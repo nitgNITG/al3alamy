@@ -1,0 +1,537 @@
+<?php
+// This file is part of Moodle - http://moodle.org/
+//
+// Moodle is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Moodle is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+
+/**
+ * Renderer for outputting the Multitopic course format.
+ *
+ * @package   format_multitopic
+ * @copyright 2019 onwards James Calder and Otago Polytechnic
+ * @copyright based on work by 2012 Dan Poltawski
+ * @copyright based on work by 2020 Ferran Recio <ferran@moodle.com>
+ * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @since     Moodle 2.3
+ */
+
+namespace format_multitopic\output;
+
+use core_courseformat\output\section_renderer;
+use moodle_page;
+
+// ADDED.
+defined('MOODLE_INTERNAL') || die();
+require_once(__DIR__ . '/../../lib.php');
+require_once(__DIR__ . '/../../classes/courseheader.php');
+require_once(__DIR__ . '/../../classes/coursecontentheaderfooter.php');
+// END ADDED.
+
+/**
+ * Basic renderer for Multitopic format.
+ *
+ * @copyright 2019 onwards James Calder and Otago Polytechnic
+ * @copyright based on work by 2012 Dan Poltawski
+ * @copyright based on work by 2020 Ferran Recio <ferran@moodle.com>
+ * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
+class renderer extends section_renderer
+{
+
+    /**
+     * Constructor method, calls the parent constructor.
+     *
+     * @param moodle_page $page
+     * @param string $target one of rendering target constants
+     */
+    public function __construct(\moodle_page $page, string $target)
+    {
+        parent::__construct($page, $target);
+
+        // REMOVED: Marker stuff.
+
+        // ADDED.
+        // If we're on the view page, patch the URL to use the section ID instead of section number.
+        if (
+            $this->page->has_set_url()
+            && ($url = $this->page->url)->compare(new \moodle_url('/course/view.php'), URL_MATCH_BASE)
+            &&  $url->get_param('section')
+            && ($sectionid = optional_param('sectionid', null, PARAM_INT))
+        ) {
+            $url->remove_params(['section']);
+            $this->page->set_url($url, ['sectionid' => $sectionid]);
+        }
+        // END ADDED.
+
+    }
+
+    /**
+     * Renders the provided widget and returns the HTML to display it.
+     *
+     * Course format templates uses a similar subfolder structure to the renderable classes.
+     * This method find out the specific template for a course widget. That's the reason why
+     * this render method is different from the normal plugin renderer one.
+     *
+     * course format templatables can be rendered using the core_course/local/* templates.
+     * Format plugins are free to override the default template location using render_xxx methods as usual.
+     *
+     * @param \renderable $widget instance with renderable interface
+     * @return string the widget HTML
+     */
+    public function render(\renderable $widget)
+    {
+        global $CFG;
+        $fullpath = str_replace('\\', '/', get_class($widget));
+        $classparts = explode('/', $fullpath);
+        // Strip namespaces.
+        $classname = array_pop($classparts);
+        // Remove _renderable suffixes.
+        $classname = preg_replace('/_renderable$/', '', $classname);
+
+        $rendermethod = 'render_' . $classname;
+        if (method_exists($this, $rendermethod)) {
+            return $this->$rendermethod($widget);
+        }
+        // Check for special course format templatables.
+        if ($widget instanceof \templatable) {
+            // Templatables from both core_courseformat\output\xxx_format\* and format_xxx\output\xxx_format\*
+            // use core_crouseformat/local/xxx_format templates by default.
+            $corepath = 'core_courseformat\/output\/local';
+            $pluginpath = 'format_.+\/output\/courseformat';
+            $specialrenderers = '/^(?<componentpath>' /*. $corepath . '|'*/ . $pluginpath . ')\/(?<template>.+)$/'; // CHANGED.
+            $matches = null;
+
+            if (preg_match($specialrenderers, $fullpath, $matches)) {
+                $data = $widget->export_for_template($this);
+                return $this->render_from_template('format_multitopic/courseformat/' . $matches['template'], $data);    // CHANGED.
+            }
+        }
+        // If nothing works, let the parent class decide.
+        return parent::render($widget);
+    }
+
+    public function section_title($section, $course, bool $linkifneeded = true): string
+    {
+        // CHANGED LINE ABOVE.
+
+        // ADDED.
+        $sectionextra = course_get_format($course)->fmt_get_section_extra($section);
+
+        // Date range for the topic, to be placed under the title.
+        $datestring = '';
+        if (isset($sectionextra->dateend) && ($sectionextra->datestart < $sectionextra->dateend)) {
+            $dateformat = get_string('strftimedateshort');
+            $startday = userdate($sectionextra->datestart + 12 * 60 * 60, $dateformat);
+            $endday = userdate($sectionextra->dateend - 12 * 60 * 60, $dateformat);
+
+            if ($startday == $endday) {
+                $datestring = "({$startday})";
+            } else {
+                $datestring = "({$startday}–{$endday})";
+            }
+        }
+        // END ADDED.
+
+        global $DB, $USER, $COURSE, $CFG;
+
+        // Fetch all modules for the given section and course
+        $modules = $DB->get_records('course_modules', ['course' => $course->id, 'section' => $section->id]);
+
+        // Initialize variable to hold module IDs and availability information
+        $module_ids = '';
+
+        // Iterate over each module and fetch availability information
+        foreach ($modules as $module) {
+            // Check if availability is set and decode it
+            $availability_json = $module->availability ?? '';
+            $availability = !empty($availability_json) ? json_decode($availability_json, true) : [];
+
+            // Check if the module has group-based availability conditions
+            if (isset($availability['c'])) {
+                foreach ($availability['c'] as $condition) {
+                    if ($condition['type'] === 'group') {
+                        // check if user in this group
+                        if (!$DB->get_record('groups_members', array('userid' => $USER->id, 'groupid' => $condition['id']))) {
+
+                            $price = $DB->get_field('groups', 'description', array('id' => $condition['id']));
+
+                            // Collect module ID and availability information
+                            $module_ids .= '
+                            <style>
+                                .popup-modal {
+                                    display: none; /* Hidden by default */
+                                    position: fixed;
+                                    z-index: 1000; /* Sit on top */
+                                    left: 0;
+                                    top: 0;
+                                    width: 100%;
+                                    height: 100%;
+                                    background-color: rgba(0,0,0,0.4); /* Black w/ opacity */
+                                }
+                
+                                .popup-content {
+                                    background-color: #fefefe;
+                                    margin: 15% auto; /* 15% from the top and centered */
+                                    padding: 20px;
+                                    border: 1px solid #888;
+                                    width: 80%; /* Could be more or less, depending on screen size */
+                                    max-width: 35rem;
+                                    border-radius: 10px;
+                                    top: 35%;
+                                    left: 50%;
+                                    transform: translate(-50%, -50%);
+                                    position: absolute;
+                                    overflow: hidden;
+                                }
+                
+                                .popup-close {
+                                    color: #aaa;
+                                    float: right;
+                                    font-size: 28px;
+                                    font-weight: bold;
+                                }
+                
+                                .popup-close:hover,
+                                .popup-close:focus {
+                                    color: black;
+                                    text-decoration: none;
+                                    cursor: pointer;
+                                }
+                                
+                                #popupText {
+                                    color: black;
+                                }
+    
+                                #mycardbody {
+                                    justify-content: center;
+                                    align-items: center;
+                                    text-align: center;
+                                }
+    
+                                #mycardbody h3 {
+                                    font-size: 20px !important;
+                                }
+    
+                                #codeform {
+                                    margin: 0;
+                                    padding: 0;
+                                    width: 100%;
+                                }
+                                
+                                #GroupCode {
+                                    font-size: large;
+                                    text-align: center;
+                                }
+
+                                .or {
+                                    width: 100%;
+                                    color: #ccc;
+                                    font-size: medium;
+                                    font-weight: 100;
+                                    border-top: 1px solid;
+                                    margin-top: 25px;
+                                    margin-bottom: 20px;
+                                }
+
+                                .or span {
+                                    position: absolute;
+                                    margin-top: -12px;
+                                    background-color: white;
+                                    padding: 0px 5px;
+                                }
+
+                                .popup-price {
+                                    color: white;
+                                    background-color: red;
+                                    position: absolute;
+                                    transform: rotate(327deg);
+                                    left: -20px;
+                                    top: 10px;
+                                    width: 140px;
+                                    text-align: center;
+                                }
+                            </style>
+                            <!-- Popup Modal -->
+                            <div id="popupModal" class="popup-modal">
+                                <div class="popup-content">
+                                    <span class="popup-close">&times;</span>
+                                    <span class="popup-price">'.$price.' LE</span>
+                                    <div class="card-body d-flex flex-column" id="mycardbody">
+                                      <h3 class="card-title">please add code to open it</h3>
+                                      <div class="alert" id="responseMessage"></div>
+                                      <form id="codeform">
+                                        <input type="hidden" class="form-control" id="GroupId">
+                                        <div class="form-group">
+                                          <input type="text" id="GroupCode" class="form-control" placeholder="Add a Code">
+                                        </div>
+                                        <button type="submit" class="btn btn-primary w-100">Submit</button>
+                                      </form>
+                                      <div class="or">
+                                        <span>Or</span>
+                                      </div>
+                                      <h4 class="mt-3">If you have a wallet: </h4>
+                                      <form id="paywalletform" class="w-100 mb-2">
+                                        <input type="hidden" class="form-control" id="GroupId2" name="groupid">
+                                        <button type="submit" class="btn btn-secondary w-100">Pay with Wallet</button>
+                                      </form>
+                                      <p style="color: #ccc;">You dont have a wallet? <a href="' . $CFG->wwwroot . '/e-wallet/">Create one</a></p>
+                                    </div>
+                                </div>
+                            </div>
+                            <script>
+                                document.addEventListener("DOMContentLoaded", function() {
+                                    var popup = document.getElementById("popupModal");
+                                    var GroupId = document.getElementById("GroupId");
+                                    var GroupId2 = document.getElementById("GroupId2");
+                                    var GroupCode = document.getElementById("GroupCode");
+                                    var responseMessage = document.getElementById("responseMessage");
+                                    var closeBtn = document.querySelector(".popup-close");
+                                    var paywalletForm = document.getElementById("paywalletform");
+                                
+                                    // Select the module element by id
+                                    var moduleElement = document.getElementById("module-' . $module->id . '");
+                                    if (moduleElement) {
+                                        moduleElement.addEventListener("click", function() {
+                                            // Fetch Group ID from availability info
+                                            var groupId = "' . $condition['id'] . '";
+                                            GroupId.value = groupId; 
+                                            GroupId2.value = groupId;
+                                            popup.style.display = "block";
+                                        });
+                                    }
+                                
+                                    closeBtn.addEventListener("click", function() {
+                                        popup.style.display = "none";
+                                    });
+                                
+                                    window.addEventListener("click", function(event) {
+                                        if (event.target == popup) {
+                                            popup.style.display = "none";
+                                        }
+                                    });
+                                
+                                    // Handle form submission via AJAX
+                                    document.getElementById("codeform").addEventListener("submit", function(event) {
+                                        event.preventDefault(); // Prevent the form from submitting via the browser
+                                    
+                                        var codeGroup = GroupCode.value;
+                                        var groupId = GroupId.value;
+                                        var userId = ' . $USER->id . ';
+                                        var courseGroup = ' . $COURSE->id . ';
+                                        var clickedAct = "mod";
+                                    
+                                        // AJAX request to send the data to /checkcode.php
+                                        var xhr = new XMLHttpRequest();
+                                        xhr.open("POST", "/checkcode.php", true);
+                                        xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+                                    
+                                        xhr.onreadystatechange = function() {
+                                            if (xhr.readyState === XMLHttpRequest.DONE) {
+                                                if (xhr.status === 200) {
+                                                    var response = JSON.parse(xhr.responseText); // Parse the JSON response
+                                    
+                                                    if (response.status === "success") {
+                                                        responseMessage.classList.remove("alert-danger");
+                                                        responseMessage.classList.add("alert-success");
+                                                        responseMessage.textContent = response.message; // Display success message
+                                                        setTimeout(function() {
+                                                            popup.style.display = "none";
+                                                            window.location.href = "' . $CFG->wwwroot . '/course/view.php?id=' . $COURSE->id . '";
+                                                        }, 2000); // Close the popup after 2 seconds
+                                                    } else {
+                                                        responseMessage.classList.remove("alert-success");
+                                                        responseMessage.classList.add("alert-danger");
+                                                        responseMessage.textContent = response.message; // Display error message
+                                                    }
+                                                } else {
+                                                    responseMessage.classList.remove("alert-success");
+                                                    responseMessage.classList.add("alert-danger");
+                                                    responseMessage.textContent = "An error occurred. Please try again.";
+                                                }
+                                            }
+                                        };
+                                    
+                                        xhr.send(
+                                            "code=" + encodeURIComponent(codeGroup) +
+                                            "&groupid=" + encodeURIComponent(groupId) +
+                                            "&userid=" + encodeURIComponent(userId) +
+                                            "&courseid=" + encodeURIComponent(courseGroup) +
+                                            "&clickedAct=" + encodeURIComponent(clickedAct)
+                                        );
+                                    });
+
+
+                                    document.getElementById("paywalletform").addEventListener("submit", function(event) {
+                                        event.preventDefault(); // Prevent the form from submitting via the browser
+                                    
+                                        var groupId = document.getElementById("GroupId2").value;
+                                        var userId = '. $USER->id .';
+                                        var courseId = '. $COURSE->id .';
+                                        var clickedAct = "mod";
+                                        
+                                        // AJAX request to send the data to /paywallet.php
+                                        var xhr = new XMLHttpRequest();
+                                        xhr.open("POST", "/paywallet.php", true);
+                                        xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+                                    
+                                        xhr.onreadystatechange = function() {
+                                            if (xhr.readyState === XMLHttpRequest.DONE) {
+                                                if (xhr.status === 200) {
+                                                    var response = JSON.parse(xhr.responseText); // Parse the JSON response
+                                    
+                                                    var responseMessage = document.getElementById("responseMessage");
+                                                    
+                                                    if (response.status === "success") {
+                                                        responseMessage.classList.remove("alert-danger");
+                                                        responseMessage.classList.add("alert-success");
+                                                        responseMessage.textContent = response.message; // Display success message
+                                                        setTimeout(function() {
+                                                            window.location.href = "'. $CFG->wwwroot .'/course/view.php?id=" + courseId;
+                                                        }, 2000); // Redirect after 2 seconds
+                                                    } else {
+                                                        responseMessage.classList.remove("alert-success");
+                                                        responseMessage.classList.add("alert-danger");
+                                                        responseMessage.textContent = response.message; // Display error message
+                                                    }
+                                                } else {
+                                                    var responseMessage = document.getElementById("responseMessage");
+                                                    responseMessage.classList.remove("alert-success");
+                                                    responseMessage.classList.add("alert-danger");
+                                                    responseMessage.textContent = "An error occurred. Please try again.";
+                                                }
+                                            }
+                                        };
+                                    
+                                        xhr.send(
+                                            "groupid=" + encodeURIComponent(groupId) +
+                                            "&userid=" + encodeURIComponent(userId) +
+                                            "&courseid=" + encodeURIComponent(courseId) +
+                                            "&clickedAct=" + encodeURIComponent(clickedAct)
+                                        );
+                                    });
+                                         
+                                });
+                                
+                            </script>
+                            ';
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+
+
+
+        return  '<div>'
+            . $this->render(course_get_format($course)->inplace_editable_render_section_name($section, $linkifneeded))
+            . \html_writer::empty_tag('br')
+            . \html_writer::tag('span', $datestring, ['class' => 'section_subtitle'])
+            . \html_writer::tag('div', $module_ids, ['class' => 'module_ids'])
+            . '</div>'; // CHANGED.
+    }
+
+
+    /**
+     * Generate the section title to be displayed on the section page, without a link.
+     *
+     * @param \section_info|\stdClass $section The course_section entry from DB
+     * @param int|\stdClass $course The course entry from DB
+     * @return string HTML to output.
+     */
+    public function section_title_without_link($section, $course): string
+    {
+        return $this->section_title($section, $course, false);                  // CHANGED.
+    }
+
+    // INCLUDED course/format/classes/output/section_renderer.php function.
+    /**
+     * Get the course index drawer with placeholder.
+     *
+     * The default course index is loaded after the page is ready. Format plugins can override
+     * this method to provide an alternative course index.
+     *
+     * If the format is not compatible with the course index, this method will return an empty string.
+     *
+     * @param \core_courseformat\base $format the course format
+     * @return string the course index HTML.
+     */
+    public function course_index_drawer(\core_courseformat\base $format): string
+    {
+        if ($format->uses_course_index()) {
+            include_course_editor($format);
+            return $this->render_from_template('format_multitopic/courseformat/courseindex/drawer', []);
+            // CHANGED LINE ABOVE.
+        }
+        return '';
+    }
+    // END INCLUDED.
+
+    // ADDED.
+    /**
+     * Generate HTML for course header: A banner with the course title and a slice of the course image.
+     *
+     * @param \format_multitopic\courseheader $header header to render
+     * @return string HTML to output.
+     */
+    protected function render_courseheader(\format_multitopic\courseheader $header): string
+    {
+        return $header->output();
+    }
+
+    /**
+     * Generate HTML for course content header/footer: Back to course button.
+     *
+     * @param \format_multitopic\coursecontentheaderfooter $headerfooter header/footer to render
+     * @return string HTML to output.
+     */
+    protected function render_coursecontentheaderfooter(
+        \format_multitopic\coursecontentheaderfooter $headerfooter
+    ): string {
+        return $headerfooter->output();
+    }
+    // END ADDED.
+
+}
+/* ?>
+
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Hello, World!</title>
+    <link rel="stylesheet" href="styles.css" />
+</head>
+
+<body>
+
+    <div class="content_box" style="margin-top: 45px;">
+        <h3>انضم إلى قبطان اللغة العربية
+            أ. عمرو أبو ناجي</h3>
+        <h3 style="color: #fff;">Code</h3>
+        <div class="alert alert-warning ">please add code to open it</div>
+
+
+        <div class="box' . $mod->id . '">
+            <div class=" alert alert-danger" id="danger2' . $mod->id . '"></div>
+            <div class=" alert alert-success" id="success2' . $mod->id . '"></div>
+            <input type="text" class="form-control " placeholder="Add a Code" id="codeGroup2' . $mod->id . '" class="">
+            <br><br>
+            <button class="btn btn-primary" id="addCode2' . $mod->id . '">اضافة كود</button>
+            <input type="hidden" id="codeGroupId2' . $mod->id . '" value="">
+        </div>
+    </div>
+    <script src="script.js"></script>
+</body>
+
+</html> */

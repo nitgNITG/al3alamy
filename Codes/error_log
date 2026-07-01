@@ -1,0 +1,108 @@
+[23-Aug-2023 11:03:14 UTC] PHP Fatal error:  Uncaught Error: Call to a member function setWidth() on null in /home/xi5b6gzv4yn6/public_html/Codes/export.php:27
+Stack trace:
+#0 {main}
+  thrown in /home/xi5b6gzv4yn6/public_html/Codes/export.php on line 27
+[23-Aug-2023 11:03:45 UTC] PHP Fatal error:  Uncaught Error: Call to a member function setWidth() on null in /home/xi5b6gzv4yn6/public_html/Codes/export.php:27
+Stack trace:
+#0 {main}
+  thrown in /home/xi5b6gzv4yn6/public_html/Codes/export.php on line 27
+[23-Aug-2023 11:05:31 UTC] PHP Fatal error:  Uncaught Error: Call to a member function setWidth() on null in /home/xi5b6gzv4yn6/public_html/Codes/export.php:27
+Stack trace:
+#0 {main}
+  thrown in /home/xi5b6gzv4yn6/public_html/Codes/export.php on line 27
+[23-Aug-2023 11:05:35 UTC] PHP Fatal error:  Uncaught Error: Call to a member function setWidth() on null in /home/xi5b6gzv4yn6/public_html/Codes/export.php:27
+Stack trace:
+#0 {main}
+  thrown in /home/xi5b6gzv4yn6/public_html/Codes/export.php on line 27
+[23-Aug-2023 11:06:05 UTC] PHP Fatal error:  Uncaught Error: Call to a member function setWidth() on null in /home/xi5b6gzv4yn6/public_html/Codes/export.php:27
+Stack trace:
+#0 {main}
+  thrown in /home/xi5b6gzv4yn6/public_html/Codes/export.php on line 27
+[23-Aug-2023 11:06:15 UTC] PHP Fatal error:  Uncaught Error: Call to a member function setWidth() on null in /home/xi5b6gzv4yn6/public_html/Codes/export.php:27
+Stack trace:
+#0 {main}
+  thrown in /home/xi5b6gzv4yn6/public_html/Codes/export.php on line 27
+[23-Aug-2023 11:08:48 UTC] PHP Fatal error:  Uncaught Error: Undefined constant PhpOffice\PhpWord\Style\Paragraph::ALIGN_LEFT in /home/xi5b6gzv4yn6/public_html/Codes/export.php:23
+Stack trace:
+#0 {main}
+  thrown in /home/xi5b6gzv4yn6/public_html/Codes/export.php on line 23
+[23-Aug-2023 11:10:20 UTC] PHP Fatal error:  Uncaught Error: Class "Paragraph" not found in /home/xi5b6gzv4yn6/public_html/Codes/export.php:21
+Stack trace:
+#0 {main}
+  thrown in /home/xi5b6gzv4yn6/public_html/Codes/export.php on line 21
+[23-Aug-2023 11:10:23 UTC] PHP Fatal error:  Uncaught Error: Class "Paragraph" not found in /home/xi5b6gzv4yn6/public_html/Codes/export.php:21
+Stack trace:
+#0 {main}
+  thrown in /home/xi5b6gzv4yn6/public_html/Codes/export.php on line 21
+[23-Aug-2023 11:10:55 UTC] PHP Fatal error:  Uncaught Error: Class "Paragraph" not found in /home/xi5b6gzv4yn6/public_html/Codes/export.php:21
+Stack trace:
+#0 {main}
+  thrown in /home/xi5b6gzv4yn6/public_html/Codes/export.php on line 21
+[23-Aug-2023 11:12:42 UTC] PHP Fatal error:  Uncaught Error: Call to a member function setBold() on null in /home/xi5b6gzv4yn6/public_html/Codes/export.php:29
+Stack trace:
+#0 {main}
+  thrown in /home/xi5b6gzv4yn6/public_html/Codes/export.php on line 29
+[23-Aug-2023 11:12:45 UTC] PHP Fatal error:  Uncaught Error: Call to a member function setBold() on null in /home/xi5b6gzv4yn6/public_html/Codes/export.php:29
+Stack trace:
+#0 {main}
+  thrown in /home/xi5b6gzv4yn6/public_html/Codes/export.php on line 29
+[23-Aug-2023 11:21:17 UTC] PHP Fatal error:  Uncaught Error: Class "PhpOffice\PhpSpreadsheet\Spreadsheet" not found in /home/xi5b6gzv4yn6/public_html/Codes/export.php:16
+Stack trace:
+#0 {main}
+  thrown in /home/xi5b6gzv4yn6/public_html/Codes/export.php on line 16
+[23-Aug-2023 11:21:48 UTC] PHP Fatal error:  Uncaught Error: Class "PhpOffice\PhpSpreadsheet\Spreadsheet" not found in /home/xi5b6gzv4yn6/public_html/Codes/export.php:16
+Stack trace:
+#0 {main}
+  thrown in /home/xi5b6gzv4yn6/public_html/Codes/export.php on line 16
+[23-Aug-2023 11:21:50 UTC] PHP Fatal error:  Uncaught Error: Class "PhpOffice\PhpSpreadsheet\Spreadsheet" not found in /home/xi5b6gzv4yn6/public_html/Codes/export.php:16
+Stack trace:
+#0 {main}
+  thrown in /home/xi5b6gzv4yn6/public_html/Codes/export.php on line 16
+[23-Aug-2023 11:24:22 UTC] PHP Fatal error:  Uncaught Error: Class "COM" not found in /home/xi5b6gzv4yn6/public_html/Codes/export.php:17
+Stack trace:
+#0 {main}
+  thrown in /home/xi5b6gzv4yn6/public_html/Codes/export.php on line 17
+[23-Aug-2023 11:24:27 UTC] PHP Fatal error:  Uncaught Error: Class "COM" not found in /home/xi5b6gzv4yn6/public_html/Codes/export.php:17
+Stack trace:
+#0 {main}
+  thrown in /home/xi5b6gzv4yn6/public_html/Codes/export.php on line 17
+[23-Aug-2023 11:24:37 UTC] PHP Fatal error:  Uncaught Error: Class "COM" not found in /home/xi5b6gzv4yn6/public_html/Codes/export.php:17
+Stack trace:
+#0 {main}
+  thrown in /home/xi5b6gzv4yn6/public_html/Codes/export.php on line 17
+[23-Aug-2023 11:24:41 UTC] PHP Fatal error:  Uncaught Error: Class "COM" not found in /home/xi5b6gzv4yn6/public_html/Codes/export.php:17
+Stack trace:
+#0 {main}
+  thrown in /home/xi5b6gzv4yn6/public_html/Codes/export.php on line 17
+[23-Aug-2023 11:34:48 UTC] PHP Fatal error:  Uncaught Error: Undefined constant PhpOffice\PhpWord\Style\Image::ALIGN_CENTER in /home/xi5b6gzv4yn6/public_html/Codes/export.php:60
+Stack trace:
+#0 {main}
+  thrown in /home/xi5b6gzv4yn6/public_html/Codes/export.php on line 60
+[23-Aug-2023 11:34:51 UTC] PHP Fatal error:  Uncaught Error: Undefined constant PhpOffice\PhpWord\Style\Image::ALIGN_CENTER in /home/xi5b6gzv4yn6/public_html/Codes/export.php:60
+Stack trace:
+#0 {main}
+  thrown in /home/xi5b6gzv4yn6/public_html/Codes/export.php on line 60
+[23-Aug-2023 11:35:39 UTC] PHP Fatal error:  Uncaught Error: Undefined constant PhpOffice\PhpWord\Style\Image::ALIGN_CENTER in /home/xi5b6gzv4yn6/public_html/Codes/export.php:60
+Stack trace:
+#0 {main}
+  thrown in /home/xi5b6gzv4yn6/public_html/Codes/export.php on line 60
+[23-Aug-2023 11:35:40 UTC] PHP Fatal error:  Uncaught Error: Undefined constant PhpOffice\PhpWord\Style\Image::ALIGN_CENTER in /home/xi5b6gzv4yn6/public_html/Codes/export.php:60
+Stack trace:
+#0 {main}
+  thrown in /home/xi5b6gzv4yn6/public_html/Codes/export.php on line 60
+[23-Aug-2023 11:41:02 UTC] PHP Fatal error:  Uncaught Error: Call to a member function setBold() on null in /home/xi5b6gzv4yn6/public_html/Codes/export.php:29
+Stack trace:
+#0 {main}
+  thrown in /home/xi5b6gzv4yn6/public_html/Codes/export.php on line 29
+[23-Aug-2023 11:43:28 UTC] PHP Fatal error:  Uncaught Error: Class "setasign\Fpdi\Tcpdf\Fpdi" not found in /home/xi5b6gzv4yn6/public_html/Codes/export.php:14
+Stack trace:
+#0 {main}
+  thrown in /home/xi5b6gzv4yn6/public_html/Codes/export.php on line 14
+[23-Aug-2023 11:43:39 UTC] PHP Fatal error:  Uncaught Error: Class "setasign\Fpdi\Tcpdf\Fpdi" not found in /home/xi5b6gzv4yn6/public_html/Codes/export.php:14
+Stack trace:
+#0 {main}
+  thrown in /home/xi5b6gzv4yn6/public_html/Codes/export.php on line 14
+[23-Aug-2023 20:20:28 UTC] PHP Parse error:  syntax error, unexpected token "use" in /home/xi5b6gzv4yn6/public_html/Codes/export.php on line 5
+[23-Aug-2023 20:22:12 UTC] PHP Parse error:  syntax error, unexpected token "use" in /home/xi5b6gzv4yn6/public_html/Codes/export.php on line 5
+[23-Aug-2023 20:22:17 UTC] PHP Parse error:  syntax error, unexpected token "use" in /home/xi5b6gzv4yn6/public_html/Codes/export.php on line 5
+[23-Aug-2023 20:22:34 UTC] PHP Parse error:  syntax error, unexpected token "use" in /home/xi5b6gzv4yn6/public_html/Codes/export.php on line 5

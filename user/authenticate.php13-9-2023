@@ -1,0 +1,20 @@
+<?php
+require_once(__DIR__ . '/../config.php');
+
+if (isset($_GET["user_id"])) {
+    $user_id = $_GET["user_id"];
+
+    // Update the confirmed status in the database
+    $updateSuccess = $DB->update_record('user', array('id' => $user_id, 'confirmed' => 1));
+
+    if ($updateSuccess) {
+        echo "User authenticated successfully.";
+        // Redirect to profile.php
+        header('Location: profile.php');
+        exit();
+    } else {
+        echo "Failed to authenticate user.";
+    }
+} else {
+    echo "Invalid user ID.";
+}

@@ -1,0 +1,13 @@
+[28-Aug-2023 06:45:05 Africa/Cairo] Debugging: Class 'format_topics_renderer' has been renamed for the autoloader and is now deprecated. Please use 'format_topics\output\renderer' instead. in 
+* line 143 of /lib/classes/component.php: call to debugging()
+* line 21 of /theme/edumy/classes/format_topics_renderer.php: call to core_component::classloader()
+* line 137 of /lib/classes/component.php: call to include_once()
+* line ? of unknownfile: call to core_component::classloader()
+* line 405 of /lib/outputfactories.php: call to class_exists()
+* line 2427 of /lib/outputlib.php: call to theme_overridden_renderer_factory->get_renderer()
+* line 1006 of /lib/pagelib.php: call to theme_config->get_renderer()
+* line 1256 of /course/format/classes/base.php: call to moodle_page->get_renderer()
+* line 85 of /course/format/classes/external/get_state.php: call to core_courseformat\base->get_renderer()
+* line 261 of /lib/externallib.php: call to core_courseformat\external\get_state::execute()
+* line 81 of /lib/ajax/service.php: call to external_api::call_external_function()
+

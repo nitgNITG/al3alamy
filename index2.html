@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>حسام هارون | العالمي – قريباً</title>
+  <meta name="description" content="منصة العالمي – التاريخ الوطني | ابطال دفعة 2027 مع أ. حسام هارون" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700;900&family=Cairo:wght@400;700;900&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --gold: #c9a227;
+      --gold-light: #f0d060;
+      --gold-dark: #8a6a00;
+      --black: #0a0704;
+      --dark: #130e04;
+    }
+
+    html, body {
+      height: 100%;
+      font-family: 'Cairo', 'Tajawal', sans-serif;
+      background: var(--black);
+      overflow-x: hidden;
+    }
+
+    /* ─── CANVAS PARTICLES ─── */
+    #particles {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    /* ─── HERO ─── */
+    .hero {
+      position: relative;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-end;
+      padding-bottom: 4rem;
+      overflow: hidden;
+    }
+
+    .hero-bg {
+      position: absolute;
+      inset: 0;
+      background: url('hero.jpeg') center top / cover no-repeat;
+      filter: brightness(0.75);
+      transform: scale(1.05);
+      animation: slowZoom 20s ease-in-out infinite alternate;
+    }
+
+    @keyframes slowZoom {
+      from { transform: scale(1.05); }
+      to   { transform: scale(1.12); }
+    }
+
+    .hero-overlay {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(
+        to bottom,
+        rgba(10,7,4,0.15) 0%,
+        rgba(10,7,4,0.10) 40%,
+        rgba(10,7,4,0.70) 75%,
+        rgba(10,7,4,0.97) 100%
+      );
+    }
+
+    /* ─── LOGO TOP ─── */
+    .logo-top {
+      position: absolute;
+      top: 1.4rem;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 10;
+      display: flex;
+      align-items: center;
+      gap: .7rem;
+    }
+    .logo-top img {
+      width: 56px;
+      height: 56px;
+      object-fit: contain;
+      filter: drop-shadow(0 0 8px var(--gold));
+    }
+    .logo-top span {
+      font-size: 1.35rem;
+      font-weight: 900;
+      color: var(--gold-light);
+      letter-spacing: .08em;
+      text-shadow: 0 0 18px var(--gold);
+    }
+
+    /* ─── BADGE ─── */
+    .badge {
+      position: relative;
+      z-index: 10;
+      background: linear-gradient(135deg, var(--gold-dark), var(--gold), var(--gold-light), var(--gold));
+      color: #1a0f00;
+      font-size: .78rem;
+      font-weight: 900;
+      letter-spacing: .18em;
+      text-transform: uppercase;
+      padding: .38rem 1.6rem;
+      border-radius: 2rem;
+      margin-bottom: 1.2rem;
+      box-shadow: 0 0 24px rgba(201,162,39,.6), 0 2px 6px #000;
+      animation: pulse 2.5s ease-in-out infinite;
+    }
+    @keyframes pulse {
+      0%,100% { box-shadow: 0 0 24px rgba(201,162,39,.6); }
+      50%      { box-shadow: 0 0 48px rgba(240,208,96,.9); }
+    }
+
+    /* ─── CONTENT ─── */
+    .content {
+      position: relative;
+      z-index: 10;
+      text-align: center;
+      width: 100%;
+      padding: 0 1rem;
+    }
+
+    .coming-soon-ar {
+      font-size: clamp(2.8rem, 9vw, 6.5rem);
+      font-weight: 900;
+      line-height: 1.05;
+      background: linear-gradient(135deg, var(--gold-dark) 0%, var(--gold) 35%, var(--gold-light) 60%, var(--gold) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      filter: drop-shadow(0 0 18px rgba(201,162,39,.55));
+      animation: shimmer 3s linear infinite;
+      background-size: 200% auto;
+    }
+    @keyframes shimmer {
+      0%   { background-position: 0% center; }
+      100% { background-position: 200% center; }
+    }
+
+    .coming-soon-en {
+      font-size: clamp(1rem, 3vw, 1.8rem);
+      font-weight: 700;
+      letter-spacing: .35em;
+      color: rgba(240,208,96,.7);
+      text-transform: uppercase;
+      margin-top: .3rem;
+      font-family: 'Tajawal', sans-serif;
+    }
+
+    .tagline {
+      margin-top: 1.2rem;
+      font-size: clamp(.95rem, 2.5vw, 1.35rem);
+      color: rgba(255,245,220,.85);
+      font-weight: 700;
+      letter-spacing: .06em;
+    }
+    .tagline span {
+      color: var(--gold-light);
+    }
+
+    /* ─── DIVIDER ─── */
+    .divider {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 1rem;
+      margin: 1.8rem auto;
+      width: min(420px, 90%);
+    }
+    .divider-line {
+      flex: 1;
+      height: 1px;
+      background: linear-gradient(to left, transparent, var(--gold), transparent);
+    }
+    .divider-eye {
+      font-size: 1.4rem;
+      filter: drop-shadow(0 0 6px var(--gold));
+      animation: glow 2s ease-in-out infinite alternate;
+    }
+    @keyframes glow {
+      from { filter: drop-shadow(0 0 4px var(--gold)); }
+      to   { filter: drop-shadow(0 0 14px var(--gold-light)); }
+    }
+
+    /* ─── COUNTDOWN ─── */
+    .countdown-label {
+      font-size: .85rem;
+      letter-spacing: .2em;
+      color: rgba(201,162,39,.7);
+      text-transform: uppercase;
+      margin-bottom: .8rem;
+    }
+
+    .countdown {
+      display: flex;
+      justify-content: center;
+      gap: clamp(.6rem, 2vw, 1.6rem);
+      flex-wrap: wrap;
+    }
+
+    .countdown-box {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      background: rgba(10,7,4,.7);
+      border: 1px solid rgba(201,162,39,.35);
+      border-radius: 12px;
+      padding: clamp(.7rem,2vw,1.1rem) clamp(.9rem,2.5vw,1.5rem);
+      min-width: clamp(64px,14vw,90px);
+      backdrop-filter: blur(8px);
+      box-shadow: 0 4px 24px rgba(0,0,0,.5), inset 0 1px 0 rgba(201,162,39,.2);
+      transition: transform .2s;
+    }
+    .countdown-box:hover { transform: translateY(-4px); }
+
+    .countdown-num {
+      font-size: clamp(2rem, 6vw, 3.6rem);
+      font-weight: 900;
+      line-height: 1;
+      background: linear-gradient(180deg, var(--gold-light), var(--gold));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .countdown-unit {
+      font-size: .7rem;
+      letter-spacing: .15em;
+      color: rgba(201,162,39,.65);
+      text-transform: uppercase;
+      margin-top: .35rem;
+    }
+
+    /* ─── CTA ─── */
+    .cta-area {
+      position: relative;
+      z-index: 10;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1rem;
+      margin-top: 2.2rem;
+    }
+
+    .btn-whatsapp {
+      display: inline-flex;
+      align-items: center;
+      gap: .7rem;
+      padding: .9rem 2.2rem;
+      border-radius: 3rem;
+      background: linear-gradient(135deg, #1a6e2e, #25d366, #1a6e2e);
+      background-size: 200% auto;
+      color: #fff;
+      font-size: 1.05rem;
+      font-weight: 900;
+      text-decoration: none;
+      box-shadow: 0 4px 24px rgba(37,211,102,.35);
+      transition: background-position .4s, transform .2s, box-shadow .2s;
+    }
+    .btn-whatsapp:hover {
+      background-position: right center;
+      transform: translateY(-3px);
+      box-shadow: 0 8px 32px rgba(37,211,102,.5);
+    }
+    .btn-whatsapp svg { width: 26px; height: 26px; fill: #fff; flex-shrink: 0; }
+
+    .phone-number {
+      font-size: 1.3rem;
+      font-weight: 900;
+      color: var(--gold-light);
+      letter-spacing: .08em;
+      direction: ltr;
+      text-shadow: 0 0 12px rgba(201,162,39,.5);
+    }
+
+    /* ─── FOOTER STRIP ─── */
+    .footer-strip {
+      position: relative;
+      z-index: 10;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: .5rem;
+      margin-top: 2.5rem;
+      padding: 1rem;
+      font-size: .8rem;
+      color: rgba(201,162,39,.45);
+      letter-spacing: .1em;
+    }
+    .footer-strip a {
+      color: rgba(201,162,39,.55);
+      text-decoration: none;
+    }
+    .footer-strip a:hover { color: var(--gold-light); }
+
+    /* ─── QR ─── */
+    .qr-block {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: .5rem;
+      margin-top: 1.6rem;
+    }
+    .qr-block img {
+      width: 110px;
+      height: 110px;
+      border-radius: 10px;
+      border: 2px solid rgba(201,162,39,.4);
+      background: #fff;
+      padding: 4px;
+    }
+    .qr-block span {
+      font-size: .72rem;
+      color: rgba(201,162,39,.55);
+      letter-spacing: .12em;
+    }
+
+    /* ─── RESPONSIVE ─── */
+    @media (max-width: 480px) {
+      .hero { padding-bottom: 2.8rem; }
+      .countdown-unit { font-size: .62rem; }
+    }
+  </style>
+</head>
+<body>
+
+<canvas id="particles"></canvas>
+
+<section class="hero">
+  <div class="hero-bg"></div>
+  <div class="hero-overlay"></div>
+
+  <!-- Logo -->
+  
+  <!-- Coming Soon Text -->
+  <div class="content">
+    <div class="badge">✦ قريباً جداً ✦</div>
+
+    <h1 class="coming-soon-ar">قريباً</h1>
+    <p class="coming-soon-en">COMING SOON</p>
+
+    <p class="tagline">
+      <span>التاريخ الوطني</span> &nbsp;|&nbsp; ابطال دفعة <span>2027</span>
+    </p>
+
+    <div class="divider">
+      <div class="divider-line"></div>
+      <div class="divider-eye">𓂀</div>
+      <div class="divider-line"></div>
+    </div>
+
+    <!-- Countdown -->
+    <p class="countdown-label">العد التنازلي للإطلاق</p>
+    <div class="countdown">
+      <div class="countdown-box">
+        <span class="countdown-num" id="cd-days">000</span>
+        <span class="countdown-unit">يوم</span>
+      </div>
+      <div class="countdown-box">
+        <span class="countdown-num" id="cd-hours">00</span>
+        <span class="countdown-unit">ساعة</span>
+      </div>
+      <div class="countdown-box">
+        <span class="countdown-num" id="cd-mins">00</span>
+        <span class="countdown-unit">دقيقة</span>
+      </div>
+      <div class="countdown-box">
+        <span class="countdown-num" id="cd-secs">00</span>
+        <span class="countdown-unit">ثانية</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- CTA -->
+  <div class="cta-area">
+    <a class="btn-whatsapp" href="https://wa.me/201226767250" target="_blank" rel="noopener">
+      <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+      </svg>
+      تواصل معنا على واتساب
+    </a>
+
+    <div class="phone-number">📞 01226767250</div>
+
+    <div class="qr-block">
+      <img src="qr.jpeg" alt="QR Code العالمي" />
+      <span>امسح الكود للتواصل المباشر</span>
+    </div>
+  </div>
+
+  <div class="footer-strip">
+    <span>© 2026 – 2027</span>
+    <span>|</span>
+    <span>أ. حسام هارون</span>
+    <span>|</span>
+    <a href="https://al3alamy.com">al3alamy.com</a>
+  </div>
+</section>
+
+<script>
+  /* ── Countdown ── */
+  const target = new Date(Date.now() + 10 * 86400000);
+  function pad(n, len = 2) { return String(n).padStart(len, '0'); }
+  function tick() {
+    const now  = new Date();
+    const diff = target - now;
+    if (diff <= 0) {
+      document.getElementById('cd-days').textContent  = '000';
+      document.getElementById('cd-hours').textContent = '00';
+      document.getElementById('cd-mins').textContent  = '00';
+      document.getElementById('cd-secs').textContent  = '00';
+      return;
+    }
+    const d = Math.floor(diff / 86400000);
+    const h = Math.floor((diff % 86400000) / 3600000);
+    const m = Math.floor((diff % 3600000)  / 60000);
+    const s = Math.floor((diff % 60000)    / 1000);
+    document.getElementById('cd-days').textContent  = String(d);
+    document.getElementById('cd-hours').textContent = pad(h);
+    document.getElementById('cd-mins').textContent  = pad(m);
+    document.getElementById('cd-secs').textContent  = pad(s);
+  }
+  tick();
+  setInterval(tick, 1000);
+
+  /* ── Gold Particles ── */
+  (function() {
+    const canvas = document.getElementById('particles');
+    const ctx    = canvas.getContext('2d');
+    let W, H, particles;
+
+    function resize() {
+      W = canvas.width  = window.innerWidth;
+      H = canvas.height = window.innerHeight;
+    }
+
+    function randBetween(a, b) { return a + Math.random() * (b - a); }
+
+    function init() {
+      resize();
+      particles = Array.from({ length: 80 }, () => ({
+        x:    Math.random() * W,
+        y:    Math.random() * H,
+        r:    randBetween(.5, 2.2),
+        vx:   randBetween(-.3, .3),
+        vy:   randBetween(-.6, -.15),
+        alpha: randBetween(.3, .9),
+        da:   randBetween(-.004, -.001),
+      }));
+    }
+
+    function draw() {
+      ctx.clearRect(0, 0, W, H);
+      particles.forEach(p => {
+        p.x += p.vx;
+        p.y += p.vy;
+        p.alpha += p.da;
+
+        if (p.alpha <= 0 || p.y < -10) {
+          p.x     = Math.random() * W;
+          p.y     = H + 10;
+          p.alpha = randBetween(.6, .9);
+          p.da    = randBetween(-.004, -.001);
+        }
+
+        ctx.save();
+        ctx.globalAlpha = Math.max(0, p.alpha);
+        const g = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.r * 2);
+        g.addColorStop(0, '#f0d060');
+        g.addColorStop(1, 'rgba(201,162,39,0)');
+        ctx.fillStyle = g;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.r * 2, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      });
+      requestAnimationFrame(draw);
+    }
+
+    window.addEventListener('resize', resize);
+    init();
+    draw();
+  })();
+</script>
+</body>
+</html>
+e(draw);
+    }
+
+    window.addEventListener('resize', resize);
+    init();
+    draw();
+  })();
+</script>
+</body>
+</html>
+dy>
+</html>

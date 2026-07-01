@@ -1,0 +1,112 @@
+{{> theme_boost/head }}
+<body {{{ bodyattributes }}}>
+<style>
+#heading_welcome {
+  color: #FFF;
+    font-family: Amiri;
+    font-size: 50px;
+    font-style: normal;
+    font-weight: bold;
+    line-height: 151.3%;
+    margin-top: -20px;
+}
+@media only screen and (max-width: 600px) {
+  #heading_welcome {
+    font-size: 35px;
+  }
+  .container_c {
+    height: 100% !important;
+    padding-bottom: 10px;
+  }
+  .hero_image_side {
+    display: none;
+  }
+}
+.form-group input {
+    border: none;
+    border-bottom: 2px solid #FEB62E;
+    background-color: #00336200;
+    color: white;
+}
+.form-group input:hover,
+.form-group input:focus {
+    background-color: #00336200;
+    color: white;
+}
+.form-group input::placeholder {
+  color: white;
+}
+.mt-2 p {color: white;}
+.btn-thm2:hover {
+    background-color: #fff;
+    border: 2px solid #FEB62E;
+    color: #FEB62E;
+}
+.btn-thm2 {
+    padding: 10px;
+    font-size: 20px;
+    border-radius: 5px;
+    background-color: #FEB62E;
+    color: #fff;
+    border: 2px solid #fff;
+}
+.btn-secondary:hover {
+    background-color: #fff;
+    border-color: #FEB62E;
+    color: #FEB62E;
+}
+.btn-secondary{
+    border-radius: 5px;
+    font-size: 20px;
+    background-color: #FEB62E;
+    border-color: #fff;
+    color: #fff;
+}
+.btn-fpswd {color: #fff;}
+.custom-control {
+    display: flex;
+    justify-content: flex-start;
+}
+
+.form-group input {padding: 15px;border-radius: 5px;padding-right: 40px;font-size: 25px;}
+.form-group i {
+  position: absolute;
+  color: #FEB62E;
+  font-size: 30px;
+  margin-top: 13px;
+  margin-left: 13px;
+}
+</style>
+  {{> theme_edumy/ccn_preloader }}
+  <div class="wrapper" id="page-content">
+    {{> theme_boost/navbar }}
+    {{{ output.standard_top_of_body_html }}}
+    <section class="bgc_xc">
+      <div class="container_c">
+       <div class="my_login_form">
+          {{{ output.main_content }}}
+          <div class="signup_place mt-5">
+           <h4 style="color: white;">هل هذه اول مرة لك؟ <a href="https://www.amrabonagy.com/login/signup.php" style="color: #FEB62E;"> انشئ حساب جديد</a></h4>
+          </div>
+       </div>
+       
+      </div>
+      <div class="hero_image_side"></div>
+    </section>
+    {{> theme_boost/footer }}
+  </div>
+  {{{ output.standard_after_main_region_html }}}
+</body>
+
+</html>
+{{#js}}
+  M.util.js_pending('theme_boost/loader');
+  require(['theme_boost/loader'], function() {
+  M.util.js_complete('theme_boost/loader');
+  });
+  M.util.js_pending('theme_boost/drawer');
+  require(['theme_boost/drawer'], function(mod) {
+  mod.init();
+  M.util.js_complete('theme_boost/drawer');
+  });
+{{/js}}

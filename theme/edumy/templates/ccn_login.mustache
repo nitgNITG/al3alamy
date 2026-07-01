@@ -1,0 +1,35 @@
+{{> theme_boost/head }}
+<body {{{ bodyattributes }}}>
+  {{> theme_edumy/ccn_preloader }}
+  <div class="wrapper" id="page-content">
+    {{> theme_boost/navbar }}
+    {{{ output.standard_top_of_body_html }}}
+    <section class="bgc_xc">
+      <div class="container_c">
+       <div class="my_login_form">
+          {{{ output.main_content }}}
+          <div class="signup_place mt-5">
+           <h4 style="color: black;">Is this your first time? <a href="{{{ config.wwwroot }}}/login/signup.php">Create a new account</a></h4>
+          </div>
+       </div>
+       
+      </div>
+      <div class="hero_image_side"></div>
+    </section>
+    {{> theme_boost/footer }}
+  </div>
+  {{{ output.standard_after_main_region_html }}}
+</body>
+
+</html>
+{{#js}}
+  M.util.js_pending('theme_boost/loader');
+  require(['theme_boost/loader'], function() {
+  M.util.js_complete('theme_boost/loader');
+  });
+  M.util.js_pending('theme_boost/drawer');
+  require(['theme_boost/drawer'], function(mod) {
+  mod.init();
+  M.util.js_complete('theme_boost/drawer');
+  });
+{{/js}}

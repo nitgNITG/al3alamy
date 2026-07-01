@@ -1,0 +1,76 @@
+<?php
+require_once('vendor/autoload.php');
+require_once(__DIR__ . '/../config.php');
+
+use GuzzleHttp\Client;
+
+$client = new Client();
+global $DB, $CFG, $USER;
+
+// Check if user is logged in and not a guest
+if (!isloggedin() || isguestuser()) {
+    http_response_code(403); // Unauthorized
+    echo json_encode(['success' => false, 'message' => 'Unauthorized']);
+    exit;
+}
+
+if (isset($_GET['amount'])) {
+    $amount = filter_var($_GET['amount'], FILTER_VALIDATE_INT);
+
+    if ($amount > 0) {
+        $user = $DB->get_record('user', array('id' => $USER->id));
+        if ($user) {
+            try {
+                $response = $client->request('POST', 'https://api.tap.company/v2/charges/', [
+                    'json' => [
+                        "amount" => $amount,
+                        "currency" => "KWD",
+                        "customer_initiated" => true,
+                        "threeDSecure" => true,
+                        "save_card" => false,
+                        "description" => "Test Description",
+                        "metadata" => ["udf1" => "Metadata 1"],
+                        "reference" => ["transaction" => "txn_01", "order" => "ord_01"],
+                        "receipt" => ["email" => true, "sms" => true],
+                        "customer" => [
+                            "first_name" => "test",
+                            "middle_name" => "test",
+                            "last_name" => "test",
+                            "email" => "test@test.com",
+                            "phone" => ["country_code" => 965, "number" => 51234567]
+                        ],
+                        "merchant" => ["id" => "1234"],
+                        "source" => ["id" => "src_all"],
+                        "post" => ["url" => "http://your_website.com/post_url"],
+                        "redirect" => ["url" => $CFG->wwwroot."/e-wallet/response.php"]
+                    ],
+                    'headers' => [
+                        'Authorization' => 'Bearer sk_test_XKokBfNWv6FIYuTMg5sLPjhJ',
+                        'Accept' => 'application/json',
+                        'Content-Type' => 'application/json',
+                    ],
+                ]);
+
+                $responseJson = $response->getBody()->getContents();
+                $responseData = json_decode($responseJson, true);
+
+                // التحقق من نجاح الشحن وتوجيه المستخدم إلى الرابط المناسب
+                if ($response->getStatusCode() == 200 && isset($responseData['transaction']['url'])) {
+                    header("Location: " . $responseData['transaction']['url']);
+                    exit;
+                } else {
+                    echo json_encode(['success' => false, 'message' => 'Failed to initiate charge.']);
+                }
+            } catch (GuzzleHttp\Exception\RequestException $e) {
+                echo "Error: " . $e->getMessage();
+            }
+        } else {
+            echo json_encode(['success' => false, 'message' => 'User not found.']);
+        }
+    } else {
+        echo json_encode(['success' => false, 'message' => 'Invalid deposit amount.']);
+    }
+} else {
+    echo json_encode(['success' => false, 'message' => 'Invalid request.']);
+}
+?>

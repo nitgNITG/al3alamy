@@ -1,0 +1,42 @@
+[28-Aug-2023 09:44:04 UTC] PHP Warning:  Undefined variable $DB in /home/xi5b6gzv4yn6/public_html/user/authenticate.php on line 6
+[28-Aug-2023 09:44:04 UTC] PHP Fatal error:  Uncaught Error: Call to a member function update_record() on null in /home/xi5b6gzv4yn6/public_html/user/authenticate.php:6
+Stack trace:
+#0 {main}
+  thrown in /home/xi5b6gzv4yn6/public_html/user/authenticate.php on line 6
+[28-Aug-2023 09:44:54 UTC] PHP Warning:  Undefined variable $DB in /home/xi5b6gzv4yn6/public_html/user/authenticate.php on line 6
+[28-Aug-2023 09:44:54 UTC] PHP Fatal error:  Uncaught Error: Call to a member function update_record() on null in /home/xi5b6gzv4yn6/public_html/user/authenticate.php:6
+Stack trace:
+#0 {main}
+  thrown in /home/xi5b6gzv4yn6/public_html/user/authenticate.php on line 6
+[28-Aug-2023 09:44:56 UTC] PHP Warning:  Undefined variable $DB in /home/xi5b6gzv4yn6/public_html/user/authenticate.php on line 6
+[28-Aug-2023 09:44:56 UTC] PHP Fatal error:  Uncaught Error: Call to a member function update_record() on null in /home/xi5b6gzv4yn6/public_html/user/authenticate.php:6
+Stack trace:
+#0 {main}
+  thrown in /home/xi5b6gzv4yn6/public_html/user/authenticate.php on line 6
+[28-Aug-2023 09:46:05 UTC] PHP Warning:  Undefined variable $DB in /home/xi5b6gzv4yn6/public_html/user/authenticate.php on line 6
+[28-Aug-2023 09:46:05 UTC] PHP Fatal error:  Uncaught Error: Call to a member function update_record() on null in /home/xi5b6gzv4yn6/public_html/user/authenticate.php:6
+Stack trace:
+#0 {main}
+  thrown in /home/xi5b6gzv4yn6/public_html/user/authenticate.php on line 6
+[28-Aug-2023 09:46:47 UTC] PHP Warning:  Undefined variable $DB in /home/xi5b6gzv4yn6/public_html/user/authenticate.php on line 6
+[28-Aug-2023 09:46:47 UTC] PHP Fatal error:  Uncaught Error: Call to a member function update_record() on null in /home/xi5b6gzv4yn6/public_html/user/authenticate.php:6
+Stack trace:
+#0 {main}
+  thrown in /home/xi5b6gzv4yn6/public_html/user/authenticate.php on line 6
+[28-Aug-2023 09:48:09 UTC] PHP Warning:  Undefined variable $DB in /home/xi5b6gzv4yn6/public_html/user/authenticate.php on line 6
+[28-Aug-2023 09:48:09 UTC] PHP Fatal error:  Uncaught Error: Call to a member function update_record() on null in /home/xi5b6gzv4yn6/public_html/user/authenticate.php:6
+Stack trace:
+#0 {main}
+  thrown in /home/xi5b6gzv4yn6/public_html/user/authenticate.php on line 6
+[28-Aug-2023 09:48:39 UTC] PHP Warning:  Undefined variable $DB in /home/xi5b6gzv4yn6/public_html/user/authenticate.php on line 6
+[28-Aug-2023 09:48:39 UTC] PHP Fatal error:  Uncaught Error: Call to a member function update_record() on null in /home/xi5b6gzv4yn6/public_html/user/authenticate.php:6
+Stack trace:
+#0 {main}
+  thrown in /home/xi5b6gzv4yn6/public_html/user/authenticate.php on line 6
+[28-Aug-2023 09:48:41 UTC] PHP Warning:  Undefined variable $DB in /home/xi5b6gzv4yn6/public_html/user/authenticate.php on line 6
+[28-Aug-2023 09:48:41 UTC] PHP Fatal error:  Uncaught Error: Call to a member function update_record() on null in /home/xi5b6gzv4yn6/public_html/user/authenticate.php:6
+Stack trace:
+#0 {main}
+  thrown in /home/xi5b6gzv4yn6/public_html/user/authenticate.php on line 6
+[31-Aug-2023 12:59:24 UTC] PHP Parse error:  syntax error, unexpected variable "$streditmyprofile" in /home/xi5b6gzv4yn6/public_html/user/edit.php on line 316
+[31-Aug-2023 12:59:29 UTC] PHP Parse error:  syntax error, unexpected variable "$streditmyprofile" in /home/xi5b6gzv4yn6/public_html/user/edit.php on line 316

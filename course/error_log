@@ -1,0 +1,109 @@
+[28-Aug-2023 06:45:04 Africa/Cairo] PHP Warning:  Undefined variable $addblockbutton in /home/xi5b6gzv4yn6/public_html/theme/edumy/ccn/ccn_themehandler_context.php on line 277
+[28-Aug-2023 06:45:04 Africa/Cairo] PHP Warning:  Undefined property: stdClass::$url in /home/xi5b6gzv4yn6/public_html/theme/edumy/classes/output/core_renderer.php on line 720
+[28-Aug-2023 06:45:04 Africa/Cairo] PHP Deprecated:  strpos(): Passing null to parameter #1 ($haystack) of type string is deprecated in /home/xi5b6gzv4yn6/public_html/theme/edumy/classes/output/core_renderer.php on line 720
+[28-Aug-2023 06:45:04 Africa/Cairo] PHP Warning:  Undefined property: stdClass::$url in /home/xi5b6gzv4yn6/public_html/theme/edumy/classes/output/core_renderer.php on line 723
+[28-Aug-2023 06:45:04 Africa/Cairo] PHP Deprecated:  strpos(): Passing null to parameter #1 ($haystack) of type string is deprecated in /home/xi5b6gzv4yn6/public_html/theme/edumy/classes/output/core_renderer.php on line 723
+[28-Aug-2023 06:45:04 Africa/Cairo] PHP Warning:  Undefined property: stdClass::$url in /home/xi5b6gzv4yn6/public_html/theme/edumy/classes/output/core_renderer.php on line 726
+[28-Aug-2023 06:45:04 Africa/Cairo] PHP Deprecated:  strpos(): Passing null to parameter #1 ($haystack) of type string is deprecated in /home/xi5b6gzv4yn6/public_html/theme/edumy/classes/output/core_renderer.php on line 726
+[28-Aug-2023 06:45:04 Africa/Cairo] PHP Warning:  Undefined property: stdClass::$url in /home/xi5b6gzv4yn6/public_html/theme/edumy/classes/output/core_renderer.php on line 729
+[28-Aug-2023 06:45:04 Africa/Cairo] PHP Deprecated:  strpos(): Passing null to parameter #1 ($haystack) of type string is deprecated in /home/xi5b6gzv4yn6/public_html/theme/edumy/classes/output/core_renderer.php on line 729
+[28-Aug-2023 06:45:04 Africa/Cairo] PHP Warning:  Undefined property: stdClass::$url in /home/xi5b6gzv4yn6/public_html/theme/edumy/classes/output/core_renderer.php on line 732
+[28-Aug-2023 06:45:04 Africa/Cairo] PHP Deprecated:  strpos(): Passing null to parameter #1 ($haystack) of type string is deprecated in /home/xi5b6gzv4yn6/public_html/theme/edumy/classes/output/core_renderer.php on line 732
+[28-Aug-2023 06:45:04 Africa/Cairo] PHP Warning:  Undefined property: stdClass::$url in /home/xi5b6gzv4yn6/public_html/theme/edumy/classes/output/core_renderer.php on line 735
+[28-Aug-2023 06:45:04 Africa/Cairo] PHP Deprecated:  strpos(): Passing null to parameter #1 ($haystack) of type string is deprecated in /home/xi5b6gzv4yn6/public_html/theme/edumy/classes/output/core_renderer.php on line 735
+[28-Aug-2023 06:45:04 Africa/Cairo] PHP Warning:  Undefined property: stdClass::$url in /home/xi5b6gzv4yn6/public_html/theme/edumy/classes/output/core_renderer.php on line 738
+[28-Aug-2023 06:45:04 Africa/Cairo] PHP Deprecated:  strpos(): Passing null to parameter #1 ($haystack) of type string is deprecated in /home/xi5b6gzv4yn6/public_html/theme/edumy/classes/output/core_renderer.php on line 738
+[28-Aug-2023 06:45:04 Africa/Cairo] PHP Warning:  Undefined property: stdClass::$url in /home/xi5b6gzv4yn6/public_html/theme/edumy/classes/output/core_renderer.php on line 741
+[28-Aug-2023 06:45:04 Africa/Cairo] PHP Deprecated:  strpos(): Passing null to parameter #1 ($haystack) of type string is deprecated in /home/xi5b6gzv4yn6/public_html/theme/edumy/classes/output/core_renderer.php on line 741
+[28-Aug-2023 06:45:04 Africa/Cairo] PHP Warning:  Undefined property: stdClass::$url in /home/xi5b6gzv4yn6/public_html/theme/edumy/classes/output/core_renderer.php on line 744
+[28-Aug-2023 06:45:04 Africa/Cairo] PHP Deprecated:  strpos(): Passing null to parameter #1 ($haystack) of type string is deprecated in /home/xi5b6gzv4yn6/public_html/theme/edumy/classes/output/core_renderer.php on line 744
+[28-Aug-2023 06:45:04 Africa/Cairo] PHP Warning:  Undefined property: stdClass::$url in /home/xi5b6gzv4yn6/public_html/theme/edumy/classes/output/core_renderer.php on line 747
+[28-Aug-2023 06:45:04 Africa/Cairo] PHP Deprecated:  strpos(): Passing null to parameter #1 ($haystack) of type string is deprecated in /home/xi5b6gzv4yn6/public_html/theme/edumy/classes/output/core_renderer.php on line 747
+[28-Aug-2023 06:45:04 Africa/Cairo] PHP Warning:  Undefined property: stdClass::$url in /home/xi5b6gzv4yn6/public_html/theme/edumy/classes/output/core_renderer.php on line 720
+[28-Aug-2023 06:45:04 Africa/Cairo] PHP Deprecated:  strpos(): Passing null to parameter #1 ($haystack) of type string is deprecated in /home/xi5b6gzv4yn6/public_html/theme/edumy/classes/output/core_renderer.php on line 720
+[28-Aug-2023 06:45:04 Africa/Cairo] PHP Warning:  Undefined property: stdClass::$url in /home/xi5b6gzv4yn6/public_html/theme/edumy/classes/output/core_renderer.php on line 723
+[28-Aug-2023 06:45:04 Africa/Cairo] PHP Deprecated:  strpos(): Passing null to parameter #1 ($haystack) of type string is deprecated in /home/xi5b6gzv4yn6/public_html/theme/edumy/classes/output/core_renderer.php on line 723
+[28-Aug-2023 06:45:04 Africa/Cairo] PHP Warning:  Undefined property: stdClass::$url in /home/xi5b6gzv4yn6/public_html/theme/edumy/classes/output/core_renderer.php on line 726
+[28-Aug-2023 06:45:04 Africa/Cairo] PHP Deprecated:  strpos(): Passing null to parameter #1 ($haystack) of type string is deprecated in /home/xi5b6gzv4yn6/public_html/theme/edumy/classes/output/core_renderer.php on line 726
+[28-Aug-2023 06:45:04 Africa/Cairo] PHP Warning:  Undefined property: stdClass::$url in /home/xi5b6gzv4yn6/public_html/theme/edumy/classes/output/core_renderer.php on line 729
+[28-Aug-2023 06:45:04 Africa/Cairo] PHP Deprecated:  strpos(): Passing null to parameter #1 ($haystack) of type string is deprecated in /home/xi5b6gzv4yn6/public_html/theme/edumy/classes/output/core_renderer.php on line 729
+[28-Aug-2023 06:45:04 Africa/Cairo] PHP Warning:  Undefined property: stdClass::$url in /home/xi5b6gzv4yn6/public_html/theme/edumy/classes/output/core_renderer.php on line 732
+[28-Aug-2023 06:45:04 Africa/Cairo] PHP Deprecated:  strpos(): Passing null to parameter #1 ($haystack) of type string is deprecated in /home/xi5b6gzv4yn6/public_html/theme/edumy/classes/output/core_renderer.php on line 732
+[28-Aug-2023 06:45:04 Africa/Cairo] PHP Warning:  Undefined property: stdClass::$url in /home/xi5b6gzv4yn6/public_html/theme/edumy/classes/output/core_renderer.php on line 735
+[28-Aug-2023 06:45:04 Africa/Cairo] PHP Deprecated:  strpos(): Passing null to parameter #1 ($haystack) of type string is deprecated in /home/xi5b6gzv4yn6/public_html/theme/edumy/classes/output/core_renderer.php on line 735
+[28-Aug-2023 06:45:04 Africa/Cairo] PHP Warning:  Undefined property: stdClass::$url in /home/xi5b6gzv4yn6/public_html/theme/edumy/classes/output/core_renderer.php on line 738
+[28-Aug-2023 06:45:04 Africa/Cairo] PHP Deprecated:  strpos(): Passing null to parameter #1 ($haystack) of type string is deprecated in /home/xi5b6gzv4yn6/public_html/theme/edumy/classes/output/core_renderer.php on line 738
+[28-Aug-2023 06:45:04 Africa/Cairo] PHP Warning:  Undefined property: stdClass::$url in /home/xi5b6gzv4yn6/public_html/theme/edumy/classes/output/core_renderer.php on line 741
+[28-Aug-2023 06:45:04 Africa/Cairo] PHP Deprecated:  strpos(): Passing null to parameter #1 ($haystack) of type string is deprecated in /home/xi5b6gzv4yn6/public_html/theme/edumy/classes/output/core_renderer.php on line 741
+[28-Aug-2023 06:45:04 Africa/Cairo] PHP Warning:  Undefined property: stdClass::$url in /home/xi5b6gzv4yn6/public_html/theme/edumy/classes/output/core_renderer.php on line 744
+[28-Aug-2023 06:45:04 Africa/Cairo] PHP Deprecated:  strpos(): Passing null to parameter #1 ($haystack) of type string is deprecated in /home/xi5b6gzv4yn6/public_html/theme/edumy/classes/output/core_renderer.php on line 744
+[28-Aug-2023 06:45:04 Africa/Cairo] PHP Warning:  Undefined property: stdClass::$url in /home/xi5b6gzv4yn6/public_html/theme/edumy/classes/output/core_renderer.php on line 747
+[28-Aug-2023 06:45:04 Africa/Cairo] PHP Deprecated:  strpos(): Passing null to parameter #1 ($haystack) of type string is deprecated in /home/xi5b6gzv4yn6/public_html/theme/edumy/classes/output/core_renderer.php on line 747
+[28-Aug-2023 06:45:36 Africa/Cairo] instantiating backup controller b581aee36ba2ac868998ed2076ee8645
+[28-Aug-2023 06:45:36 Africa/Cairo] setting controller status to 100
+[28-Aug-2023 06:45:36 Africa/Cairo] loading controller plan
+[28-Aug-2023 06:45:36 Africa/Cairo] setting controller status to 300
+[28-Aug-2023 06:45:36 Africa/Cairo] applying plan defaults
+[28-Aug-2023 06:45:36 Africa/Cairo] setting controller status to 400
+[28-Aug-2023 06:45:36 Africa/Cairo] setting file inclusion to 
+[28-Aug-2023 06:45:36 Africa/Cairo] checking plan security
+[28-Aug-2023 06:45:36 Africa/Cairo] setting controller status to 700
+[28-Aug-2023 06:45:36 Africa/Cairo] saving controller to db
+[28-Aug-2023 06:45:36 Africa/Cairo] calculating controller checksum 0003374af2d23d83942abd267d89507f
+[28-Aug-2023 06:45:36 Africa/Cairo] loading controller from db
+[28-Aug-2023 06:45:36 Africa/Cairo] setting file inclusion to 1
+[28-Aug-2023 06:45:36 Africa/Cairo] setting controller status to 800
+[28-Aug-2023 06:45:36 Africa/Cairo] saving controller to db
+[28-Aug-2023 06:45:36 Africa/Cairo] calculating controller checksum 567e36e86d98d15f2c891e65f1f8ded9
+[28-Aug-2023 06:45:36 Africa/Cairo] loading controller from db
+[28-Aug-2023 06:45:37 Africa/Cairo] setting controller status to 1000
+[28-Aug-2023 06:45:37 Africa/Cairo] saving controller to db
+[28-Aug-2023 06:45:37 Africa/Cairo] Default exception handler: الجدول "vimeo_files" غير موجود Debug: 
+Error code: ddltablenotexist
+* line 673 of /lib/dml/moodle_database.php: dml_exception thrown
+* line 1629 of /lib/dml/moodle_database.php: call to moodle_database->where_clause()
+* line 183 of /mod/resource2/lib.php: call to moodle_database->get_record()
+* line 900 of /course/lib.php: call to resource2_delete_instance()
+* line 130 of /course/mod.php: call to course_delete_module()
+
+[28-Aug-2023 06:45:37 Africa/Cairo] PHP Warning:  Undefined variable $addblockbutton in /home/xi5b6gzv4yn6/public_html/theme/edumy/ccn/ccn_themehandler_context.php on line 277
+[28-Aug-2023 06:45:37 Africa/Cairo] PHP Warning:  Undefined property: stdClass::$url in /home/xi5b6gzv4yn6/public_html/theme/edumy/classes/output/core_renderer.php on line 720
+[28-Aug-2023 06:45:37 Africa/Cairo] PHP Deprecated:  strpos(): Passing null to parameter #1 ($haystack) of type string is deprecated in /home/xi5b6gzv4yn6/public_html/theme/edumy/classes/output/core_renderer.php on line 720
+[28-Aug-2023 06:45:37 Africa/Cairo] PHP Warning:  Undefined property: stdClass::$url in /home/xi5b6gzv4yn6/public_html/theme/edumy/classes/output/core_renderer.php on line 723
+[28-Aug-2023 06:45:37 Africa/Cairo] PHP Deprecated:  strpos(): Passing null to parameter #1 ($haystack) of type string is deprecated in /home/xi5b6gzv4yn6/public_html/theme/edumy/classes/output/core_renderer.php on line 723
+[28-Aug-2023 06:45:37 Africa/Cairo] PHP Warning:  Undefined property: stdClass::$url in /home/xi5b6gzv4yn6/public_html/theme/edumy/classes/output/core_renderer.php on line 726
+[28-Aug-2023 06:45:37 Africa/Cairo] PHP Deprecated:  strpos(): Passing null to parameter #1 ($haystack) of type string is deprecated in /home/xi5b6gzv4yn6/public_html/theme/edumy/classes/output/core_renderer.php on line 726
+[28-Aug-2023 06:45:37 Africa/Cairo] PHP Warning:  Undefined property: stdClass::$url in /home/xi5b6gzv4yn6/public_html/theme/edumy/classes/output/core_renderer.php on line 729
+[28-Aug-2023 06:45:37 Africa/Cairo] PHP Deprecated:  strpos(): Passing null to parameter #1 ($haystack) of type string is deprecated in /home/xi5b6gzv4yn6/public_html/theme/edumy/classes/output/core_renderer.php on line 729
+[28-Aug-2023 06:45:37 Africa/Cairo] PHP Warning:  Undefined property: stdClass::$url in /home/xi5b6gzv4yn6/public_html/theme/edumy/classes/output/core_renderer.php on line 732
+[28-Aug-2023 06:45:37 Africa/Cairo] PHP Deprecated:  strpos(): Passing null to parameter #1 ($haystack) of type string is deprecated in /home/xi5b6gzv4yn6/public_html/theme/edumy/classes/output/core_renderer.php on line 732
+[28-Aug-2023 06:45:37 Africa/Cairo] PHP Warning:  Undefined property: stdClass::$url in /home/xi5b6gzv4yn6/public_html/theme/edumy/classes/output/core_renderer.php on line 735
+[28-Aug-2023 06:45:37 Africa/Cairo] PHP Deprecated:  strpos(): Passing null to parameter #1 ($haystack) of type string is deprecated in /home/xi5b6gzv4yn6/public_html/theme/edumy/classes/output/core_renderer.php on line 735
+[28-Aug-2023 06:45:37 Africa/Cairo] PHP Warning:  Undefined property: stdClass::$url in /home/xi5b6gzv4yn6/public_html/theme/edumy/classes/output/core_renderer.php on line 738
+[28-Aug-2023 06:45:37 Africa/Cairo] PHP Deprecated:  strpos(): Passing null to parameter #1 ($haystack) of type string is deprecated in /home/xi5b6gzv4yn6/public_html/theme/edumy/classes/output/core_renderer.php on line 738
+[28-Aug-2023 06:45:37 Africa/Cairo] PHP Warning:  Undefined property: stdClass::$url in /home/xi5b6gzv4yn6/public_html/theme/edumy/classes/output/core_renderer.php on line 741
+[28-Aug-2023 06:45:37 Africa/Cairo] PHP Deprecated:  strpos(): Passing null to parameter #1 ($haystack) of type string is deprecated in /home/xi5b6gzv4yn6/public_html/theme/edumy/classes/output/core_renderer.php on line 741
+[28-Aug-2023 06:45:37 Africa/Cairo] PHP Warning:  Undefined property: stdClass::$url in /home/xi5b6gzv4yn6/public_html/theme/edumy/classes/output/core_renderer.php on line 744
+[28-Aug-2023 06:45:37 Africa/Cairo] PHP Deprecated:  strpos(): Passing null to parameter #1 ($haystack) of type string is deprecated in /home/xi5b6gzv4yn6/public_html/theme/edumy/classes/output/core_renderer.php on line 744
+[28-Aug-2023 06:45:37 Africa/Cairo] PHP Warning:  Undefined property: stdClass::$url in /home/xi5b6gzv4yn6/public_html/theme/edumy/classes/output/core_renderer.php on line 747
+[28-Aug-2023 06:45:37 Africa/Cairo] PHP Deprecated:  strpos(): Passing null to parameter #1 ($haystack) of type string is deprecated in /home/xi5b6gzv4yn6/public_html/theme/edumy/classes/output/core_renderer.php on line 747
+[28-Aug-2023 06:45:37 Africa/Cairo] PHP Warning:  Undefined property: stdClass::$url in /home/xi5b6gzv4yn6/public_html/theme/edumy/classes/output/core_renderer.php on line 720
+[28-Aug-2023 06:45:37 Africa/Cairo] PHP Deprecated:  strpos(): Passing null to parameter #1 ($haystack) of type string is deprecated in /home/xi5b6gzv4yn6/public_html/theme/edumy/classes/output/core_renderer.php on line 720
+[28-Aug-2023 06:45:37 Africa/Cairo] PHP Warning:  Undefined property: stdClass::$url in /home/xi5b6gzv4yn6/public_html/theme/edumy/classes/output/core_renderer.php on line 723
+[28-Aug-2023 06:45:37 Africa/Cairo] PHP Deprecated:  strpos(): Passing null to parameter #1 ($haystack) of type string is deprecated in /home/xi5b6gzv4yn6/public_html/theme/edumy/classes/output/core_renderer.php on line 723
+[28-Aug-2023 06:45:37 Africa/Cairo] PHP Warning:  Undefined property: stdClass::$url in /home/xi5b6gzv4yn6/public_html/theme/edumy/classes/output/core_renderer.php on line 726
+[28-Aug-2023 06:45:37 Africa/Cairo] PHP Deprecated:  strpos(): Passing null to parameter #1 ($haystack) of type string is deprecated in /home/xi5b6gzv4yn6/public_html/theme/edumy/classes/output/core_renderer.php on line 726
+[28-Aug-2023 06:45:37 Africa/Cairo] PHP Warning:  Undefined property: stdClass::$url in /home/xi5b6gzv4yn6/public_html/theme/edumy/classes/output/core_renderer.php on line 729
+[28-Aug-2023 06:45:37 Africa/Cairo] PHP Deprecated:  strpos(): Passing null to parameter #1 ($haystack) of type string is deprecated in /home/xi5b6gzv4yn6/public_html/theme/edumy/classes/output/core_renderer.php on line 729
+[28-Aug-2023 06:45:37 Africa/Cairo] PHP Warning:  Undefined property: stdClass::$url in /home/xi5b6gzv4yn6/public_html/theme/edumy/classes/output/core_renderer.php on line 732
+[28-Aug-2023 06:45:37 Africa/Cairo] PHP Deprecated:  strpos(): Passing null to parameter #1 ($haystack) of type string is deprecated in /home/xi5b6gzv4yn6/public_html/theme/edumy/classes/output/core_renderer.php on line 732
+[28-Aug-2023 06:45:37 Africa/Cairo] PHP Warning:  Undefined property: stdClass::$url in /home/xi5b6gzv4yn6/public_html/theme/edumy/classes/output/core_renderer.php on line 735
+[28-Aug-2023 06:45:37 Africa/Cairo] PHP Deprecated:  strpos(): Passing null to parameter #1 ($haystack) of type string is deprecated in /home/xi5b6gzv4yn6/public_html/theme/edumy/classes/output/core_renderer.php on line 735
+[28-Aug-2023 06:45:37 Africa/Cairo] PHP Warning:  Undefined property: stdClass::$url in /home/xi5b6gzv4yn6/public_html/theme/edumy/classes/output/core_renderer.php on line 738
+[28-Aug-2023 06:45:37 Africa/Cairo] PHP Deprecated:  strpos(): Passing null to parameter #1 ($haystack) of type string is deprecated in /home/xi5b6gzv4yn6/public_html/theme/edumy/classes/output/core_renderer.php on line 738
+[28-Aug-2023 06:45:37 Africa/Cairo] PHP Warning:  Undefined property: stdClass::$url in /home/xi5b6gzv4yn6/public_html/theme/edumy/classes/output/core_renderer.php on line 741
+[28-Aug-2023 06:45:37 Africa/Cairo] PHP Deprecated:  strpos(): Passing null to parameter #1 ($haystack) of type string is deprecated in /home/xi5b6gzv4yn6/public_html/theme/edumy/classes/output/core_renderer.php on line 741
+[28-Aug-2023 06:45:37 Africa/Cairo] PHP Warning:  Undefined property: stdClass::$url in /home/xi5b6gzv4yn6/public_html/theme/edumy/classes/output/core_renderer.php on line 744
+[28-Aug-2023 06:45:37 Africa/Cairo] PHP Deprecated:  strpos(): Passing null to parameter #1 ($haystack) of type string is deprecated in /home/xi5b6gzv4yn6/public_html/theme/edumy/classes/output/core_renderer.php on line 744
+[28-Aug-2023 06:45:37 Africa/Cairo] PHP Warning:  Undefined property: stdClass::$url in /home/xi5b6gzv4yn6/public_html/theme/edumy/classes/output/core_renderer.php on line 747
+[28-Aug-2023 06:45:37 Africa/Cairo] PHP Deprecated:  strpos(): Passing null to parameter #1 ($haystack) of type string is deprecated in /home/xi5b6gzv4yn6/public_html/theme/edumy/classes/output/core_renderer.php on line 747

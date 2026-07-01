@@ -1,0 +1,106 @@
+<?php
+require_once('vendor/autoload.php');
+require_once(__DIR__ . '/../config.php');
+
+use GuzzleHttp\Client;
+use GuzzleHttp\Psr7\Request;
+
+$client = new Client();
+global $DB, $CFG, $USER;
+
+// Check if user is logged in and not a guest
+if (!isloggedin() || isguestuser()) {
+    http_response_code(403); // Unauthorized
+    echo json_encode(['success' => false, 'message' => 'Unauthorized']);
+    exit;
+}
+
+if (isset($_GET['amount'])) {
+    $amount = filter_var($_GET['amount'], FILTER_VALIDATE_INT);
+
+    $Secret_Key = 'egy_sk_live_8cdd0d41ce2648eaa40cbdbe95fde334f3a97de420a5d302edc14c6fb2100c5e';
+    $publicKey = 'egy_pk_live_qfif3UUBZBPCrzHN27ZeimbWTRPoWlrZ';
+
+    if ($_GET['type'] == 'wallet') {
+        $IntegrationID = 4830246;
+    } else {
+        $IntegrationID = 4632692;
+    }
+
+    if ($amount && $amount > 0) {
+        // تحويل المبلغ من جنيه إلى قرش
+        $amountInCents = $amount * 100;
+
+        $user = $DB->get_record('user', array('id' => $USER->id));
+        $email = $USER->email;
+        $firstname = $USER->firstname;
+        $phone = $USER->phone1;
+        if ($user) {
+            try {
+                // إعداد بيانات الطلب
+                $headers = [
+                    'Authorization' => 'Token ' . $Secret_Key,
+                    'Content-Type' => 'application/json'
+                ];
+
+                $body = json_encode([
+                    "amount" => $amountInCents,
+                    "currency" => "EGP",
+                    "payment_methods" => [1, $IntegrationID], // wallet: 4822534 , card: 4632692
+                    "items" => [
+                        [
+                            "name" => "Wallet",
+                            "amount" => $amountInCents,
+                            "description" => "Wallet charging",
+                            "quantity" => 1
+                        ]
+                    ],
+                    "billing_data" => [
+                        "apartment" => "6",
+                        "first_name" => $firstname,
+                        "last_name" => ".",
+                        "street" => "938, Al-Jadeed Bldg",
+                        "building" => "939",
+                        "phone_number" => $phone,
+                        "country" => "OMN",
+                        "email" => $email,
+                        "floor" => "1",
+                        "state" => "Alkhuwair"
+                    ],
+                    "customer" => [
+                        "first_name" => $firstname,
+                        "last_name" => ".",
+                        "email" => $email
+                    ]
+                ]);
+
+                // إرسال الطلب إلى Paymob
+                $request = new Request('POST', 'https://accept.paymob.com/v1/intention/', $headers, $body);
+                $res = $client->sendAsync($request)->wait();
+                $responseJson = $res->getBody()->getContents();
+                $responseData = json_decode($responseJson, true);
+
+                // Handle response
+                if ($responseData && isset($responseData['id'])) {
+                    // Assume payment intention created successfully
+                    //echo json_encode(['success' => true, 'responseData' => $responseData]);
+                    header("Location: https://accept.paymob.com/unifiedcheckout/?publicKey=" . $publicKey . "&clientSecret=" . $responseData['client_secret']);
+                    exit;
+                    //print_r($USER);
+                } else {
+                    // Log error details for debugging (optional)
+                    error_log("Payment Gateway Error: " . $responseJson);
+                    echo json_encode(['success' => false, 'message' => 'Failed to create payment intention. Please try again later.']);
+                }
+            } catch (GuzzleHttp\Exception\RequestException $e) {
+                echo "Error: " . $e->getMessage();
+            }
+        } else {
+            echo json_encode(['success' => false, 'message' => 'User not found.']);
+        }
+    } else {
+        echo json_encode(['success' => false, 'message' => 'Invalid deposit amount.']);
+    }
+} else {
+    echo json_encode(['success' => false, 'message' => 'Invalid request.']);
+}

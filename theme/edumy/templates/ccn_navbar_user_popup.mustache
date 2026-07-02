@@ -31,16 +31,8 @@ header.header-nav.menu_style_home_one.stricky-fixed .sign_up_btn .btn {
   color: #C9A227 !important;
 }
 </style>
-<link rel="stylesheet" href="https://unpkg.com/aos@2.3.4/dist/aos.css">
-<script src="https://unpkg.com/aos@2.3.4/dist/aos.js"></script>
-<script>
-  document.addEventListener('DOMContentLoaded', function () {
-    AOS.init();
-  });
-</script>
-
 {{#notloggedin}}
-  <li class="list-inline-item list_s" data-aos="fade-down" data-aos-duration="1500">
+  <li class="list-inline-item list_s">
     {{#header_login_popup}}
     <a href="#" class="btn flaticon-user" data-toggle="modal" data-target="#exampleModalCenter">
       <span class="dn-lg">{{#str}}login_register, theme_edumy{{/str}}</span>

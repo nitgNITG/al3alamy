@@ -774,22 +774,24 @@ footer a:hover, .footer-area a:hover { color: var(--al-gold) !important; }
   border-radius: 50% !important;
   background: var(--al-navy-mid) !important;
   border: 1.5px solid var(--al-border) !important;
+  color: var(--al-gold) !important;
   transition: all 0.25s ease !important;
   text-decoration: none !important;
 }
 .footer_social_widget ul li a:hover {
   background: var(--al-gold) !important;
   border-color: var(--al-gold) !important;
+  color: var(--al-navy-dark) !important;
   transform: translateY(-2px) !important;
   box-shadow: var(--al-shadow-gold) !important;
 }
 .footer_social_widget ul li a i {
-  color: var(--al-gold) !important;
+  color: inherit !important;
   font-size: 18px !important;
   line-height: 1 !important;
 }
-.footer_social_widget ul li a:hover i {
-  color: var(--al-navy-dark) !important;
+.footer_social_widget ul li a svg {
+  display: block !important;
 }
 
 /* ── العالمي block rounded social icons ── */

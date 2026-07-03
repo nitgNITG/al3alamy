@@ -37,8 +37,6 @@
 
 body, html {
   font-family: 'Cairo', 'Tajawal', sans-serif !important;
-  background-color: var(--al-dark) !important;
-  color: var(--al-text) !important;
   direction: rtl;
 }
 
@@ -65,11 +63,8 @@ p, li, span, td, th, div {
 a { color: var(--al-gold) !important; text-decoration: none !important; transition: color 0.2s; }
 a:hover { color: var(--al-gold-light) !important; }
 
-strong, b { color: var(--al-text) !important; }
-
 h1, h2, h3, h4, h5, h6 {
   font-family: 'Cairo', 'Tajawal', sans-serif !important;
-  color: var(--al-text) !important;
   font-weight: 700 !important;
 }
 
@@ -698,38 +693,8 @@ button.btn-primary,
 }
 
 /* ══════════════════════════════════════
-   PAGE & CONTENT AREAS
+   SECTION / HERO (login page only)
 ══════════════════════════════════════ */
-#page,
-#page-content,
-#region-main,
-.course-content,
-#maincontent {
-  background: var(--al-dark) !important;
-  color: var(--al-text) !important;
-}
-
-/* White/light bg overrides */
-.bg-white, .bg-light, .bg-fafafa { background: var(--al-navy) !important; }
-.text-dark, .text-body { color: var(--al-text) !important; }
-.text-muted { color: var(--al-text-muted) !important; }
-.text-success { color: #6ee7b7 !important; }
-.text-warning { color: var(--al-gold) !important; }
-.text-info { color: #7dd3fc !important; }
-.text-danger { color: #fca5a5 !important; }
-
-/* ══════════════════════════════════════
-   SECTION / HERO
-══════════════════════════════════════ */
-.our-log,
-.home_one_hero, .home-hero, .ccn-hero, .banner-section {
-  background: linear-gradient(145deg, var(--al-navy-dark) 0%, var(--al-navy) 60%, #1a2d5a 100%) !important;
-  border-bottom: 3px solid var(--al-gold) !important;
-}
-.section-title {
-  color: var(--al-gold) !important;
-}
-.bg-light, .section-bg { background: var(--al-navy) !important; }
 
 /* ══════════════════════════════════════
    FOOTER

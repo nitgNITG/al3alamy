@@ -143,9 +143,7 @@ echo $OUTPUT->header();
         color: white;
         font-size: large;
     }
-    #ccn-main-region {
-        display: none;
-    }
+
 </style>
 <?php
 $ex_date = $DB->get_field('user', 'ex_date', array('id' => $USER->id));

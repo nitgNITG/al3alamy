@@ -359,10 +359,92 @@ echo $OUTPUT->footer();
 
 <!-- create-wallet-button removed: wallet is now created automatically -->
 
-<script>
-    // PHP check for admin status
-    var isAdmin = <?php echo json_encode(is_siteadmin()); ?>;
+<?php
+// ── Build admin section HTML server-side (DB + cURL only for site admins) ──
+$admin_section_html = '';
+if (is_siteadmin()) {
+    $admin_wallet_uuid = $wallet ? $wallet->wallet_uuid : '';
+    $stydents_label    = get_string('config_students', 'block_cocoon_course_instructor');
 
+    ob_start();
+    ?>
+    <div class="card mt-4">
+        <div class="card-body">
+            <form class="d-flex" id="rechargeForm" method="post" action="./recharge_wallet.php">
+                <div class="form-group">
+                    <input type="hidden" class="form-control" id="uuid" name="uuid"
+                           value="<?php echo htmlspecialchars($admin_wallet_uuid); ?>" required>
+                </div>
+                <div class="form-group" style="position: absolute;">
+                    <input style="border: 3px solid #0a0a0a;" type="number" class="form-control"
+                           placeholder="Amount" id="amount" name="amount" required>
+                </div>
+                <button style="width:100%;height:fit-content;background-color:#0a0a0a;text-align:right;"
+                        type="submit" class="btn btn-primary">Ad Recharge</button>
+            </form>
+        </div>
+        <div class="card-body">
+            <h2 class="card-title"><?php echo $stydents_label; ?></h2>
+            <?php
+            $all_users = $DB->get_records('user', array('deleted' => 0), 'id DESC');
+            if ($all_users) {
+                echo '<ul class="list-group" style="height: 250px; overflow: auto;">';
+                foreach ($all_users as $u) {
+                    if ($u->id == $USER->id || $u->id == 1) continue;
+                    $u_wallet_uuid = $DB->get_field('user_wallet', 'wallet_uuid', array('user_id' => $u->id));
+                    $u_background  = 'badge-primary';
+                    if ($u_wallet_uuid) {
+                        $ch2 = curl_init('https://salem-mar3y.com/e-wallet/src/api/get_wallet_details.php');
+                        curl_setopt($ch2, CURLOPT_RETURNTRANSFER, true);
+                        curl_setopt($ch2, CURLOPT_TIMEOUT, 5);
+                        curl_setopt($ch2, CURLOPT_CONNECTTIMEOUT, 3);
+                        curl_setopt($ch2, CURLOPT_POST, true);
+                        curl_setopt($ch2, CURLOPT_POSTFIELDS, json_encode(['wallet_uuid' => $u_wallet_uuid]));
+                        curl_setopt($ch2, CURLOPT_HTTPHEADER, [
+                            'Authorization: Bearer 8b5a0e6d266ae2c3250a98ac3a568a95',
+                            'Content-Type: application/json',
+                        ]);
+                        $u_response = curl_exec($ch2);
+                        curl_close($ch2);
+                        $u_data = $u_response ? json_decode($u_response, true) : null;
+                        if ($u_data && isset($u_data['data']['balance'])) {
+                            $u_balance    = $u_data['data']['balance'] . ' LE';
+                            $u_background = 'bg-success';
+                        } else {
+                            $u_balance    = 'N/A';
+                            $u_background = 'bg-info';
+                        }
+                    } else {
+                        $u_balance = 'No Wallet';
+                    }
+                    echo '<li class="list-group-item d-flex justify-content-between align-items-center">';
+                    echo '<div class="d-flex align-items-center">';
+                    echo '<img src="' . upload_user_image($u->id) . '" class="rounded-circle" style="width:40px;height:40px;object-fit:cover;margin-right:10px;">';
+                    echo '<div><span class="font-weight-bold">' . fullname($u) . '</span><br>';
+                    echo '<small class="text-muted" style="font-size:10px;">' . $u->email . '</small></div></div>';
+                    echo '<div class="d-flex align-items-center">';
+                    echo '<span class="badge ' . $u_background . ' badge-pill mr-2">' . $u_balance . '</span>';
+                    if ($u_wallet_uuid) {
+                        echo '<button class="copy btn btn-outline-secondary btn-sm" onclick="copyToClipboard(\'' . $u_wallet_uuid . '\', this)">'
+                           . '<span data-text-end="Copied!" data-text-initial="Copy" class="tooltip"></span>'
+                           . '<span><svg xml:space="preserve" style="enable-background:new 0 0 512 512" viewBox="0 0 6.35 6.35" height="16" width="16" xmlns="http://www.w3.org/2000/svg" class="clipboard"><g><path fill="currentColor" d="M2.43.265c-.3 0-.548.236-.573.53h-.328a.74.74 0 0 0-.735.734v3.822a.74.74 0 0 0 .735.734H4.82a.74.74 0 0 0 .735-.734V1.529a.74.74 0 0 0-.735-.735h-.328a.58.58 0 0 0-.573-.53zm0 .529h1.49c.032 0 .049.017.049.049v.431c0 .032-.017.049-.049.049H2.43c-.032 0-.05-.017-.05-.049V.843c0-.032.018-.05.05-.05zm-.901.53h.328c.026.292.274.528.573.528h1.49a.58.58 0 0 0 .573-.529h.328a.2.2 0 0 1 .206.206v3.822a.2.2 0 0 1-.206.205H1.53a.2.2 0 0 1-.206-.205V1.529a.2.2 0 0 1 .206-.206z"></path></g></svg></span>'
+                           . '</button>';
+                    }
+                    echo '</div></li>';
+                }
+                echo '</ul>';
+            } else {
+                echo '<p>No users found.</p>';
+            }
+            ?>
+        </div>
+    </div>
+    <?php
+    $admin_section_html = ob_get_clean();
+}
+?>
+
+<script>
     // Translation strings from PHP
     var balance = "<?php echo get_string('balance', 'theme_edumy'); ?>";
     var recharge = "<?php echo get_string('recharge', 'theme_edumy'); ?>";
@@ -373,6 +455,9 @@ echo $OUTPUT->footer();
     var noTransactions = "<?php echo get_string('no_transactions', 'theme_edumy'); ?>";
     var latestTransactions = "<?php echo get_string('latest_transactions', 'theme_edumy'); ?>";
     var stydents = "<?php echo get_string('config_students', 'block_cocoon_course_instructor'); ?>";
+
+    // Admin section HTML pre-built server-side (empty for regular users)
+    var adminSectionHtml = <?php echo json_encode($admin_section_html); ?>;
 
     // Function to fetch wallet details using AJAX
     function fetchWalletDetails() {
@@ -417,116 +502,7 @@ echo $OUTPUT->footer();
                               </div>
                             </div>
                           </div>
-                          ${isAdmin ? `
-                              <div class="card mt-4">
-                                  <div class="card-body">
-                                    <form class="d-flex" id="rechargeForm" method="post" action="./recharge_wallet.php">
-                                        <div class="form-group">
-                                            <input type="hidden" class="form-control" id="uuid" name="uuid" value="<?php echo $wallet->wallet_uuid; ?>" required>
-                                        </div>
-                                        <div class="form-group" style="position: absolute;">
-                                            <input style="border: 3px solid #0a0a0a;" type="number" class="form-control" placeholder="Amount" id="amount" name="amount" required>
-                                        </div>
-                                        <button style="width: 100%;height: fit-content;background-color: #0a0a0a;text-align: right;"  type="submit" class="btn btn-primary">Ad Recharge</button>
-                                    </form>
-                                  </div>
-                                  <div class="card-body">
-                                      <h2 class="card-title">${stydents}</h2>
-                                      <!-- Fetch and display all users -->
-                                      <?php
-
-                                        // Fetch all users
-                                        $users = $DB->get_records('user', array('deleted' => 0), 'id DESC');
-
-                                        if ($users) {
-
-                                            echo '<ul class="list-group" style="height: 250px;overflow: auto;">';
-                                            foreach ($users as $user) {
-                                                if ($user->id == $USER->id || $user->id == 1) {
-                                                    continue;
-                                                }
-                                                // Fetch the wallet UUID associated with the user
-                                                $wallet_uuid = $DB->get_field('user_wallet', 'wallet_uuid', array('user_id' => $user->id));
-
-                                                $background = 'badge-primary';
-                                                if ($wallet_uuid) {
-                                                    // Request wallet details using cURL
-                                                    $api_url = 'https://salem-mar3y.com/e-wallet/src/api/get_wallet_details.php';
-                                                    $authorization_token = '8b5a0e6d266ae2c3250a98ac3a568a95';
-
-                                                    $data = array(
-                                                        'wallet_uuid' => $wallet_uuid,
-                                                    );
-
-                                                    $ch = curl_init($api_url);
-                                                    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-                                                    curl_setopt($ch, CURLOPT_HTTPHEADER, array(
-                                                        'Authorization: Bearer ' . $authorization_token,
-                                                        'Content-Type: application/json'
-                                                    ));
-                                                    curl_setopt($ch, CURLOPT_POST, true);
-                                                    curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
-
-                                                    $response = curl_exec($ch);
-                                                    curl_close($ch);
-
-                                                    $response_data = json_decode($response, true);
-
-                                                    // Check if the response is valid and contains balance information
-                                                    if ($response_data && isset($response_data['data']['balance'])) {
-                                                        $balance = $response_data['data']['balance'] . " LE";
-                                                        $background = 'bg-success';
-                                                    } else {
-                                                        $balance = "N/A"; // Handle cases where balance data is not available
-                                                        $background = 'bg-info';
-                                                    }
-                                                } else {
-                                                    $balance = "No Wallet"; // Handle cases where the user does not have a wallet
-                                                }
-
-                                                echo '<li class="list-group-item d-flex justify-content-between align-items-center">';
-                                                // عرض صورة المستخدم
-                                                echo '<div class="d-flex align-items-center">';
-                                                echo '<img src="' . upload_user_image($user->id) . '" alt="User Image" class="rounded-circle" style="width: 40px; height: 40px; object-fit: cover; margin-right: 10px;">';
-                                                echo '<div>';
-                                                echo '<span class="font-weight-bold">' . fullname($user) . '</span><br>';
-                                                echo '<small class="text-muted" style="font-size: 10px;">' . $user->email . '</small>';
-                                                echo '</div>';
-                                                echo '</div>';
-
-                                                // عرض الرصيد والزر
-                                                echo '<div class="d-flex align-items-center">';
-                                                echo '<span class="badge ' . $background . ' badge-pill mr-2">' . $balance . '</span>';
-                                                if ($wallet_uuid) {
-                                                    echo '
-                                                            <button class="copy btn btn-outline-secondary btn-sm" onclick="copyToClipboard(\'' . $wallet_uuid . '\', this)">
-                                                                <span data-text-end="Copied!" data-text-initial="Copy" class="tooltip"></span>
-                                                                <span>
-                                                                    <svg xml:space="preserve" style="enable-background:new 0 0 512 512" viewBox="0 0 6.35 6.35" y="0" x="0" height="16" width="16" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" xmlns="http://www.w3.org/2000/svg" class="clipboard">
-                                                                        <g>
-                                                                            <path fill="currentColor" d="M2.43.265c-.3 0-.548.236-.573.53h-.328a.74.74 0 0 0-.735.734v3.822a.74.74 0 0 0 .735.734H4.82a.74.74 0 0 0 .735-.734V1.529a.74.74 0 0 0-.735-.735h-.328a.58.58 0 0 0-.573-.53zm0 .529h1.49c.032 0 .049.017.049.049v.431c0 .032-.017.049-.049.049H2.43c-.032 0-.05-.017-.05-.049V.843c0-.032.018-.05.05-.05zm-.901.53h.328c.026.292.274.528.573.528h1.49a.58.58 0 0 0 .573-.529h.328a.2.2 0 0 1 .206.206v3.822a.2.2 0 0 1-.206.205H1.53a.2.2 0 0 1-.206-.205V1.529a.2.2 0 0 1 .206-.206z"></path>
-                                                                        </g>
-                                                                    </svg>
-                                                                    <svg xml:space="preserve" style="enable-background:new 0 0 512 512" viewBox="0 0 24 24" y="0" x="0" height="16" width="16" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" xmlns="http://www.w3.org/2000/svg" class="checkmark">
-                                                                        <g>
-                                                                            <path data-original="#000000" fill="currentColor" d="M9.707 19.121a.997.997 0 0 1-1.414 0l-5.646-5.647a1.5 1.5 0 0 1 0-2.121l.707-.707a1.5 1.5 0 0 1 2.121 0L9 14.171l9.525-9.525a1.5 1.5 0 0 1 2.121 0l.707.707a1.5 1.5 0 0 1 0 2.121z"></path>
-                                                                        </g>
-                                                                    </svg>
-                                                                </span>
-                                                            </button>';
-                                                }
-                                                echo '</div>';
-
-                                                echo '</li>';
-                                            }
-                                            echo '</ul>';
-                                        } else {
-                                            echo '<p>No users found.</p>';
-                                        }
-                                        ?>
-                                  </div>
-                              </div>
-                          ` : ''}
+                          ${adminSectionHtml}
                         </div>
                         <div class="col-md-12 col-lg-8">
                           <div class="card border-success">
@@ -675,8 +651,12 @@ echo $OUTPUT->footer();
         }
     });
 
-    // Optionally, fetch transactions periodically
-    setInterval(fetchTransactions, 30000); // 30 seconds
+    // Optionally, fetch transactions periodically (only when container exists)
+    setInterval(function() {
+        if (document.getElementById('transactions-container')) {
+            fetchTransactions();
+        }
+    }, 30000); // 30 seconds
 
     // Function to mask and unmask the UUID
     function maskUuid(uuidFieldId, toggleUuidId) {
@@ -779,7 +759,7 @@ echo $OUTPUT->footer();
         var amount = document.getElementById('transferAmount').value; // المبلغ الذي سيتم تحويله
         var description = 'Transfer payment'; // الوصف
 
-        fetch('https://xmathsacademy.com/e-wallet/src/api/transfer_funds.php', {
+        fetch('https://salem-mar3y.com/e-wallet/src/api/transfer_funds.php', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

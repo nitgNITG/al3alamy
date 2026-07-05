@@ -33,15 +33,18 @@ curl_setopt($ch, CURLOPT_URL, $api_url);
 curl_setopt($ch, CURLOPT_POST, 1);
 curl_setopt($ch, CURLOPT_POSTFIELDS, $post_fields);
 curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+curl_setopt($ch, CURLOPT_TIMEOUT, 10);
+curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 5);
 curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
 
 $response = curl_exec($ch);
-if ($response === false) {
-    echo json_encode(['status' => 'error', 'message' => 'cURL error: ' . curl_error($ch)]);
-    curl_close($ch);
+$curl_error = curl_error($ch);
+curl_close($ch);
+
+if ($curl_error || !$response) {
+    echo json_encode(['status' => 'error', 'message' => 'Transactions API unreachable']);
     exit;
 }
-curl_close($ch);
 
 $transactions_data = json_decode($response, true);
 

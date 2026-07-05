@@ -1,7 +1,7 @@
 /*
  * al3alamy Custom Theme
- * Dark theme: ONLY navbar, footer, login page, register page
- * Everything else: default Edumy (white/light)
+ * Dark theme: ONLY login page and register page
+ * Navbar, footer, and everything else: default Edumy
  */
 
 /* ── Google Fonts ── */
@@ -31,7 +31,7 @@
 }
 
 /* ══════════════════════════════════════
-   BASE
+   BASE  (fonts + RTL only — no colors)
 ══════════════════════════════════════ */
 *, *::before, *::after { box-sizing: border-box; }
 
@@ -60,90 +60,12 @@ input[type="password"] {
 }
 
 /* ══════════════════════════════════════
-   NAVBAR  (dark — intentional)
+   LOGIN & REGISTER PAGE  (dark theme)
+   Scoped entirely inside .our-log /
+   #page-login-index / #page-login-signup
 ══════════════════════════════════════ */
-header.header-nav,
-.header-nav,
-nav.navbar,
-.menu_style_home_one {
-  background: var(--al-navy-dark) !important;
-  border-bottom: 2px solid var(--al-gold) !important;
-  box-shadow: 0 2px 20px rgba(201,162,39,0.12) !important;
-}
 
-.header-nav .nav-link,
-.header-nav a,
-.menu_style_home_one .navbar-nav .nav-link,
-.menu_style_home_one .navbar-nav > li > a,
-.navbar-nav .nav-link {
-  color: var(--al-text) !important;
-  font-weight: 600 !important;
-  transition: color 0.2s ease !important;
-}
-
-.header-nav .nav-link:hover,
-.header-nav a:hover,
-.menu_style_home_one .navbar-nav .nav-link:hover,
-.menu_style_home_one .navbar-nav > li > a:hover,
-.menu_style_home_one .navbar-nav .active > a,
-.navbar-nav .nav-item.active .nav-link {
-  color: var(--al-gold) !important;
-}
-
-.dropdown-menu,
-.navbar .dropdown-menu {
-  background: var(--al-navy-mid) !important;
-  border: 1px solid var(--al-border) !important;
-  border-radius: 10px !important;
-  box-shadow: var(--al-shadow) !important;
-}
-
-.dropdown-item {
-  color: var(--al-text) !important;
-  transition: background 0.18s, color 0.18s !important;
-}
-.dropdown-item:hover,
-.dropdown-item:focus {
-  background: rgba(201,162,39,0.12) !important;
-  color: var(--al-gold) !important;
-}
-
-/* ── Navbar Login / Register buttons ── */
-.ccn-nav-btn {
-  display: inline-block !important;
-  width: 90px !important;
-  text-align: center !important;
-  font-weight: 700 !important;
-  font-size: 13px !important;
-  border-radius: 6px !important;
-  padding: 7px 12px !important;
-  transition: all 0.22s ease !important;
-  text-decoration: none !important;
-}
-.ccn-nav-btn-login {
-  background-color: transparent !important;
-  border: 2px solid var(--al-gold) !important;
-  color: var(--al-gold) !important;
-}
-.ccn-nav-btn-login:hover {
-  background-color: var(--al-gold) !important;
-  color: var(--al-navy-dark) !important;
-}
-.ccn-nav-btn-register {
-  background: linear-gradient(135deg, var(--al-gold-dim), var(--al-gold)) !important;
-  border: 2px solid var(--al-gold) !important;
-  color: var(--al-navy-dark) !important;
-  margin-right: 6px !important;
-}
-.ccn-nav-btn-register:hover {
-  background: linear-gradient(135deg, var(--al-gold), var(--al-gold-light)) !important;
-  box-shadow: var(--al-shadow-gold) !important;
-  color: var(--al-navy-dark) !important;
-}
-
-/* ══════════════════════════════════════
-   LOGIN & REGISTER PAGE  (dark — intentional)
-══════════════════════════════════════ */
+/* ── Page background ── */
 .our-log,
 .our-log.style3,
 .our-log.style4,
@@ -155,7 +77,7 @@ nav.navbar,
   min-height: 100vh !important;
 }
 
-/* Split layout: image LEFT, form RIGHT */
+/* ── Split layout: image LEFT, form RIGHT ── */
 .our-log.style3 {
   position: relative !important;
   overflow: hidden !important;
@@ -170,6 +92,7 @@ nav.navbar,
   width: 100% !important;
   flex-direction: row-reverse !important;
 }
+/* Form column — RIGHT */
 .our-log.style3 > .container-fluid > .row > div:first-child {
   flex: 0 0 50% !important;
   max-width: 50% !important;
@@ -185,6 +108,12 @@ nav.navbar,
   overflow-y: auto !important;
   box-sizing: border-box !important;
 }
+/* Image column — LEFT */
+.our-log.style3 > .container-fluid > .row > div:last-child {
+  flex: 0 0 50% !important;
+  max-width: 50% !important;
+  min-height: 100vh !important;
+}
 section.our-log.style3 .login_form.inner_page.style3,
 section.our-log.style3 .login_page_logo {
   width: 100% !important;
@@ -197,27 +126,19 @@ section.our-log.style3 .login_page_logo {
 .our-log.style3 input[type="password"] {
   height: 46px !important;
 }
-.our-log.style3 > .container-fluid > .row > div:last-child {
-  flex: 0 0 50% !important;
-  max-width: 50% !important;
-  min-height: 100vh !important;
-}
+/* Mobile */
 @media (max-width: 991px) {
-  .our-log.style3 > .container-fluid > .row {
-    flex-direction: column !important;
-  }
+  .our-log.style3 > .container-fluid > .row { flex-direction: column !important; }
   .our-log.style3 > .container-fluid > .row > div:first-child,
   .our-log.style3 > .container-fluid > .row > div:last-child {
     flex: 0 0 100% !important;
     max-width: 100% !important;
     padding: 32px 20px !important;
   }
-  .our-log.style3 > .container-fluid > .row > div:last-child {
-    display: none !important;
-  }
+  .our-log.style3 > .container-fluid > .row > div:last-child { display: none !important; }
 }
 
-/* Form box */
+/* ── Form card ── */
 .login_form.inner_page.style3 {
   background: var(--al-navy) !important;
   border: 1px solid var(--al-border) !important;
@@ -226,7 +147,7 @@ section.our-log.style3 .login_page_logo {
   padding: 40px 50px !important;
 }
 
-/* Heading */
+/* ── Heading ── */
 .login_form .heading { margin-bottom: 28px !important; }
 .login_form .heading h3,
 .login_form.inner_page .heading h3 {
@@ -242,7 +163,7 @@ section.our-log.style3 .login_page_logo {
 .login_form .heading p a:hover,
 .text-thm:hover { color: var(--al-gold-light) !important; }
 
-/* Labels — scoped to login/register only */
+/* ── Labels ── */
 .our-log label,
 .login_form label,
 .login_form .form-label,
@@ -257,7 +178,7 @@ section.our-log.style3 .login_page_logo {
   margin-bottom: 6px !important;
 }
 
-/* Inputs — scoped to login/register only */
+/* ── Inputs ── */
 .our-log .form-control,
 .login_form .form-control,
 .login_form.inner_page .form-control,
@@ -282,11 +203,11 @@ section.our-log.style3 .login_page_logo {
   outline: none !important;
 }
 
-/* Placeholder — scoped */
+/* ── Placeholder ── */
 .our-log ::placeholder { color: var(--al-text-muted) !important; opacity: 1 !important; }
 .our-log ::-webkit-input-placeholder { color: var(--al-text-muted) !important; }
 
-/* Checkbox */
+/* ── Checkbox ── */
 .login_form .custom-control-label::before,
 .sign_up_form .custom-control-label::before,
 .our-log .custom-control-input:not(:checked) ~ .custom-control-label::before {
@@ -298,7 +219,7 @@ section.our-log.style3 .login_page_logo {
   border-color: var(--al-gold) !important;
 }
 
-/* Forgot password */
+/* ── Forgot password ── */
 .login_form .btn-fpswd, .btn-fpswd, a.btn-fpswd {
   color: var(--al-text-muted) !important;
   font-size: 13px !important;
@@ -307,7 +228,7 @@ section.our-log.style3 .login_page_logo {
 }
 .login_form .btn-fpswd:hover, a.btn-fpswd:hover { color: var(--al-gold) !important; }
 
-/* Submit button */
+/* ── Submit button ── */
 .login_form button#loginbtn, #loginbtn {
   background: linear-gradient(135deg, var(--al-gold-dim), var(--al-gold)) !important;
   border: none !important;
@@ -327,7 +248,7 @@ section.our-log.style3 .login_page_logo {
   transform: translateY(-1px) !important;
 }
 
-/* Divider */
+/* ── OR Divider ── */
 .login_form .divide, .sign_up_form .divide {
   position: relative !important; text-align: center !important; margin: 24px 0 !important;
 }
@@ -341,7 +262,7 @@ section.our-log.style3 .login_page_logo {
   padding: 0 12px !important; width: auto !important;
 }
 
-/* First time / sign up */
+/* ── First time / sign up link ── */
 .ccn_first-time { text-align: center !important; margin-top: 16px !important; }
 .ccn_first-time h3 {
   color: var(--al-text-soft) !important;
@@ -365,31 +286,46 @@ section.our-log.style3 .login_page_logo {
   box-shadow: var(--al-shadow-gold) !important;
 }
 
-/* Error */
+/* ── Error alert ── */
 .loginerrors .alert-danger {
   background: rgba(220,38,38,0.15) !important;
   border: 1px solid rgba(220,38,38,0.4) !important;
   border-radius: 8px !important; color: #fca5a5 !important;
 }
 
-/* Logo */
+/* ── Logo text ── */
 .login_page_logo span { color: var(--al-text) !important; }
 
 /* ══════════════════════════════════════
-   FOOTER  (dark — intentional)
+   SOCIAL ICONS  (العالمي block)
+   Dark circles on any background
 ══════════════════════════════════════ */
-footer, .footer-area, #page-footer, .ccn-footer {
-  background: var(--al-navy-dark) !important;
-  border-top: 2px solid var(--al-gold) !important;
-  color: var(--al-text-muted) !important;
+.ccn-social-round {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 46px !important;
+  height: 46px !important;
+  border-radius: 50% !important;
+  background: var(--al-navy-mid) !important;
+  border: 2px solid var(--al-border) !important;
+  color: var(--al-gold) !important;
+  font-size: 20px !important;
+  transition: all 0.25s ease !important;
+  text-decoration: none !important;
 }
-footer h4, footer h5, .footer-area h4, .footer-area h5 { color: var(--al-gold) !important; }
-footer p, .footer-area p { color: var(--al-text-muted) !important; }
-footer a, .footer-area a, .ccn-footer a { color: var(--al-text-muted) !important; }
-footer a:hover, .footer-area a:hover { color: var(--al-gold) !important; }
-.cocoon_copyright, .copyright-text { color: var(--al-text-muted) !important; font-size: 13px !important; }
+.ccn-social-round:hover {
+  background: var(--al-gold) !important;
+  border-color: var(--al-gold) !important;
+  color: var(--al-navy-dark) !important;
+  transform: translateY(-2px) !important;
+  box-shadow: var(--al-shadow-gold) !important;
+}
+.ccn-social-round i { line-height: 1 !important; }
 
-/* ── Footer social icons ── */
+/* ══════════════════════════════════════
+   FOOTER SOCIAL ICONS
+══════════════════════════════════════ */
 .footer_social_widget ul,
 .footer_social_widget ul.list-inline {
   display: flex !important;
@@ -421,36 +357,3 @@ footer a:hover, .footer-area a:hover { color: var(--al-gold) !important; }
 }
 .footer_social_widget ul li a i { color: inherit !important; font-size: 18px !important; line-height: 1 !important; }
 .footer_social_widget ul li a svg { display: block !important; }
-
-/* ── العالمي block social icons ── */
-.ccn-social-round {
-  display: inline-flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  width: 46px !important;
-  height: 46px !important;
-  border-radius: 50% !important;
-  background: var(--al-navy-mid) !important;
-  border: 2px solid var(--al-border) !important;
-  color: var(--al-gold) !important;
-  font-size: 20px !important;
-  transition: all 0.25s ease !important;
-  text-decoration: none !important;
-}
-.ccn-social-round:hover {
-  background: var(--al-gold) !important;
-  border-color: var(--al-gold) !important;
-  color: var(--al-navy-dark) !important;
-  transform: translateY(-2px) !important;
-  box-shadow: var(--al-shadow-gold) !important;
-}
-.ccn-social-round i { line-height: 1 !important; }
-
-/* ══════════════════════════════════════
-   SCROLLBAR & SELECTION
-══════════════════════════════════════ */
-::-webkit-scrollbar { width: 5px; height: 5px; }
-::-webkit-scrollbar-track { background: var(--al-dark); }
-::-webkit-scrollbar-thumb { background: var(--al-navy-light); border-radius: 99px; }
-::-webkit-scrollbar-thumb:hover { background: var(--al-gold-dim); }
-::selection { background: var(--al-gold); color: var(--al-navy-dark); }

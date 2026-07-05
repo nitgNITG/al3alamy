@@ -35,8 +35,30 @@ global $USER;
 
 redirect_if_major_upgrade_required();
 
-// Flag: auto-create wallet for new users via background JS (non-blocking)
-$need_wallet = (!isguestuser() && isloggedin() && !$DB->record_exists('user_wallet', ['user_id' => $USER->id]));
+// Auto-create wallet for new users — API responds in ~0.2s so this is safe
+if (!isguestuser() && isloggedin() && !$DB->record_exists('user_wallet', ['user_id' => $USER->id])) {
+    $ch = curl_init('https://salem-mar3y.com/e-wallet/src/api/create_wallet.php');
+    curl_setopt_array($ch, [
+        CURLOPT_POST           => 1,
+        CURLOPT_POSTFIELDS     => json_encode(['platform_uuid' => '17b931f8-5a3e-11ef-b921-005056472f78']),
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_TIMEOUT        => 5,
+        CURLOPT_CONNECTTIMEOUT => 3,
+        CURLOPT_HTTPHEADER     => [
+            'Authorization: Bearer 8b5a0e6d266ae2c3250a98ac3a568a95',
+            'Content-Type: application/json',
+        ],
+    ]);
+    $resp = curl_exec($ch);
+    curl_close($ch);
+    $wd = $resp ? json_decode($resp, true) : null;
+    if (!empty($wd['status']) && $wd['status'] === 'success') {
+        $rec = new stdClass();
+        $rec->user_id    = $USER->id;
+        $rec->wallet_uuid = $wd['data']['wallet_uuid'];
+        $DB->insert_record('user_wallet', $rec);
+    }
+}
 
 $urlparams = array();
 if (
@@ -190,16 +212,4 @@ if (!empty($ex_date) && $ex_date < $current_date) {
     exit;
 }
 
-<?php if ($need_wallet): ?>
-<script>
-// Auto-create wallet in background — no blocking, no popup
-(function() {
-    fetch('<?php echo $CFG->wwwroot; ?>/e-wallet/create_wallet_ajax.php', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        credentials: 'same-origin'
-    }).catch(function() {}); // silent — ignore errors
-})();
-</script>
-<?php endif; ?>
-<?php echo $OUTPUT->footer();
+echo $OUTPUT->footer();

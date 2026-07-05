@@ -23,38 +23,37 @@ class block_cocoon_featured_video_edit_form extends block_edit_form {
         $mform->addElement('select', 'config_videosnumber', 'عدد الفيديوهات', $ccnVideoRange);
         $mform->setDefault('config_videosnumber', 1);
 
-        // ── Video slots (1–8) ─────────────────────────────────────────────────
-        $ccnVideoMax = 8;
-        for ($i = 1; $i <= $ccnVideoMax; $i++) {
+        // ── Video URL fields (1–8) ────────────────────────────────────────────
+        for ($i = 1; $i <= 8; $i++) {
             $mform->addElement('header', 'config_video_item' . $i, 'فيديو ' . $i);
 
-            // Video URL  ── slot 1 keeps the legacy field name 'config_video_url'
-            // for backward compatibility with existing block instances
+            // Slot 1 keeps legacy field name for backward compat
             $url_field = ($i === 1) ? 'config_video_url' : 'config_video_url_' . $i;
-            $mform->addElement('text', $url_field, 'رابط الفيديو (YouTube / mp4)');
+            $mform->addElement('text', $url_field, 'رابط YouTube للفيديو ' . $i);
             if ($i === 1) {
                 $mform->setDefault('config_video_url', 'https://youtu.be/UdDwKI4DcGw');
             }
             $mform->setType($url_field, PARAM_RAW);
-
-            // Image URL (text field — slot 1 can also use the filemanager below)
-            $mform->addElement('text', 'config_video_image_' . $i, 'رابط صورة الخلفية (URL)');
-            $mform->setType('config_video_image_' . $i, PARAM_URL);
-            if ($i === 1) {
-                $mform->addElement('static', 'config_image_note_1', '',
-                    '<small class="text-muted">يمكنك رفع صورة بالأداة أدناه بدلاً من الرابط</small>');
-            }
         }
 
-        // ── Filemanager image (legacy / slot-1 fallback) ──────────────────────
-        $mform->addElement('header', 'config_image_header', 'صورة الفيديو 1 (رفع ملف)');
-        $mform->addElement('filemanager', 'config_image', get_string('config_image', 'theme_edumy'), null,
-            array('subdirs' => 0, 'maxbytes' => 0, 'maxfiles' => 1,
-                  'accepted_types' => array('.png', '.jpg', '.gif', '.webp')));
+        // ── Images (single filemanager, upload up to 8) ───────────────────────
+        $mform->addElement('header', 'config_image_header', 'صور الفيديوهات (ارفع حتى 8 صور)');
+        $mform->addElement('static', 'config_image_note', '',
+            '<div class="alert alert-info" style="font-size:13px;">'
+            . 'ارفع صور الفيديوهات بالترتيب: الصورة الأولى للفيديو 1، الثانية للفيديو 2 ... إلخ.'
+            . '</div>');
+        $mform->addElement('filemanager', 'config_image',
+            get_string('config_image', 'theme_edumy'), null,
+            array(
+                'subdirs'        => 0,
+                'maxbytes'       => 0,
+                'maxfiles'       => 8,
+                'accepted_types' => array('.png', '.jpg', '.jpeg', '.gif', '.webp'),
+            )
+        );
 
         // ── Number of counter items (0 = hide counters entirely) ─────────────
         $mform->addElement('header', 'config_counters_header', 'العدادات تحت الفيديو');
-
         $ccnItemsRange = [
             0  => '0 — بدون عدادات',
             1  => '1',  2  => '2',  3  => '3',  4  => '4',

@@ -48,20 +48,15 @@ class block_cocoon_featured_video extends block_base
         }
         $this->content = new stdClass;
 
-        // ── Colors ��─────────────────────────────────────────────────────────
+        // ── Colors ────────────────────────────────────────────────────────────
         $color_bfbg     = !empty($this->config->color_bfbg)     ? $this->config->color_bfbg     : '#f9f9f9';
         $color_title    = !empty($this->config->color_title)    ? $this->config->color_title    : '#0067da';
         $color_subtitle = !empty($this->config->color_subtitle) ? $this->config->color_subtitle : '#222222';
         $color_overlay  = !empty($this->config->color_overlay)  ? $this->config->color_overlay  : 'rgb(34, 34, 34, .4)';
 
-        $this->content->color_bfbg     = $color_bfbg;
-        $this->content->color_title    = $color_title;
-        $this->content->color_subtitle = $color_subtitle;
-        $this->content->color_overlay  = $color_overlay;
-
         $ccnLazy = new ccnLazy();
 
-        // ── Counter data ─────────��────────────────────────────��──────────────
+        // ── Counter data ──────────────────────────────────────────────────────
         $data = new stdClass();
         if (!empty($this->config) && is_object($this->config)) {
             $data = $this->config;
@@ -71,31 +66,39 @@ class block_cocoon_featured_video extends block_base
             $data->slidesnumber = 4;
         }
 
-        // ── Filemanager image (legacy slot-1 image) ──────────────────────────
+        // ── Collect uploaded images, sorted by filename ───────────────────────
         $default_image = $CFG->wwwroot . '/theme/edumy/images/ccnBgMd.png';
-        $fm_image = $default_image;
+        $uploaded_images = [];
         $fs    = get_file_storage();
         $files = $fs->get_area_files($this->context->id, 'block_cocoon_featured_video', 'content');
+
+        // Sort files by filename for a consistent, predictable slot order
+        usort($files, function($a, $b) {
+            return strcmp($a->get_filename(), $b->get_filename());
+        });
+
         foreach ($files as $file) {
-            $filename = $file->get_filename();
-            if ($filename !== '.') {
-                $fm_image = moodle_url::make_pluginfile_url(
+            if ($file->get_filename() !== '.') {
+                $uploaded_images[] = (string) moodle_url::make_pluginfile_url(
                     $file->get_contextid(), $file->get_component(),
                     $file->get_filearea(), null,
-                    $file->get_filepath(), $filename
+                    $file->get_filepath(), $file->get_filename()
                 );
             }
         }
-        $this->content->image = $fm_image;
 
-        // ── Number of videos ────────────────────────────────────────────────
+        // Slot 1 fallback image (used when fewer images than videos)
+        $slot1_image = !empty($uploaded_images[0]) ? $uploaded_images[0] : $default_image;
+        $this->content->image = $slot1_image;
+
+        // ── Number of videos ──────────────────────────────────────────────────
         $videosnumber = !empty($this->config->videosnumber) ? (int)$this->config->videosnumber : 1;
         $videosnumber = max(1, min(8, $videosnumber));
 
-        // ── Build slides array ──────────────���────────────────────────���───────
+        // ── Build slides array ────────────────────────────────────────────────
         $slides = [];
         for ($i = 1; $i <= $videosnumber; $i++) {
-            // Video URL: slot 1 falls back to legacy 'video_url' key
+            // Video URL — slot 1 falls back to legacy 'video_url' key
             $video_url = '';
             if (!empty($this->config->{'video_url_' . $i})) {
                 $video_url = $this->config->{'video_url_' . $i};
@@ -103,15 +106,8 @@ class block_cocoon_featured_video extends block_base
                 $video_url = $this->config->video_url;
             }
 
-            // Image: explicit URL field first, then filemanager image for slot 1, then default
-            $image_url = '';
-            if (!empty($this->config->{'video_image_' . $i})) {
-                $image_url = $this->config->{'video_image_' . $i};
-            } elseif ($i === 1) {
-                $image_url = $fm_image;
-            } else {
-                $image_url = $fm_image; // fallback to slot-1 image
-            }
+            // Image — use uploaded image by slot index, fall back to slot-1 image
+            $image_url = !empty($uploaded_images[$i - 1]) ? $uploaded_images[$i - 1] : $slot1_image;
 
             $slides[] = [
                 'video_url' => $video_url,
@@ -119,12 +115,12 @@ class block_cocoon_featured_video extends block_base
             ];
         }
 
-        // ── Build video HTML ─────────────────────────────────────────────────
-        $block_id  = 'ccnFeatVideo_' . $this->instance->id;
+        // ── Build video HTML ──────────────────────────────────────────────────
+        $block_id   = 'ccnFeatVideo_' . $this->instance->id;
         $video_html = '';
 
         if (count($slides) === 1) {
-            // Single video — original layout
+            // Single video — original layout preserved
             $slide = $slides[0];
             $video_html = '
             <div class="gallery_item home13 mt80">
@@ -146,12 +142,15 @@ class block_cocoon_featured_video extends block_base
             </div>';
         } else {
             // Multiple videos — Bootstrap carousel
+            // stopPropagation on the <a> prevents the carousel JS from
+            // swallowing the click before Magnific Popup handles it.
             $indicators = '';
             $items      = '';
             foreach ($slides as $idx => $slide) {
                 $active      = ($idx === 0) ? ' active' : '';
-                $indicators .= '<li data-target="#' . $block_id . '" data-slide-to="' . $idx . '" class="' . trim($active) . '"></li>';
-                $items      .= '
+                $indicators .= '<li data-target="#' . $block_id . '" data-slide-to="' . $idx . '"'
+                             . ($idx === 0 ? ' class="active"' : '') . '></li>';
+                $items .= '
                 <div class="carousel-item' . $active . '">
                     <div class="gallery_item home13">
                         <img class="img-fluid img-circle-rounded d-block w-100" alt=""
@@ -159,7 +158,8 @@ class block_cocoon_featured_video extends block_base
                         <div class="gallery_overlay"
                              style="background-color:' . htmlspecialchars($color_overlay) . ';">
                             <a class="popup-img popup-youtube home_post_overlay_icon bgc-theme8"
-                               href="' . htmlspecialchars($slide['video_url']) . '">
+                               href="' . htmlspecialchars($slide['video_url']) . '"
+                               onclick="event.stopPropagation();">
                                 <div class="video_popup_btn">
                                     <span class="flaticon-play-button-1"></span>
                                 </div>
@@ -168,6 +168,7 @@ class block_cocoon_featured_video extends block_base
                     </div>
                 </div>';
             }
+
             $video_html = '
             <div id="' . $block_id . '" class="carousel slide" data-ride="carousel" data-interval="false">
                 <ol class="carousel-indicators">' . $indicators . '</ol>
@@ -180,10 +181,24 @@ class block_cocoon_featured_video extends block_base
                     <span class="carousel-control-next-icon" aria-hidden="true"></span>
                     <span class="sr-only">Next</span>
                 </a>
-            </div>';
+            </div>
+            <script>
+            // Re-init Magnific Popup for carousel slides (theme may init before slides exist)
+            document.addEventListener("DOMContentLoaded", function() {
+                if (typeof jQuery !== "undefined" && typeof jQuery.fn.magnificPopup !== "undefined") {
+                    jQuery("#' . $block_id . ' .popup-youtube").magnificPopup({
+                        type: "iframe",
+                        mainClass: "mfp-fade",
+                        removalDelay: 160,
+                        preloader: false,
+                        fixedContentPos: false
+                    });
+                }
+            });
+            </script>';
         }
 
-        // ── Full content ────────────────────────────���────────────────────────
+        // ── Full section ──────────────────────────────────────────────────────
         $this->content->text = '
         <section class="about-us-home13 pb20 pt0"
           data-ccn-c="color_bfbg"
@@ -198,7 +213,7 @@ class block_cocoon_featured_video extends block_base
           </div>
         </section>';
 
-        // ── Counter section — skip entirely when slidesnumber = 0 ─��───────────
+        // ── Counter section — skipped entirely when slidesnumber = 0 ─────────
         if ($data->slidesnumber > 0) {
             $this->content->text .= '
         <section id="our-top-courses" class="our-courses pt0 pb0">

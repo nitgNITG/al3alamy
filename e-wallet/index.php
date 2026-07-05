@@ -243,18 +243,39 @@ if ($wallet) {
     echo '<div class="alert alert-info" role="alert">' . get_string('loading_wallet_details', 'theme_edumy') . '</div>';
     echo '</div>';
 } else {
-    // No wallet found, display a button to create a wallet
-    echo '<div class="container">';
-    echo '<div class="row flex-column align-items-center">';
-    echo '<div class="col-md-8 col-lg-6 d-flex flex-column">';
-    echo '<div class="alert alert-warning text-center" role="alert">';
-    echo '<p class="mb-0">' . get_string('no_wallet_message', 'theme_edumy') . '</p>';
-    echo '</div>';
-    echo '<img src="./img/wallet.svg" alt="' . get_string('create_wallet_alt', 'theme_edumy') . '" class="img-fluid mb-4">';
-    echo '<button id="create-wallet-button" class="btn btn-primary btn-lg">' . get_string('create_wallet_button', 'theme_edumy') . '</button>';
-    echo '<div id="wallet-message" class="mt-3"></div>';
-    echo '</div>';
-    echo '</div>';
+    // No wallet yet — try to auto-create it now, then reload
+    $platform_uuid = "17b931f8-5a3e-11ef-b921-005056472f78";
+    $api_key       = "8b5a0e6d266ae2c3250a98ac3a568a95";
+
+    $ch = curl_init();
+    curl_setopt($ch, CURLOPT_URL, 'https://salem-mar3y.com/e-wallet/src/api/create_wallet.php');
+    curl_setopt($ch, CURLOPT_POST, 1);
+    curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode(['platform_uuid' => $platform_uuid]));
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_TIMEOUT, 15);
+    curl_setopt($ch, CURLOPT_HTTPHEADER, [
+        'Authorization: Bearer ' . $api_key,
+        'Content-Type: application/json',
+    ]);
+    $api_response = curl_exec($ch);
+    curl_close($ch);
+
+    $wallet_data = $api_response ? json_decode($api_response, true) : null;
+    if (!empty($wallet_data['status']) && $wallet_data['status'] === 'success') {
+        $record = new stdClass();
+        $record->user_id     = $USER->id;
+        $record->wallet_uuid = $wallet_data['data']['wallet_uuid'];
+        $DB->insert_record('user_wallet', $record);
+        // Reload so the wallet UI shows correctly
+        redirect(new moodle_url('/e-wallet/'));
+    } else {
+        // API failed — show a gentle error, no button needed
+        echo '<div class="container mt-4">';
+        echo '<div class="alert alert-danger text-center" role="alert">';
+        echo '<p class="mb-0">تعذّر إنشاء المحفظة تلقائياً. يرجى المحاولة مرة أخرى لاحقاً.</p>';
+        echo '</div>';
+        echo '</div>';
+    }
 }
 
 echo $OUTPUT->footer();
@@ -335,31 +356,7 @@ echo $OUTPUT->footer();
     </div>
 </div>
 
-<script>
-    document.getElementById('create-wallet-button').addEventListener('click', function() {
-        var xhr = new XMLHttpRequest();
-        xhr.open('POST', './create_wallet_ajax.php', true);
-        xhr.setRequestHeader('Content-Type', 'application/json;charset=UTF-8');
-        xhr.onreadystatechange = function() {
-            if (xhr.readyState == 4 && xhr.status == 200) {
-                var response = JSON.parse(xhr.responseText);
-                var messageDiv = document.getElementById('wallet-message');
-                if (response.status == "success") {
-                    messageDiv.innerHTML = '<div class="alert alert-success"><?php echo get_string('wallet_created_success', 'theme_edumy'); ?></div>';
-                    // Optionally reload the page or update the UI
-                    setTimeout(function() {
-                        window.location.reload();
-                    }, 2000);
-                } else {
-                    messageDiv.innerHTML = '<div class="alert alert-danger"><?php echo get_string('wallet_creation_failed', 'theme_edumy'); ?></div>';
-                }
-            }
-        };
-        xhr.send(JSON.stringify({
-            platform_uuid: "<?php echo $platform_uuid; ?>"
-        }));
-    });
-</script>
+<!-- create-wallet-button removed: wallet is now created automatically -->
 
 <script>
     // PHP check for admin status

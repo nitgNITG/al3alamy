@@ -35,119 +35,32 @@ global $USER;
 
 redirect_if_major_upgrade_required();
 
+// Auto-create wallet for new users (no popup, no button needed)
 $have_wallet = $DB->get_record('user_wallet', array('user_id' => $USER->id));
-if (!$have_wallet && !isguestuser() && isloggedin()) {  // check if is loggedin but not guestuser and not have wallet
-?>
-    <style>
-        /* Popup container */
-        .popup {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.5);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 999999;
-        }
+if (!$have_wallet && !isguestuser() && isloggedin()) {
+    $platform_uuid = "17b931f8-5a3e-11ef-b921-005056472f78";
+    $api_key       = "8b5a0e6d266ae2c3250a98ac3a568a95";
 
-        /* Popup content */
-        .popup .card {
-            background: #fff;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-            width: 300px;
-            text-align: center;
-            position: relative;
-            align-items: center;
-        }
+    $ch = curl_init();
+    curl_setopt($ch, CURLOPT_URL, 'https://salem-mar3y.com/e-wallet/src/api/create_wallet.php');
+    curl_setopt($ch, CURLOPT_POST, 1);
+    curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode(['platform_uuid' => $platform_uuid]));
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_TIMEOUT, 15);
+    curl_setopt($ch, CURLOPT_HTTPHEADER, [
+        'Authorization: Bearer ' . $api_key,
+        'Content-Type: application/json',
+    ]);
+    $api_response = curl_exec($ch);
+    curl_close($ch);
 
-        .popup img {
-            max-width: 100px;
-            margin-bottom: 10px;
-        }
-
-        .popup .cookieHeading {
-            font-size: 18px;
-            font-weight: bold;
-            margin: 0;
-            margin-bottom: 10px;
-        }
-
-        .popup .cookieDescription {
-            font-size: 14px;
-            margin: 0;
-            margin-bottom: 20px;
-        }
-
-        .popup .buttonContainer {
-            display: flex;
-            justify-content: center;
-        }
-
-        .popup .buttonContainer button {
-            padding: 10px 15px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 14px;
-        }
-
-        .popup .acceptButton {
-            background: #F4CE14;
-            color: #45474B;
-        }
-
-        /* Close button */
-        .popup .close {
-            position: absolute;
-            top: 20px;
-            right: 20px;
-            opacity: 1;
-            background: none;
-            border: none;
-            font-size: 20px;
-            color: #fff;
-            cursor: pointer;
-        }
-    </style>
-    <!-- Popup container -->
-    <div class="popup" id="popup">
-        <button type="button" class="close" onclick="closePopup();">
-            <span aria-hidden="true">&times;</span>
-        </button>
-        <div class="card">
-            <img src="./service_images/wallet.png" alt="صورة محفظة">
-            <p class="cookieHeading">إنشاء محفظة إلكترونية</p>
-            <p class="cookieDescription">للحصول على أفضل تجربة استخدام على موقعنا، نوصي بإنشاء محفظة إلكترونية.</p>
-            <div class="buttonContainer">
-                <button class="acceptButton" onclick="window.location.href='/e-wallet';">اِبْدَأْ الآن</button>
-            </div>
-        </div>
-    </div>
-    <script>
-        // JavaScript function to close the popup
-        function closePopup() {
-            document.getElementById('popup').style.display = 'none';
-        }
-
-        // JavaScript to handle the popup display for demo purposes
-        document.addEventListener('DOMContentLoaded', () => {
-            const popup = document.getElementById('popup');
-
-            // Function to show the popup
-            function showPopup() {
-                popup.style.display = 'flex';
-            }
-
-            // Show the popup initially (for demo purposes)
-            showPopup();
-        });
-    </script>
-<?php
+    $wallet_data = $api_response ? json_decode($api_response, true) : null;
+    if (!empty($wallet_data['status']) && $wallet_data['status'] === 'success') {
+        $record = new stdClass();
+        $record->user_id    = $USER->id;
+        $record->wallet_uuid = $wallet_data['data']['wallet_uuid'];
+        $DB->insert_record('user_wallet', $record);
+    }
 }
 
 $urlparams = array();

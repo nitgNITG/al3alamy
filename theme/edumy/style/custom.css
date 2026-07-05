@@ -49,18 +49,22 @@ h1, h2, h3, h4, h5, h6 {
   font-weight: 700 !important;
 }
 
-/* ── BiDi Fix: email & password always LTR ── */
-input[type="email"],
-input[type="password"] {
+/* ── BiDi Fix: username/password always LTR, text starts from left ── */
+#page-login-index input[name="username"],
+#page-login-index input[type="password"],
+#page-login-signup input[type="password"],
+#page-login-signup input[type="email"],
+#page-login-signup input[name="username"] {
   direction: ltr !important;
   text-align: left !important;
+  unicode-bidi: bidi-override !important;
 }
 
-/* Login/Signup: fix icon overlap in RTL */
-#page-login-index .form-control.pl-5,
-#page-login-signup .form-control.pl-5 {
-  padding-left: 3rem !important;
-  padding-right: 0.75rem !important;
+/* Login/Signup: indent inputs so text doesn't sit under the icon */
+#page-login-index .form-control,
+#page-login-signup .form-control {
+  padding-right: 3rem !important;
+  padding-left: 1rem !important;
 }
 
 /* ══════════════════════════════════════

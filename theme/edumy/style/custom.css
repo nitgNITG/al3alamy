@@ -39,6 +39,11 @@ body, html {
   font-family: 'Cairo', 'Tajawal', sans-serif !important;
 }
 
+/* RTL only on login & signup pages */
+body.path-login {
+  direction: rtl;
+}
+
 h1, h2, h3, h4, h5, h6 {
   font-family: 'Cairo', 'Tajawal', sans-serif !important;
   font-weight: 700 !important;

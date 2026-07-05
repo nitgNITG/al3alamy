@@ -33,14 +33,22 @@ curl_setopt($ch, CURLOPT_URL, $api_url);
 curl_setopt($ch, CURLOPT_POST, 1);
 curl_setopt($ch, CURLOPT_POSTFIELDS, $post_fields);
 curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+curl_setopt($ch, CURLOPT_TIMEOUT, 10);
+curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 5);
 curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
 
 $response = curl_exec($ch);
+$curl_error = curl_error($ch);
 curl_close($ch);
+
+if ($curl_error || !$response) {
+    echo json_encode(['status' => 'error', 'message' => 'Wallet API unreachable']);
+    exit;
+}
 
 $wallet_data = json_decode($response, true);
 
-if ($wallet_data['status'] == 'success') {
+if (!empty($wallet_data['status']) && $wallet_data['status'] == 'success') {
     echo json_encode(['status' => 'success', 'data' => $wallet_data['data']]);
 } else {
     echo json_encode(['status' => 'error', 'message' => 'Failed to retrieve wallet details']);

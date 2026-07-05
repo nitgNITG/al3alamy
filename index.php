@@ -35,33 +35,8 @@ global $USER;
 
 redirect_if_major_upgrade_required();
 
-// Auto-create wallet for new users (no popup, no button needed)
-$have_wallet = $DB->get_record('user_wallet', array('user_id' => $USER->id));
-if (!$have_wallet && !isguestuser() && isloggedin()) {
-    $platform_uuid = "17b931f8-5a3e-11ef-b921-005056472f78";
-    $api_key       = "8b5a0e6d266ae2c3250a98ac3a568a95";
-
-    $ch = curl_init();
-    curl_setopt($ch, CURLOPT_URL, 'https://salem-mar3y.com/e-wallet/src/api/create_wallet.php');
-    curl_setopt($ch, CURLOPT_POST, 1);
-    curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode(['platform_uuid' => $platform_uuid]));
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-    curl_setopt($ch, CURLOPT_TIMEOUT, 15);
-    curl_setopt($ch, CURLOPT_HTTPHEADER, [
-        'Authorization: Bearer ' . $api_key,
-        'Content-Type: application/json',
-    ]);
-    $api_response = curl_exec($ch);
-    curl_close($ch);
-
-    $wallet_data = $api_response ? json_decode($api_response, true) : null;
-    if (!empty($wallet_data['status']) && $wallet_data['status'] === 'success') {
-        $record = new stdClass();
-        $record->user_id    = $USER->id;
-        $record->wallet_uuid = $wallet_data['data']['wallet_uuid'];
-        $DB->insert_record('user_wallet', $record);
-    }
-}
+// Flag: auto-create wallet for new users via background JS (non-blocking)
+$need_wallet = (!isguestuser() && isloggedin() && !$DB->record_exists('user_wallet', ['user_id' => $USER->id]));
 
 $urlparams = array();
 if (
@@ -215,4 +190,16 @@ if (!empty($ex_date) && $ex_date < $current_date) {
     exit;
 }
 
-echo $OUTPUT->footer();
+<?php if ($need_wallet): ?>
+<script>
+// Auto-create wallet in background — no blocking, no popup
+(function() {
+    fetch('<?php echo $CFG->wwwroot; ?>/e-wallet/create_wallet_ajax.php', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        credentials: 'same-origin'
+    }).catch(function() {}); // silent — ignore errors
+})();
+</script>
+<?php endif; ?>
+<?php echo $OUTPUT->footer();

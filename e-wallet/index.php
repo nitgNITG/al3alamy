@@ -52,7 +52,7 @@ $api_key = "8b5a0e6d266ae2c3250a98ac3a568a95";
 // Start output to the browser
 echo $OUTPUT->header();
 ?>
-<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+<!-- Bootstrap already included in Moodle theme -->
 <style>
     a {
         text-decoration: none !important;
@@ -283,7 +283,7 @@ echo $OUTPUT->footer();
 
 ?>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<!-- Bootstrap JS already included in Moodle theme -->
 <!-- Modal -->
 <div class="modal fade" id="rechargeModal" tabindex="-1" aria-labelledby="rechargeModalLabel" aria-hidden="true">
     <div class="modal-dialog">

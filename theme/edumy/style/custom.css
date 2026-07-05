@@ -5,8 +5,8 @@
  * This file: fonts, CSS variables, social icons only.
  */
 
-/* ── Google Fonts ── */
-@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&family=Tajawal:wght@400;500;700;900&display=swap');
+/* ── Fonts via Bunny Fonts (Google Fonts mirror — faster, no timeout) ── */
+@import url('https://fonts.bunny.net/css2?family=cairo:wght@400;600;700;900&family=tajawal:wght@400;500;700;900&display=swap');
 
 /* ── CSS Variables ── */
 :root {

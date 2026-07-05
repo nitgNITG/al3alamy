@@ -1,6 +1,7 @@
 <?php
 
 class block_cocoon_featured_video_edit_form extends block_edit_form {
+
     protected function specific_definition($mform) {
         global $CFG;
         $ccnFontList = include($CFG->dirroot . '/theme/edumy/ccn/font_handler/ccn_font_select.php');
@@ -12,96 +13,130 @@ class block_cocoon_featured_video_edit_form extends block_edit_form {
             $data->slidesnumber = 4;
         }
 
-
-        // Fields for editing HTML block title and contents.
         $mform->addElement('header', 'configheader', get_string('blocksettings', 'block'));
 
-        $mform->addElement('text', 'config_video_url', get_string('config_video', 'theme_edumy'));
-        $mform->setDefault('config_video_url', 'https://youtu.be/UdDwKI4DcGw');
-        $mform->setType('config_video_url', PARAM_RAW);
+        // ── Number of videos ─────────────────────────────────────────────────
+        $ccnVideoRange = [
+            1 => '1', 2 => '2', 3 => '3', 4 => '4',
+            5 => '5', 6 => '6', 7 => '7', 8 => '8',
+        ];
+        $mform->addElement('select', 'config_videosnumber', 'عدد الفيديوهات', $ccnVideoRange);
+        $mform->setDefault('config_videosnumber', 1);
 
-        // Image
-        $mform->addElement('filemanager', 'config_image', get_string('config_image', 'theme_edumy'), null,
-                array('subdirs' => 0, 'maxbytes' => $maxbytes, 'maxfiles' => 1,
-                'accepted_types' => array('.png', '.jpg', '.gif') ));
+        // ── Video slots (1–8) ─────────────────────────────────────────────────
+        $ccnVideoMax = 8;
+        for ($i = 1; $i <= $ccnVideoMax; $i++) {
+            $mform->addElement('header', 'config_video_item' . $i, 'فيديو ' . $i);
 
-        $ccnItemsRange = array(
-          1 => '1',
-          2 => '2',
-          3 => '3',
-          4 => '4',
-          5 => '5',
-          6 => '6',
-          7 => '7',
-          8 => '8',
-          9 => '9',
-          10 => '10',
-          11 => '11',
-          12 => '12',
-        );
+            // Video URL  ── slot 1 keeps the legacy field name 'config_video_url'
+            // for backward compatibility with existing block instances
+            $url_field = ($i === 1) ? 'config_video_url' : 'config_video_url_' . $i;
+            $mform->addElement('text', $url_field, 'رابط الفيديو (YouTube / mp4)');
+            if ($i === 1) {
+                $mform->setDefault('config_video_url', 'https://youtu.be/UdDwKI4DcGw');
+            }
+            $mform->setType($url_field, PARAM_RAW);
 
-        $ccnItemsMax = 12;
-
-        $mform->addElement('select', 'config_slidesnumber', get_string('config_items', 'theme_edumy'), $ccnItemsRange);
-        $mform->setDefault('config_slidesnumber', 4);
-
-        for($i = 1; $i <= $ccnItemsMax; $i++) {
-
-            $mform->addElement('header', 'config_ccn_item' . $i , get_string('config_item', 'theme_edumy') . $i);
-
-            $mform->addElement('text', 'config_title' . $i, get_string('config_title', 'theme_edumy'));
-            $mform->setDefault('config_title' .$i , 'Creative Events');
-            $mform->setType('config_title' . $i, PARAM_TEXT);
-
-            $mform->addElement('text', 'config_subtitle' . $i, get_string('config_number', 'theme_edumy'));
-            $mform->setDefault('config_subtitle' .$i , '#');
-            $mform->setType('config_subtitle' . $i, PARAM_TEXT);
-
-            $mform->addElement('text', 'config_subtitle_2_' . $i, get_string('config_number_after', 'theme_edumy'));
-            $mform->setDefault('config_subtitle_2_' .$i , '+');
-            $mform->setType('config_subtitle_2_' . $i, PARAM_TEXT);
-
+            // Image URL (text field — slot 1 can also use the filemanager below)
+            $mform->addElement('text', 'config_video_image_' . $i, 'رابط صورة الخلفية (URL)');
+            $mform->setType('config_video_image_' . $i, PARAM_URL);
+            if ($i === 1) {
+                $mform->addElement('static', 'config_image_note_1', '',
+                    '<small class="text-muted">يمكنك رفع صورة بالأداة أدناه بدلاً من الرابط</small>');
+            }
         }
 
+        // ── Filemanager image (legacy / slot-1 fallback) ──────────────────────
+        $mform->addElement('header', 'config_image_header', 'صورة الفيديو 1 (رفع ملف)');
+        $mform->addElement('filemanager', 'config_image', get_string('config_image', 'theme_edumy'), null,
+            array('subdirs' => 0, 'maxbytes' => 0, 'maxfiles' => 1,
+                  'accepted_types' => array('.png', '.jpg', '.gif', '.webp')));
 
-        $mform->addElement('header', 'config_ccn_colors', get_string('block_styles', 'theme_edumy'));
+        // ── Number of counter items (0 = hide counters entirely) ─────────────
+        $mform->addElement('header', 'config_counters_header', 'العدادات تحت الفيديو');
 
-        $mform->addElement('text', 'config_color_bfbg', get_string('config_color_bg', 'theme_edumy'), array('class'=>'ccn_spectrum_class'));
+        $ccnItemsRange = [
+            0  => '0 — بدون عدادات',
+            1  => '1',  2  => '2',  3  => '3',  4  => '4',
+            5  => '5',  6  => '6',  7  => '7',  8  => '8',
+            9  => '9',  10 => '10', 11 => '11', 12 => '12',
+        ];
+        $mform->addElement('select', 'config_slidesnumber',
+            get_string('config_items', 'theme_edumy'), $ccnItemsRange);
+        $mform->setDefault('config_slidesnumber', 4);
+
+        $ccnItemsMax = 12;
+        for ($i = 1; $i <= $ccnItemsMax; $i++) {
+            $mform->addElement('header', 'config_ccn_item' . $i,
+                get_string('config_item', 'theme_edumy') . $i);
+
+            $mform->addElement('text', 'config_title' . $i,
+                get_string('config_title', 'theme_edumy'));
+            $mform->setDefault('config_title' . $i, 'Creative Events');
+            $mform->setType('config_title' . $i, PARAM_TEXT);
+
+            $mform->addElement('text', 'config_subtitle' . $i,
+                get_string('config_number', 'theme_edumy'));
+            $mform->setDefault('config_subtitle' . $i, '#');
+            $mform->setType('config_subtitle' . $i, PARAM_TEXT);
+
+            $mform->addElement('text', 'config_subtitle_2_' . $i,
+                get_string('config_number_after', 'theme_edumy'));
+            $mform->setDefault('config_subtitle_2_' . $i, '+');
+            $mform->setType('config_subtitle_2_' . $i, PARAM_TEXT);
+        }
+
+        // ── Color settings ────────────────────────────────────────────────────
+        $mform->addElement('header', 'config_ccn_colors',
+            get_string('block_styles', 'theme_edumy'));
+
+        $mform->addElement('text', 'config_color_bfbg',
+            get_string('config_color_bg', 'theme_edumy'),
+            array('class' => 'ccn_spectrum_class'));
         $mform->setDefault('config_color_bfbg', '#f9f9f9');
         $mform->setType('config_color_bfbg', PARAM_TEXT);
 
-        $mform->addElement('text', 'config_color_title', get_string('config_color_title', 'theme_edumy'), array('class'=>'ccn_spectrum_class'));
+        $mform->addElement('text', 'config_color_title',
+            get_string('config_color_title', 'theme_edumy'),
+            array('class' => 'ccn_spectrum_class'));
         $mform->setDefault('config_color_title', '#0067da');
         $mform->setType('config_color_title', PARAM_TEXT);
 
-        $mform->addElement('text', 'config_color_subtitle', get_string('config_color_subtitle', 'theme_edumy'), array('class'=>'ccn_spectrum_class'));
+        $mform->addElement('text', 'config_color_subtitle',
+            get_string('config_color_subtitle', 'theme_edumy'),
+            array('class' => 'ccn_spectrum_class'));
         $mform->setDefault('config_color_subtitle', '#222222');
         $mform->setType('config_color_subtitle', PARAM_TEXT);
 
-        $mform->addElement('text', 'config_color_overlay', get_string('config_color_overlay', 'theme_edumy'), array('class'=>'ccn_spectrum_class'));
+        $mform->addElement('text', 'config_color_overlay',
+            get_string('config_color_overlay', 'theme_edumy'),
+            array('class' => 'ccn_spectrum_class'));
         $mform->setDefault('config_color_overlay', 'rgb(34, 34, 34, .4)');
         $mform->setType('config_color_overlay', PARAM_TEXT);
 
-
         include($CFG->dirroot . '/theme/edumy/ccn/block_handler/edit.php');
-
     }
 
     function set_data($defaults) {
-      // Begin CCN Image Processing
         if (empty($entry->id)) {
-            $entry = new stdClass;
+            $entry     = new stdClass;
             $entry->id = null;
         }
         $draftitemid = file_get_submitted_draft_itemid('config_image');
-        file_prepare_draft_area($draftitemid, $this->block->context->id, 'block_cocoon_featured_video', 'content', 0,
-            array('subdirs' => true));
+        file_prepare_draft_area(
+            $draftitemid, $this->block->context->id,
+            'block_cocoon_featured_video', 'content', 0,
+            array('subdirs' => true)
+        );
         $entry->attachments = $draftitemid;
         parent::set_data($defaults);
         if ($data = parent::get_data()) {
-            file_save_draft_area_files($data->config_image, $this->block->context->id, 'block_cocoon_featured_video', 'content', 0,
-                array('subdirs' => true));
+            file_save_draft_area_files(
+                $data->config_image,
+                $this->block->context->id,
+                'block_cocoon_featured_video', 'content', 0,
+                array('subdirs' => true)
+            );
         }
-      // END CCN Image Processing
     }
 }

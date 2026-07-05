@@ -66,17 +66,14 @@ class block_cocoon_featured_video extends block_base
             $data->slidesnumber = 4;
         }
 
-        // ── Collect uploaded images, sorted by filename ───────────────────────
-        $default_image = $CFG->wwwroot . '/theme/edumy/images/ccnBgMd.png';
+        // ── Collect uploaded images sorted by filename ────────────────────────
+        $default_image   = $CFG->wwwroot . '/theme/edumy/images/ccnBgMd.png';
         $uploaded_images = [];
         $fs    = get_file_storage();
         $files = $fs->get_area_files($this->context->id, 'block_cocoon_featured_video', 'content');
-
-        // Sort files by filename for a consistent, predictable slot order
         usort($files, function($a, $b) {
             return strcmp($a->get_filename(), $b->get_filename());
         });
-
         foreach ($files as $file) {
             if ($file->get_filename() !== '.') {
                 $uploaded_images[] = (string) moodle_url::make_pluginfile_url(
@@ -86,69 +83,67 @@ class block_cocoon_featured_video extends block_base
                 );
             }
         }
-
-        // Slot 1 fallback image (used when fewer images than videos)
-        $slot1_image = !empty($uploaded_images[0]) ? $uploaded_images[0] : $default_image;
+        $slot1_image         = !empty($uploaded_images[0]) ? $uploaded_images[0] : $default_image;
         $this->content->image = $slot1_image;
 
         // ── Number of videos ──────────────────────────────────────────────────
         $videosnumber = !empty($this->config->videosnumber) ? (int)$this->config->videosnumber : 1;
         $videosnumber = max(1, min(8, $videosnumber));
 
-        // ── Build slides array ────────────────────────────────────────────────
+        // ── Build slides ──────────────────────────────────────────────────────
         $slides = [];
         for ($i = 1; $i <= $videosnumber; $i++) {
-            // Video URL — slot 1 falls back to legacy 'video_url' key
             $video_url = '';
             if (!empty($this->config->{'video_url_' . $i})) {
                 $video_url = $this->config->{'video_url_' . $i};
             } elseif ($i === 1 && !empty($this->config->video_url)) {
                 $video_url = $this->config->video_url;
             }
-
-            // Image — use uploaded image by slot index, fall back to slot-1 image
             $image_url = !empty($uploaded_images[$i - 1]) ? $uploaded_images[$i - 1] : $slot1_image;
-
-            $slides[] = [
-                'video_url' => $video_url,
-                'image_url' => $image_url,
-            ];
+            $slides[]  = ['video_url' => $video_url, 'image_url' => $image_url];
         }
 
+        // ── Unique IDs for this block instance ────────────────────────────────
+        $block_id    = 'ccnFeatVideo_'   . $this->instance->id;
+        $modal_id    = 'ccnVideoModal_'  . $this->instance->id;
+        $carousel_id = 'ccnCarousel_'    . $this->instance->id;
+
+        // ── Play button HTML helper ───────────────────────────────────────────
+        // Uses Bootstrap modal — no dependency on Magnific Popup / theme JS order
+        $play_button = function($video_url) use ($modal_id) {
+            return '<button type="button"
+                        class="ccn-play-btn home_post_overlay_icon bgc-theme8"
+                        data-toggle="modal"
+                        data-target="#' . $modal_id . '"
+                        data-video="' . htmlspecialchars($video_url) . '"
+                        onclick="event.stopPropagation();">
+                        <div class="video_popup_btn">
+                            <span class="flaticon-play-button-1"></span>
+                        </div>
+                    </button>';
+        };
+
         // ── Build video HTML ──────────────────────────────────────────────────
-        $block_id   = 'ccnFeatVideo_' . $this->instance->id;
         $video_html = '';
 
         if (count($slides) === 1) {
-            // Single video — original layout preserved
-            $slide = $slides[0];
+            $slide      = $slides[0];
             $video_html = '
             <div class="gallery_item home13 mt80">
                 <img class="img-fluid img-circle-rounded" alt=""
                      data-ccn="image" data-ccn-img="content"
                      ' . $ccnLazy->ccnLazyImage($slide['image_url']) . '>
                 <div class="gallery_overlay"
-                     data-ccn-c="color_overlay"
-                     data-ccn-co="ccnBg"
-                     data-ccn-cv="' . htmlspecialchars($color_overlay) . '"
                      style="background-color:' . htmlspecialchars($color_overlay) . ';">
-                    <a class="popup-img popup-youtube home_post_overlay_icon bgc-theme8"
-                       href="' . htmlspecialchars($slide['video_url']) . '">
-                        <div class="video_popup_btn">
-                            <span class="flaticon-play-button-1"></span>
-                        </div>
-                    </a>
+                    ' . $play_button($slide['video_url']) . '
                 </div>
             </div>';
         } else {
-            // Multiple videos — Bootstrap carousel
-            // stopPropagation on the <a> prevents the carousel JS from
-            // swallowing the click before Magnific Popup handles it.
             $indicators = '';
             $items      = '';
             foreach ($slides as $idx => $slide) {
                 $active      = ($idx === 0) ? ' active' : '';
-                $indicators .= '<li data-target="#' . $block_id . '" data-slide-to="' . $idx . '"'
+                $indicators .= '<li data-target="#' . $carousel_id . '" data-slide-to="' . $idx . '"'
                              . ($idx === 0 ? ' class="active"' : '') . '></li>';
                 $items .= '
                 <div class="carousel-item' . $active . '">
@@ -157,52 +152,89 @@ class block_cocoon_featured_video extends block_base
                              src="' . htmlspecialchars($slide['image_url']) . '">
                         <div class="gallery_overlay"
                              style="background-color:' . htmlspecialchars($color_overlay) . ';">
-                            <a class="popup-img popup-youtube home_post_overlay_icon bgc-theme8"
-                               href="' . htmlspecialchars($slide['video_url']) . '"
-                               onclick="event.stopPropagation();">
-                                <div class="video_popup_btn">
-                                    <span class="flaticon-play-button-1"></span>
-                                </div>
-                            </a>
+                            ' . $play_button($slide['video_url']) . '
                         </div>
                     </div>
                 </div>';
             }
-
             $video_html = '
-            <div id="' . $block_id . '" class="carousel slide" data-ride="carousel" data-interval="false">
+            <div id="' . $carousel_id . '" class="carousel slide" data-ride="carousel" data-interval="false">
                 <ol class="carousel-indicators">' . $indicators . '</ol>
                 <div class="carousel-inner">' . $items . '</div>
-                <a class="carousel-control-prev" href="#' . $block_id . '" role="button" data-slide="prev">
+                <a class="carousel-control-prev" href="#' . $carousel_id . '" role="button" data-slide="prev">
                     <span class="carousel-control-prev-icon" aria-hidden="true"></span>
-                    <span class="sr-only">Previous</span>
                 </a>
-                <a class="carousel-control-next" href="#' . $block_id . '" role="button" data-slide="next">
+                <a class="carousel-control-next" href="#' . $carousel_id . '" role="button" data-slide="next">
                     <span class="carousel-control-next-icon" aria-hidden="true"></span>
-                    <span class="sr-only">Next</span>
                 </a>
-            </div>
-            <script>
-            // Re-init Magnific Popup for carousel slides (theme may init before slides exist)
-            document.addEventListener("DOMContentLoaded", function() {
-                if (typeof jQuery !== "undefined" && typeof jQuery.fn.magnificPopup !== "undefined") {
-                    jQuery("#' . $block_id . ' .popup-youtube").magnificPopup({
-                        type: "iframe",
-                        mainClass: "mfp-fade",
-                        removalDelay: 160,
-                        preloader: false,
-                        fixedContentPos: false
-                    });
-                }
-            });
-            </script>';
+            </div>';
         }
+
+        // ── Bootstrap modal (shared by all slides in this block) ──────────────
+        $modal_html = '
+        <div class="modal fade" id="' . $modal_id . '" tabindex="-1" role="dialog"
+             aria-labelledby="' . $modal_id . 'Label" aria-hidden="true">
+            <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+                <div class="modal-content" style="background:#000;border:none;">
+                    <div class="modal-header" style="border:none;padding:8px 12px;">
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close"
+                                style="color:#fff;opacity:1;font-size:28px;">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body" style="padding:0;">
+                        <div class="embed-responsive embed-responsive-16by9">
+                            <iframe id="' . $modal_id . '_frame"
+                                    class="embed-responsive-item"
+                                    src="" frameborder="0"
+                                    allow="autoplay; encrypted-media"
+                                    allowfullscreen></iframe>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <script>
+        (function() {
+            // Convert any YouTube URL format → embed URL
+            function ccnYtEmbed(url) {
+                if (!url) return "";
+                // already an embed URL
+                if (url.indexOf("youtube.com/embed/") !== -1) return url + "?autoplay=1";
+                // youtu.be/ID
+                var m = url.match(/youtu\.be\/([^?&">\s]+)/);
+                if (m) return "https://www.youtube.com/embed/" + m[1] + "?autoplay=1";
+                // youtube.com/watch?v=ID
+                m = url.match(/[?&]v=([^?&">\s]+)/);
+                if (m) return "https://www.youtube.com/embed/" + m[1] + "?autoplay=1";
+                // fallback — treat as direct embed URL
+                return url;
+            }
+
+            var modal  = document.getElementById("' . $modal_id . '");
+            var iframe = document.getElementById("' . $modal_id . '_frame");
+
+            if (modal && iframe) {
+                // Set iframe src when modal opens
+                modal.addEventListener("show.bs.modal", function(e) {
+                    var btn   = e.relatedTarget;
+                    var video = btn ? btn.getAttribute("data-video") : "";
+                    iframe.src = ccnYtEmbed(video);
+                });
+                // Clear src when modal closes — stops the video
+                modal.addEventListener("hidden.bs.modal", function() {
+                    iframe.src = "";
+                });
+            }
+        })();
+        </script>';
 
         // ── Full section ──────────────────────────────────────────────────────
         $this->content->text = '
+        ' . $modal_html . '
         <section class="about-us-home13 pb20 pt0"
-          data-ccn-c="color_bfbg"
-          data-ccn-co="ccnBfBg"
+          data-ccn-c="color_bfbg" data-ccn-co="ccnBfBg"
           data-ccn-cv="' . htmlspecialchars($color_bfbg) . '">
           <div class="container">
             <div class="row">
@@ -213,18 +245,16 @@ class block_cocoon_featured_video extends block_base
           </div>
         </section>';
 
-        // ── Counter section — skipped entirely when slidesnumber = 0 ─────────
+        // ── Counter section — skip when slidesnumber = 0 ──────────────────────
         if ($data->slidesnumber > 0) {
             $this->content->text .= '
         <section id="our-top-courses" class="our-courses pt0 pb0">
           <div class="container pb60">
             <div class="row">';
-
             for ($i = 1; $i <= $data->slidesnumber; $i++) {
                 $title     = 'title' . $i;
                 $subtitle  = 'subtitle' . $i;
                 $subtitle2 = 'subtitle_2_' . $i;
-
                 $this->content->text .= '
               <div class="col-sm-6 col-lg-3">
                 <div class="funfact_one home13 text-center">
@@ -233,29 +263,25 @@ class block_cocoon_featured_video extends block_base
                       <li class="list-inline-item">
                         <div class="timer"
                              data-ccn="' . $subtitle . '"
-                             data-ccn-c="color_title"
-                             data-ccn-co="ccnCn"
+                             data-ccn-c="color_title" data-ccn-co="ccnCn"
                              data-ccn-cv="' . htmlspecialchars($color_title) . '">'
                              . (isset($data->$subtitle) ? $data->$subtitle : '') . '</div>
                       </li>
                       <li class="list-inline-item">
                         <span data-ccn="' . $subtitle2 . '"
-                              data-ccn-c="color_title"
-                              data-ccn-co="ccnCn"
+                              data-ccn-c="color_title" data-ccn-co="ccnCn"
                               data-ccn-cv="' . htmlspecialchars($color_title) . '">'
                               . (isset($data->$subtitle2) ? $data->$subtitle2 : '') . '</span>
                       </li>
                     </ul>
                     <h5 data-ccn="' . $title . '"
-                        data-ccn-c="color_subtitle"
-                        data-ccn-co="ccnCn"
+                        data-ccn-c="color_subtitle" data-ccn-co="ccnCn"
                         data-ccn-cv="' . htmlspecialchars($color_subtitle) . '">'
                         . (isset($data->$title) ? $data->$title : '') . '</h5>
                   </div>
                 </div>
               </div>';
             }
-
             $this->content->text .= '
             </div>
           </div>

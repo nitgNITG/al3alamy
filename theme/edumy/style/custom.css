@@ -90,3 +90,29 @@ h1, h2, h3, h4, h5, h6 {
 }
 .footer_social_widget ul li a i { color: inherit !important; font-size: 18px !important; line-height: 1 !important; }
 .footer_social_widget ul li a svg { display: block !important; }
+
+/* ══════════════════════════════════════
+   FOOTER TITLE (حسام هارون) — center
+══════════════════════════════════════ */
+.footer_one .footer_program_widget,
+.footer_one .footer_contact_widget,
+.footer_one .footer_company_widget {
+  text-align: center !important;
+  width: 100% !important;
+}
+.footer_one .footer_program_widget h1,
+.footer_one .footer_program_widget h2,
+.footer_one .footer_program_widget h3,
+.footer_one .footer_program_widget h4,
+.footer_one .footer_program_widget p {
+  text-align: center !important;
+}
+
+/* Center social icons row in footer middle area */
+.footer_middle_area .col-sm-12 {
+  text-align: center !important;
+}
+.footer_middle_area .footer_social_widget {
+  display: flex !important;
+  justify-content: center !important;
+}

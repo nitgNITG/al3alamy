@@ -159,11 +159,7 @@ if($dash_breadcrumb_clip_setting == 1) { //Clip V Long
   $breadcrumb_clip_dash = 'ccn-clip-l';
 }
 $social_target = ($_ccnTC->social_target ?? '');
-if($social_target == 1) {
-  $social_target_href = 'target="_blank"';
-} else {
-  $social_target_href = 'target="_self"';
-}
+$social_target_href = 'target="_blank" rel="noopener noreferrer"';
 if ($PAGE->pagetype == 'site-index') {
   $ccn_frontcheck = 'ccn-is-front';
 } else {

@@ -134,6 +134,7 @@ class block_cocoon_featured_video extends block_base
                     <div class="modal-header"
                          style="border:none;padding:6px 10px;justify-content:flex-end;">
                         <button type="button" class="close" data-dismiss="modal"
+                                onclick="document.getElementById(\'' . $frame_id . '\').src=\'\';"
                                 style="color:#fff;opacity:.8;font-size:24px;line-height:1;">
                             &times;
                         </button>
@@ -294,13 +295,34 @@ class block_cocoon_featured_video extends block_base
             strip.scrollBy({ left: dir * step, behavior: "smooth" });
         }
 
-        // Clear iframe on modal close
-        (function waitJQ() {
-            if (typeof jQuery !== "undefined") {
-                jQuery("#' . $modal_id . '").on("hidden.bs.modal", function() {
-                    document.getElementById("' . $frame_id . '").src = "";
+        // Stop video on close — three redundant paths so one always fires:
+        (function() {
+            function ccnClearFrame() {
+                document.getElementById("' . $frame_id . '").src = "";
+            }
+
+            // 1. Backdrop click (user clicks outside modal box)
+            var modalEl = document.getElementById("' . $modal_id . '");
+            if (modalEl) {
+                modalEl.addEventListener("click", function(e) {
+                    if (e.target === modalEl) ccnClearFrame();
                 });
-            } else { setTimeout(waitJQ, 80); }
+            }
+
+            // 2. Escape key
+            document.addEventListener("keydown", function(e) {
+                if ((e.key === "Escape" || e.keyCode === 27) && modalEl &&
+                    modalEl.classList.contains("show")) {
+                    ccnClearFrame();
+                }
+            });
+
+            // 3. Bootstrap hide event (jQuery BS4 or native BS5)
+            (function waitJQ() {
+                if (typeof jQuery !== "undefined") {
+                    jQuery("#' . $modal_id . '").on("hide.bs.modal", ccnClearFrame);
+                } else { setTimeout(waitJQ, 80); }
+            })();
         })();
         </script>';
 

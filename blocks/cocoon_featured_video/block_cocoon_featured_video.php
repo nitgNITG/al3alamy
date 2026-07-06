@@ -108,18 +108,19 @@ class block_cocoon_featured_video extends block_base
         $modal_id    = 'ccnVideoModal_'  . $this->instance->id;
         $carousel_id = 'ccnCarousel_'    . $this->instance->id;
 
-        // ── Play button HTML helper ───────────────────────────────────────────
-        // Uses Bootstrap modal — no dependency on Magnific Popup / theme JS order
-        $play_button = function($video_url) use ($modal_id) {
-            // No stopPropagation — Bootstrap 4 registers data-toggle="modal" at
-            // document level; stopping propagation silently kills the modal trigger.
-            // Bootstrap carousel only intercepts [data-slide] / [data-slide-to],
-            // so play-button clicks are safe without stopPropagation.
+        // ── YouTube URL → embed URL (named per instance to avoid conflicts) ─────
+        $fn_name = 'ccnYtEmbed_' . $this->instance->id;
+
+        // ── Play button: set iframe src directly in onclick, then open modal ──
+        // Avoids relying on show.bs.modal jQuery event (BS4) or relatedTarget.
+        $frame_id = $modal_id . '_frame';
+        $play_button = function($video_url) use ($modal_id, $frame_id, $fn_name) {
+            $escaped = htmlspecialchars($video_url, ENT_QUOTES);
             return '<button type="button"
                         class="ccn-play-btn home_post_overlay_icon bgc-theme8"
                         data-toggle="modal"
                         data-target="#' . $modal_id . '"
-                        data-video="' . htmlspecialchars($video_url) . '">
+                        onclick="document.getElementById(\'' . $frame_id . '\').src=' . $fn_name . '(\'' . $escaped . '\');">
                         <div class="video_popup_btn">
                             <span class="flaticon-play-button-1"></span>
                         </div>
@@ -199,36 +200,28 @@ class block_cocoon_featured_video extends block_base
         </div>
 
         <script>
-        (function() {
-            // Convert any YouTube URL format → embed URL
-            function ccnYtEmbed(url) {
-                if (!url) return "";
-                // already an embed URL
-                if (url.indexOf("youtube.com/embed/") !== -1) return url + "?autoplay=1";
-                // youtu.be/ID
-                var m = url.match(/youtu\.be\/([^?&">\s]+)/);
-                if (m) return "https://www.youtube.com/embed/" + m[1] + "?autoplay=1";
-                // youtube.com/watch?v=ID
-                m = url.match(/[?&]v=([^?&">\s]+)/);
-                if (m) return "https://www.youtube.com/embed/" + m[1] + "?autoplay=1";
-                // fallback — treat as direct embed URL
-                return url;
+        // YouTube URL → embed URL (global, named per block instance)
+        function ' . $fn_name . '(url) {
+            if (!url) return "";
+            if (url.indexOf("youtube.com/embed/") !== -1) {
+                return url + (url.indexOf("?") !== -1 ? "&" : "?") + "autoplay=1";
             }
+            var m = url.match(/youtu\.be\/([^?&\s"]+)/);
+            if (m) return "https://www.youtube.com/embed/" + m[1] + "?autoplay=1";
+            m = url.match(/[?&]v=([^?&\s"]+)/);
+            if (m) return "https://www.youtube.com/embed/" + m[1] + "?autoplay=1";
+            return url;
+        }
 
-            var modal  = document.getElementById("' . $modal_id . '");
-            var iframe = document.getElementById("' . $modal_id . '_frame");
-
-            if (modal && iframe) {
-                // Set iframe src when modal opens
-                modal.addEventListener("show.bs.modal", function(e) {
-                    var btn   = e.relatedTarget;
-                    var video = btn ? btn.getAttribute("data-video") : "";
-                    iframe.src = ccnYtEmbed(video);
+        // Clear iframe when modal closes — stops video playback
+        // Use jQuery (.on) because Bootstrap 4 fires events through jQuery
+        (function waitForJQ() {
+            if (typeof jQuery !== "undefined") {
+                jQuery("#' . $modal_id . '").on("hidden.bs.modal", function() {
+                    document.getElementById("' . $frame_id . '").src = "";
                 });
-                // Clear src when modal closes — stops the video
-                modal.addEventListener("hidden.bs.modal", function() {
-                    iframe.src = "";
-                });
+            } else {
+                setTimeout(waitForJQ, 100);
             }
         })();
         </script>';

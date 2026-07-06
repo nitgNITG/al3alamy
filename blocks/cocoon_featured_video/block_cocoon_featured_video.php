@@ -111,12 +111,15 @@ class block_cocoon_featured_video extends block_base
         // ── Play button HTML helper ───────────────────────────────────────────
         // Uses Bootstrap modal — no dependency on Magnific Popup / theme JS order
         $play_button = function($video_url) use ($modal_id) {
+            // No stopPropagation — Bootstrap 4 registers data-toggle="modal" at
+            // document level; stopping propagation silently kills the modal trigger.
+            // Bootstrap carousel only intercepts [data-slide] / [data-slide-to],
+            // so play-button clicks are safe without stopPropagation.
             return '<button type="button"
                         class="ccn-play-btn home_post_overlay_icon bgc-theme8"
                         data-toggle="modal"
                         data-target="#' . $modal_id . '"
-                        data-video="' . htmlspecialchars($video_url) . '"
-                        onclick="event.stopPropagation();">
+                        data-video="' . htmlspecialchars($video_url) . '">
                         <div class="video_popup_btn">
                             <span class="flaticon-play-button-1"></span>
                         </div>

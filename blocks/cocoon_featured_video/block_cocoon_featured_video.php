@@ -52,9 +52,7 @@ class block_cocoon_featured_video extends block_base
         $color_bfbg     = !empty($this->config->color_bfbg)     ? $this->config->color_bfbg     : '#f9f9f9';
         $color_title    = !empty($this->config->color_title)    ? $this->config->color_title    : '#0067da';
         $color_subtitle = !empty($this->config->color_subtitle) ? $this->config->color_subtitle : '#222222';
-        $color_overlay  = !empty($this->config->color_overlay)  ? $this->config->color_overlay  : 'rgb(34, 34, 34, .4)';
-
-        $ccnLazy = new ccnLazy();
+        $color_overlay  = !empty($this->config->color_overlay)  ? $this->config->color_overlay  : 'rgba(0,0,0,0.45)';
 
         // ── Counter data ──────────────────────────────────────────────────────
         $data = new stdClass();
@@ -83,7 +81,7 @@ class block_cocoon_featured_video extends block_base
                 );
             }
         }
-        $slot1_image         = !empty($uploaded_images[0]) ? $uploaded_images[0] : $default_image;
+        $slot1_image          = !empty($uploaded_images[0]) ? $uploaded_images[0] : $default_image;
         $this->content->image = $slot1_image;
 
         // ── Number of videos ──────────────────────────────────────────────────
@@ -103,148 +101,234 @@ class block_cocoon_featured_video extends block_base
             $slides[]  = ['video_url' => $video_url, 'image_url' => $image_url];
         }
 
-        // ── Unique IDs for this block instance ────────────────────────────────
-        $block_id    = 'ccnFeatVideo_'   . $this->instance->id;
-        $modal_id    = 'ccnVideoModal_'  . $this->instance->id;
-        $carousel_id = 'ccnCarousel_'    . $this->instance->id;
+        // ── Unique IDs ────────────────────────────────────────────────────────
+        $iid      = $this->instance->id;
+        $modal_id = 'ccnVM_'  . $iid;
+        $strip_id = 'ccnVS_'  . $iid;
+        $frame_id = 'ccnVF_'  . $iid;
+        $fn_name  = 'ccnVPlay_' . $iid;
 
-        // ── YouTube URL → embed URL (named per instance to avoid conflicts) ─────
-        $fn_name = 'ccnYtEmbed_' . $this->instance->id;
-
-        // ── Play button: set iframe src directly in onclick, then open modal ──
-        // Avoids relying on show.bs.modal jQuery event (BS4) or relatedTarget.
-        $frame_id = $modal_id . '_frame';
-        $play_button = function($video_url) use ($modal_id, $frame_id, $fn_name) {
-            $escaped = htmlspecialchars($video_url, ENT_QUOTES);
-            return '<button type="button"
-                        class="ccn-play-btn home_post_overlay_icon bgc-theme8"
-                        data-toggle="modal"
-                        data-target="#' . $modal_id . '"
-                        onclick="document.getElementById(\'' . $frame_id . '\').src=' . $fn_name . '(\'' . $escaped . '\');">
-                        <div class="video_popup_btn">
-                            <span class="flaticon-play-button-1"></span>
-                        </div>
-                    </button>';
-        };
-
-        // ── Build video HTML ──────────────────────────────────────────────────
-        $video_html = '';
-
-        if (count($slides) === 1) {
-            $slide      = $slides[0];
-            $video_html = '
-            <div class="gallery_item home13 mt80">
-                <img class="img-fluid img-circle-rounded" alt=""
-                     data-ccn="image" data-ccn-img="content"
-                     ' . $ccnLazy->ccnLazyImage($slide['image_url']) . '>
-                <div class="gallery_overlay"
-                     style="background-color:' . htmlspecialchars($color_overlay) . ';">
-                    ' . $play_button($slide['video_url']) . '
-                </div>
-            </div>';
-        } else {
-            $indicators = '';
-            $items      = '';
-            foreach ($slides as $idx => $slide) {
-                $active      = ($idx === 0) ? ' active' : '';
-                $indicators .= '<li data-target="#' . $carousel_id . '" data-slide-to="' . $idx . '"'
-                             . ($idx === 0 ? ' class="active"' : '') . '></li>';
-                $items .= '
-                <div class="carousel-item' . $active . '">
-                    <div class="gallery_item home13">
-                        <img class="img-fluid img-circle-rounded d-block w-100" alt=""
-                             src="' . htmlspecialchars($slide['image_url']) . '">
-                        <div class="gallery_overlay"
-                             style="background-color:' . htmlspecialchars($color_overlay) . ';">
-                            ' . $play_button($slide['video_url']) . '
-                        </div>
+        // ── Build thumbnail strip ─────────────────────────────────────────────
+        $items_html = '';
+        foreach ($slides as $slide) {
+            $vurl = htmlspecialchars($slide['video_url'], ENT_QUOTES);
+            $iurl = htmlspecialchars($slide['image_url']);
+            $items_html .= '
+            <div class="ccn-vs-item">
+                <div class="ccn-vs-thumb" onclick="' . $fn_name . '(\'' . $vurl . '\')">
+                    <img src="' . $iurl . '" alt="" loading="lazy">
+                    <div class="ccn-vs-overlay">
+                        <div class="ccn-vs-play"><span class="flaticon-play-button-1"></span></div>
                     </div>
-                </div>';
-            }
-            $video_html = '
-            <div id="' . $carousel_id . '" class="carousel slide" data-ride="carousel" data-interval="false">
-                <ol class="carousel-indicators">' . $indicators . '</ol>
-                <div class="carousel-inner">' . $items . '</div>
-                <a class="carousel-control-prev" href="#' . $carousel_id . '" role="button" data-slide="prev">
-                    <span class="carousel-control-prev-icon" aria-hidden="true"></span>
-                </a>
-                <a class="carousel-control-next" href="#' . $carousel_id . '" role="button" data-slide="next">
-                    <span class="carousel-control-next-icon" aria-hidden="true"></span>
-                </a>
+                </div>
             </div>';
         }
 
-        // ── Bootstrap modal (shared by all slides in this block) ──────────────
+        // ── Modal (compact) ───────────────────────────────────────────────────
         $modal_html = '
-        <div class="modal fade" id="' . $modal_id . '" tabindex="-1" role="dialog"
-             aria-labelledby="' . $modal_id . 'Label" aria-hidden="true">
-            <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
-                <div class="modal-content" style="background:#000;border:none;">
-                    <div class="modal-header" style="border:none;padding:8px 12px;">
-                        <button type="button" class="close" data-dismiss="modal" aria-label="Close"
-                                style="color:#fff;opacity:1;font-size:28px;">
-                            <span aria-hidden="true">&times;</span>
+        <div class="modal fade ccn-video-modal" id="' . $modal_id . '" tabindex="-1"
+             role="dialog" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered" role="document"
+                 style="max-width:560px;width:92%;">
+                <div class="modal-content" style="background:#000;border:none;border-radius:8px;overflow:hidden;">
+                    <div class="modal-header"
+                         style="border:none;padding:6px 10px;justify-content:flex-end;">
+                        <button type="button" class="close" data-dismiss="modal"
+                                style="color:#fff;opacity:.8;font-size:24px;line-height:1;">
+                            &times;
                         </button>
                     </div>
                     <div class="modal-body" style="padding:0;">
                         <div class="embed-responsive embed-responsive-16by9">
-                            <iframe id="' . $modal_id . '_frame"
+                            <iframe id="' . $frame_id . '"
                                     class="embed-responsive-item"
                                     src="" frameborder="0"
-                                    allow="autoplay; encrypted-media"
+                                    allow="autoplay; encrypted-media; picture-in-picture"
                                     allowfullscreen></iframe>
                         </div>
                     </div>
                 </div>
             </div>
-        </div>
+        </div>';
 
-        <script>
-        // YouTube URL → embed URL (global, named per block instance)
-        function ' . $fn_name . '(url) {
-            if (!url) return "";
-            if (url.indexOf("youtube.com/embed/") !== -1) {
-                return url + (url.indexOf("?") !== -1 ? "&" : "?") + "autoplay=1";
-            }
-            var m = url.match(/youtu\.be\/([^?&\s"]+)/);
-            if (m) return "https://www.youtube.com/embed/" + m[1] + "?autoplay=1";
-            m = url.match(/[?&]v=([^?&\s"]+)/);
-            if (m) return "https://www.youtube.com/embed/" + m[1] + "?autoplay=1";
-            return url;
+        // ── CSS + JS ──────────────────────────────────────────────────────────
+        $css_js = '
+        <style>
+        /* ── video strip ── */
+        .ccn-vs-wrap {
+            position: relative;
+            padding: 0 40px;
+        }
+        .ccn-vs-strip {
+            display: flex;
+            gap: 12px;
+            overflow-x: auto;
+            scroll-snap-type: x mandatory;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: none;
+            padding-bottom: 6px;
+        }
+        .ccn-vs-strip::-webkit-scrollbar { display: none; }
+
+        /* desktop: 3 visible + hint of 4th */
+        .ccn-vs-item {
+            scroll-snap-align: start;
+            flex: 0 0 calc(33.33% - 8px);
+            min-width: 0;
+        }
+        /* tablet: 2 visible */
+        @media (max-width: 900px) {
+            .ccn-vs-item { flex: 0 0 calc(50% - 6px); }
+        }
+        /* mobile: 1.3 visible */
+        @media (max-width: 576px) {
+            .ccn-vs-wrap { padding: 0 32px; }
+            .ccn-vs-item { flex: 0 0 78%; }
         }
 
-        // Clear iframe when modal closes — stops video playback
-        // Use jQuery (.on) because Bootstrap 4 fires events through jQuery
-        (function waitForJQ() {
+        /* thumbnail */
+        .ccn-vs-thumb {
+            position: relative;
+            border-radius: 8px;
+            overflow: hidden;
+            cursor: pointer;
+            aspect-ratio: 16/9;
+            background: #111;
+        }
+        .ccn-vs-thumb img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+            transition: transform .3s ease;
+        }
+        .ccn-vs-thumb:hover img { transform: scale(1.04); }
+
+        /* overlay */
+        .ccn-vs-overlay {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0,0,0,.35);
+            transition: background .25s;
+        }
+        .ccn-vs-thumb:hover .ccn-vs-overlay { background: rgba(0,0,0,.55); }
+
+        /* play button */
+        .ccn-vs-play {
+            width: 52px;
+            height: 52px;
+            border-radius: 50%;
+            background: rgba(255,255,255,.92);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform .2s, box-shadow .2s;
+            box-shadow: 0 2px 12px rgba(0,0,0,.4);
+        }
+        .ccn-vs-thumb:hover .ccn-vs-play {
+            transform: scale(1.12);
+            box-shadow: 0 4px 20px rgba(0,0,0,.5);
+        }
+        .ccn-vs-play .flaticon-play-button-1 {
+            font-size: 20px;
+            color: #222;
+            margin-left: 3px;
+        }
+        @media (max-width: 576px) {
+            .ccn-vs-play { width: 42px; height: 42px; }
+            .ccn-vs-play .flaticon-play-button-1 { font-size: 16px; }
+        }
+
+        /* nav arrows */
+        .ccn-vs-nav {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
+            border: none;
+            background: rgba(255,255,255,.9);
+            box-shadow: 0 2px 8px rgba(0,0,0,.25);
+            font-size: 20px;
+            line-height: 1;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2;
+            transition: background .2s, transform .2s;
+            padding: 0;
+        }
+        .ccn-vs-nav:hover { background: #fff; transform: translateY(-50%) scale(1.1); }
+        .ccn-vs-prev { left: 2px; }
+        .ccn-vs-next { right: 2px; }
+        </style>
+
+        <script>
+        function ' . $fn_name . '(url) {
+            // Convert any YouTube URL → embed with autoplay
+            function toEmbed(u) {
+                if (!u) return "";
+                if (u.indexOf("youtube.com/embed/") !== -1)
+                    return u + (u.indexOf("?") !== -1 ? "&" : "?") + "autoplay=1";
+                var m = u.match(/youtu\.be\/([^?&\s"]+)/);
+                if (m) return "https://www.youtube.com/embed/" + m[1] + "?autoplay=1";
+                m = u.match(/[?&]v=([^?&\s"]+)/);
+                if (m) return "https://www.youtube.com/embed/" + m[1] + "?autoplay=1";
+                return u;
+            }
+            document.getElementById("' . $frame_id . '").src = toEmbed(url);
+            if (typeof jQuery !== "undefined") {
+                jQuery("#' . $modal_id . '").modal("show");
+            }
+        }
+
+        // Scroll strip left/right by one page width
+        function ccnVsScroll_' . $iid . '(dir) {
+            var strip = document.getElementById("' . $strip_id . '");
+            var step  = strip.clientWidth * 0.85;
+            strip.scrollBy({ left: dir * step, behavior: "smooth" });
+        }
+
+        // Clear iframe on modal close
+        (function waitJQ() {
             if (typeof jQuery !== "undefined") {
                 jQuery("#' . $modal_id . '").on("hidden.bs.modal", function() {
                     document.getElementById("' . $frame_id . '").src = "";
                 });
-            } else {
-                setTimeout(waitForJQ, 100);
-            }
+            } else { setTimeout(waitJQ, 80); }
         })();
         </script>';
 
         // ── Full section ──────────────────────────────────────────────────────
-        $this->content->text = '
-        ' . $modal_html . '
-        <section class="about-us-home13 pb20 pt0"
-          data-ccn-c="color_bfbg" data-ccn-co="ccnBfBg"
-          data-ccn-cv="' . htmlspecialchars($color_bfbg) . '">
+        $this->content->text = $modal_html . $css_js . '
+        <section class="about-us-home13 pb20 pt20"
+                 style="background-color:' . htmlspecialchars($color_bfbg) . ';">
           <div class="container">
-            <div class="row">
-              <div class="col-lg-10 offset-lg-1">
-                ' . $video_html . '
+            <div class="ccn-vs-wrap">
+              <button class="ccn-vs-nav ccn-vs-prev"
+                      onclick="ccnVsScroll_' . $iid . '(-1)"
+                      aria-label="Previous">&#8249;</button>
+
+              <div class="ccn-vs-strip" id="' . $strip_id . '">
+                ' . $items_html . '
               </div>
+
+              <button class="ccn-vs-nav ccn-vs-next"
+                      onclick="ccnVsScroll_' . $iid . '(1)"
+                      aria-label="Next">&#8250;</button>
             </div>
           </div>
         </section>';
 
-        // ── Counter section — skip when slidesnumber = 0 ──────────────────────
+        // ── Counter section ───────────────────────────────────────────────────
         if ($data->slidesnumber > 0) {
             $this->content->text .= '
-        <section id="our-top-courses" class="our-courses pt0 pb0">
+        <section class="our-courses pt0 pb0">
           <div class="container pb60">
             <div class="row">';
             for ($i = 1; $i <= $data->slidesnumber; $i++) {

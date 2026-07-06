@@ -163,3 +163,17 @@ h1, h2, h3, h4, h5, h6 {
 .footer_social_widget ul li a:hover svg {
   fill: var(--al-navy-dark) !important;
 }
+
+/* ══════════════════════════════════════
+   COURSES SLIDER — image aspect ratio 1678×937
+   object-fit:cover keeps the image cropped to
+   fill the box without distortion
+══════════════════════════════════════ */
+.block_cocoon_courses_slider .top_courses .thumb img.img-whp,
+.block_cocoon_courses_slider .top_courses .thumb img {
+  width: 100% !important;
+  aspect-ratio: 1678 / 937 !important;
+  object-fit: cover !important;
+  display: block !important;
+  height: auto !important;
+}

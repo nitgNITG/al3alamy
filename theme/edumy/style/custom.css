@@ -108,6 +108,15 @@ h1, h2, h3, h4, h5, h6 {
   text-align: center !important;
 }
 
+/* ══════════════════════════════════════
+   UTILITY BLOCK CLASSES — enter these in
+   the "Custom CSS Class" field on any block
+══════════════════════════════════════ */
+.ccn-bg-black  { background-color: #000 !important; }
+.ccn-bg-white  { background-color: #fff !important; }
+.ccn-bg-navy   { background-color: var(--al-navy) !important; }
+.ccn-bg-gold   { background-color: var(--al-gold) !important; }
+
 /* Center social icons row in footer middle area */
 .footer_middle_area .col-sm-12 {
   text-align: center !important;

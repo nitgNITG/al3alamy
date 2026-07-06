@@ -141,3 +141,25 @@ h1, h2, h3, h4, h5, h6 {
   display: flex !important;
   justify-content: center !important;
 }
+
+/* ══════════════════════════════════════
+   FOOTER — force column divs to full width
+   so "حسام هارون" centres on screen
+══════════════════════════════════════ */
+.footer_one .row > div {
+  flex: 0 0 100% !important;
+  max-width: 100% !important;
+  width: 100% !important;
+  text-align: center !important;
+}
+
+/* TikTok SVG icon — match gold colour of FA icons */
+.footer_social_widget ul li a svg {
+  fill: var(--al-gold) !important;
+  width: 18px !important;
+  height: 18px !important;
+  display: block !important;
+}
+.footer_social_widget ul li a:hover svg {
+  fill: var(--al-navy-dark) !important;
+}

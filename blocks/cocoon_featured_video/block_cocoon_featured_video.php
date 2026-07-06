@@ -326,15 +326,25 @@ class block_cocoon_featured_video extends block_base
         })();
         </script>';
 
+        // ── Block title (optional) ────────────────────────────────────────────
+        $block_title_html = '';
+        if (!empty($this->config->block_title)) {
+            $block_title_html = '
+        <div class="container pt20 pb0 text-center">
+          <h3 class="ccn-block-title" style="color:' . htmlspecialchars($color_title) . ';">'
+              . htmlspecialchars($this->config->block_title) . '</h3>
+        </div>';
+        }
+
         // ── Full section ──────────────────────────────────────────────────────
-        $this->content->text = $modal_html . $css_js . '
+        $this->content->text = $modal_html . $css_js . $block_title_html . '
         <section class="about-us-home13 pb20 pt20"
                  style="background-color:' . htmlspecialchars($color_bfbg) . ';">
           <div class="container">
             <div class="ccn-vs-wrap">
               <button class="ccn-vs-nav ccn-vs-prev"
                       onclick="ccnVsScroll_' . $iid . '(-1)"
-                      aria-label="Previous">&#8249;</button>
+                      aria-label="Previous">&#8250;</button>
 
               <div class="ccn-vs-strip" id="' . $strip_id . '">
                 ' . $items_html . '
@@ -342,7 +352,7 @@ class block_cocoon_featured_video extends block_base
 
               <button class="ccn-vs-nav ccn-vs-next"
                       onclick="ccnVsScroll_' . $iid . '(1)"
-                      aria-label="Next">&#8250;</button>
+                      aria-label="Next">&#8249;</button>
             </div>
           </div>
         </section>';

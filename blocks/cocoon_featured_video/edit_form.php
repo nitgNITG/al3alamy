@@ -15,6 +15,10 @@ class block_cocoon_featured_video_edit_form extends block_edit_form {
 
         $mform->addElement('header', 'configheader', get_string('blocksettings', 'block'));
 
+        // ── Block title ───────────────────────────────────────────────────────
+        $mform->addElement('text', 'config_block_title', 'عنوان البلوك');
+        $mform->setType('config_block_title', PARAM_TEXT);
+
         // ── Number of videos ─────────────────────────────────────────────────
         $ccnVideoRange = [
             1 => '1', 2 => '2', 3 => '3', 4 => '4',

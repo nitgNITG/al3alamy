@@ -109,6 +109,22 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 /* ══════════════════════════════════════
+   REMOVE GAPS BETWEEN FULLWIDTH BLOCKS
+   Zeros the top/bottom margin+padding on
+   the outermost wrapper inside each block
+   so blocks sit flush against each other.
+══════════════════════════════════════ */
+#block-region-fullwidth-top  .block .ccnBlockContent > div,
+#block-region-fullwidth-top  .block .ccnBlockContent > section,
+#block-region-fullwidth-bottom .block .ccnBlockContent > div,
+#block-region-fullwidth-bottom .block .ccnBlockContent > section {
+  margin-top:    0 !important;
+  margin-bottom: 0 !important;
+  padding-top:   0 !important;
+  padding-bottom:0 !important;
+}
+
+/* ══════════════════════════════════════
    UTILITY BLOCK CLASSES — enter these in
    the "Custom CSS Class" field on any block
 ══════════════════════════════════════ */

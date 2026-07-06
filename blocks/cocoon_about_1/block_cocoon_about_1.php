@@ -67,18 +67,13 @@ class block_cocoon_about_1 extends block_base
           flex-direction: row !important;
         }
         #top_title {
-          border-bottom: 5px solid #C7AE72 !important;
+          border-bottom: 5px solid #C9A227 !important;
           padding: 10px;
           width: 30%;
-          color: #0E504D !important;
+          color: #C9A227 !important;
         }
         #body {
-          color: #0E504D !important;
-        }
-        .funfact_two .details .timer,
-        .block_cocoon_simple_counters .home_icon_box .icon,
-        h1, h2, h3, h4, h5, h6, .h1, .h2, .h3, .h4, .h5, .h6 {
-          color: #0E504D !important;
+          color: inherit !important;
         }
         </style>';
         $this->content->text = '

@@ -94,8 +94,8 @@ if ($this->content->title || $this->content->subtitle) {
     <div class="row">
       <div class="col-lg-6 offset-lg-3">
         <div class="main-title text-center">
-          <h3 class="mt0" style="color: #167B44;font-size: 40px;">' . format_text($this->content->title, FORMAT_HTML, array('filter' => true)) . '</h3>
-          <p style="color: #167B44;font-size: 20px;font-weight: 500;">' . format_text($this->content->subtitle, FORMAT_HTML, array('filter' => true)) . '</p>
+          <h3 class="mt0" style="color: #C9A227;font-size: 40px;">' . format_text($this->content->title, FORMAT_HTML, array('filter' => true)) . '</h3>
+          <p style="color: #C9A227;font-size: 20px;font-weight: 500;">' . format_text($this->content->subtitle, FORMAT_HTML, array('filter' => true)) . '</p>
         </div>
       </div>
     </div>';

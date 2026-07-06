@@ -198,13 +198,13 @@ class block_cocoon_courses_slider extends block_base
     echo '<style>
         
         .main-title h3 {
-          color: #C7AE72;
+          color: #C9A227;
           text-align: center;
           font-size: 40px;
         }
         .top_courses .details .tc_content {
           padding: 20px;
-          color: #C7AE72;
+          color: #C9A227;
           text-align: center;
           font-size: 30px;
           font-style: normal;
@@ -215,7 +215,7 @@ class block_cocoon_courses_slider extends block_base
           background-color: rgb(0 0 0 / 5%) !important;
         }
         .top_courses .details .tc_content h5 {
-          color: #C7AE72;
+          color: #C9A227;
         }
         .img-whp {
           border-radius: 10px;
@@ -304,7 +304,7 @@ class block_cocoon_courses_slider extends block_base
                               </div>';
             if ($ccnBlockShowBottomBar == 1) {
               $this->content->text .= '
-            									<div class="tc_footer" style="background-color: #C7AE72;text-align: center;
+            									<div class="tc_footer" style="background-color: #C9A227;text-align: center;
                               display: flex;
                               justify-content: center;">
                               ';
@@ -347,7 +347,7 @@ class block_cocoon_courses_slider extends block_base
       <div class="col-lg-6 offset-lg-3">
         <div class="main-title text-center">
           ' . (!empty($this->content->title) ? '<h3 class="mb0 mt0" data-ccn="title" style="font-size: 40px;">' . format_text($this->content->title, FORMAT_HTML, array('filter' => true)) . '</h3>' : '') . '
-          ' . (!empty($this->content->subtitle) ? '<h5 data-ccn="subtitle" style="font-size: 18px !important;color:#C7AE72;">' . format_text($this->content->subtitle, FORMAT_HTML, array('filter' => true)) . '</h5>' : '') . '
+          ' . (!empty($this->content->subtitle) ? '<h5 data-ccn="subtitle" style="font-size: 18px !important;color:#C9A227;">' . format_text($this->content->subtitle, FORMAT_HTML, array('filter' => true)) . '</h5>' : '') . '
         </div>
       </div>
     </div>
@@ -399,7 +399,7 @@ class block_cocoon_courses_slider extends block_base
 
             if ($ccnBlockShowBottomBar == 1) {
               $this->content->text .= '
-              <div class="tc_footer" style="background-color: #C7AE72;text-align: center; display: flex; justify-content: center; border-radius: 10px;">
+              <div class="tc_footer" style="background-color: #C9A227;text-align: center; display: flex; justify-content: center; border-radius: 10px;">
                 ' . ($ccnBlockShowEnrolBtn ? '<a href="' . $ccnCourse->url . '" class="tc_enrol_btn float-right" data-ccn="enrol_btn_text" style="color: #fff; font-size: 25px; font-weight: 700;">' . $this->content->enrol_btn_text . '</a>' : '') . '
                 ' . ($ccnBlockShowPrice ? '<div class="tc_price float-right">' . $ccnCourse->price . '</div>' : '') . '
               </div>';

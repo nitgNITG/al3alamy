@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<XMLDB PATH="local/registrationcodes/db" VERSION="20260708" COMMENT="XMLDB file for local_registrationcodes"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:noNamespaceSchemaLocation="../../../lib/xmldb/xmldb.xsd">
+  <TABLES>
+    <TABLE NAME="local_regcodes" COMMENT="Registration codes for controlling user sign-up">
+      <FIELDS>
+        <FIELD NAME="id"          TYPE="int"  LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="code"        TYPE="char" LENGTH="64" NOTNULL="true"  COMMENT="The registration code (stored uppercase)"/>
+        <FIELD NAME="status"      TYPE="char" LENGTH="20" NOTNULL="true" DEFAULT="unused" COMMENT="unused | used | expired | disabled"/>
+        <FIELD NAME="created_by"  TYPE="int"  LENGTH="10" NOTNULL="true" DEFAULT="0"      COMMENT="User ID of the admin who created this code"/>
+        <FIELD NAME="timecreated" TYPE="int"  LENGTH="10" NOTNULL="true" DEFAULT="0"      COMMENT="Unix timestamp of creation"/>
+        <FIELD NAME="timeexpiry"  TYPE="int"  LENGTH="10" NOTNULL="false"                 COMMENT="Optional expiry timestamp; NULL = never expires"/>
+        <FIELD NAME="used_by"     TYPE="int"  LENGTH="10" NOTNULL="false"                 COMMENT="User ID of the registrant who consumed this code"/>
+        <FIELD NAME="timeused"    TYPE="int"  LENGTH="10" NOTNULL="false"                 COMMENT="Timestamp when the code was consumed"/>
+        <FIELD NAME="notes"       TYPE="text"             NOTNULL="false"                 COMMENT="Optional admin notes"/>
+        <FIELD NAME="prefix"      TYPE="char" LENGTH="20" NOTNULL="false"                 COMMENT="Prefix used when generating this code (for display/filter)"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="code_unique" TYPE="unique" FIELDS="code"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="idx_status"  UNIQUE="false" FIELDS="status"/>
+        <INDEX NAME="idx_used_by" UNIQUE="false" FIELDS="used_by"/>
+        <INDEX NAME="idx_created_by" UNIQUE="false" FIELDS="created_by"/>
+      </INDEXES>
+    </TABLE>
+  </TABLES>
+</XMLDB>

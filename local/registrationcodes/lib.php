@@ -89,7 +89,7 @@ function local_registrationcodes_post_signup_requests($user) {
  * @param \context             $context
  */
 function local_registrationcodes_extend_navigation_user_settings(
-    \settings_navigation $settingsnav,
+    \navigation_node $settingsnav,
     \context $context
 ) {
     global $PAGE;

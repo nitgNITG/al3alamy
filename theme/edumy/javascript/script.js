@@ -1,6 +1,10 @@
 (function($) {
   // always false because of Owl bugs
   var $ccnDirection = $("body").hasClass("dir-rtl") ? false : false;
+  // Direction-aware arrows for OwlCarousel navText
+  var $ccnIsRtl    = $("body").hasClass("dir-rtl");
+  var $ccnNavPrev  = $ccnIsRtl ? '<i class="flaticon-right-arrow-1"></i>' : '<i class="flaticon-left-arrow"></i>';
+  var $ccnNavNext  = $ccnIsRtl ? '<i class="flaticon-left-arrow"></i>'    : '<i class="flaticon-right-arrow-1"></i>';
 
   (function($) {
     "use strict";
@@ -387,7 +391,7 @@
           autoplay: true,
           smartSpeed: 2000,
           singleItem: true,
-          navText: ['<i class="flaticon-left-arrow"></i>', '<i class="flaticon-right-arrow-1"></i>'],
+          navText: [$ccnNavPrev, $ccnNavNext],
           responsive: {
             320: {
               items: 1,
@@ -425,7 +429,7 @@
           autoplay: false,
           singleItem: true,
           smartSpeed: 1200,
-          navText: ['<i class="flaticon-left-arrow"></i>', '<i class="flaticon-right-arrow-1"></i>'],
+          navText: [$ccnNavPrev, $ccnNavNext],
           responsive: {
             0: {
               items: 1,
@@ -473,7 +477,7 @@
           autoplay: false,
           singleItem: true,
           smartSpeed: 1200,
-          navText: ['<i class="flaticon-left-arrow"></i>', '<i class="flaticon-right-arrow-1"></i>'],
+          navText: [$ccnNavPrev, $ccnNavNext],
           responsive: {
             0: {
               items: 1,
@@ -521,7 +525,7 @@
           autoplay: true,
           singleItem: true,
           smartSpeed: 1200,
-          navText: ['<i class="flaticon-left-arrow"></i>', '<i class="flaticon-right-arrow-1"></i>'],
+          navText: [$ccnNavPrev, $ccnNavNext],
           responsive: {
             0: {
               items: 1,
@@ -570,7 +574,7 @@
           autoplay: false,
           singleItem: true,
           smartSpeed: 1200,
-          navText: ['<i class="flaticon-left-arrow"></i>', '<i class="flaticon-right-arrow-1"></i>'],
+          navText: [$ccnNavPrev, $ccnNavNext],
           responsive: {
             0: {
               items: 1,
@@ -618,7 +622,7 @@
           autoplay: true,
           smartSpeed: 2000,
           singleItem: true,
-          navText: ['<i class="flaticon-left-arrow"></i>', '<i class="flaticon-right-arrow-1"></i>'],
+          navText: [$ccnNavPrev, $ccnNavNext],
           responsive: {
             320: {
               items: 1,
@@ -656,7 +660,7 @@
           autoplay: true,
           singleItem: true,
           smartSpeed: 1200,
-          navText: ['<i class="flaticon-left-arrow"></i>', '<i class="flaticon-right-arrow-1"></i>'],
+          navText: [$ccnNavPrev, $ccnNavNext],
           responsive: {
             0: {
               items: 1,
@@ -704,7 +708,7 @@
           autoplay: false,
           singleItem: true,
           smartSpeed: 1200,
-          navText: ['<i class="flaticon-left-arrow"></i>', '<i class="flaticon-right-arrow-1"></i>'],
+          navText: [$ccnNavPrev, $ccnNavNext],
           responsive: {
             0: {
               items: 1,
@@ -752,7 +756,7 @@
           autoplay: false,
           singleItem: true,
           smartSpeed: 1200,
-          navText: ['<i class="flaticon-left-arrow"></i>', '<i class="flaticon-right-arrow-1"></i>'],
+          navText: [$ccnNavPrev, $ccnNavNext],
           responsive: {
             0: {
               items: 1,
@@ -801,7 +805,7 @@
           autoplay: true,
           singleItem: true,
           smartSpeed: 1200,
-          navText: ['<i class="flaticon-left-arrow"></i>', '<i class="flaticon-right-arrow-1"></i>'],
+          navText: [$ccnNavPrev, $ccnNavNext],
           responsive: {
             0: {
               items: 1,
@@ -849,7 +853,7 @@
           autoplay: true,
           singleItem: true,
           smartSpeed: 1200,
-          navText: ['<i class="flaticon-left-arrow"></i>', '<i class="flaticon-right-arrow-1"></i>'],
+          navText: [$ccnNavPrev, $ccnNavNext],
           responsive: {
             0: {
               items: 1,
@@ -1083,7 +1087,7 @@
           autoplay: true,
           singleItem: true,
           smartSpeed: 1200,
-          navText: ['<i class="flaticon-left-arrow"></i>', '<i class="flaticon-right-arrow-1"></i>'],
+          navText: [$ccnNavPrev, $ccnNavNext],
           responsive: {
             0: {
               items: 1,
@@ -1200,7 +1204,7 @@
           autoplay: false,
           singleItem: true,
           smartSpeed: 1200,
-          navText: ['<i class="flaticon-left-arrow"></i>', '<i class="flaticon-right-arrow-1"></i>'],
+          navText: [$ccnNavPrev, $ccnNavNext],
           responsive: {
             0: {
               items: 1,

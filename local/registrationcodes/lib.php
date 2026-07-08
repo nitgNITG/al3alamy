@@ -89,30 +89,26 @@ function local_registrationcodes_post_signup_requests($user) {
  * @param \context             $context
  */
 function local_registrationcodes_extend_navigation_user_settings(
-    \navigation_node $settingsnav,
-    \context $context
+    \navigation_node $usersetting,
+    $user,
+    $usercontext,
+    $course,
+    $coursecontext
 ) {
-    global $PAGE;
-
     if (!has_capability('local/registrationcodes:viewreports', \context_system::instance())) {
         return;
     }
 
-    $userid = optional_param('id', 0, PARAM_INT);
-    if (!$userid && isset($PAGE->url)) {
-        $userid = (int)$PAGE->url->get_param('id');
-    }
-    if (!$userid) {
+    if (empty($user->id)) {
         return;
     }
 
-    $url  = new \moodle_url('/local/registrationcodes/userinfo.php', ['userid' => $userid]);
-    $node = $settingsnav->add(
+    $url = new \moodle_url('/local/registrationcodes/userinfo.php', ['userid' => $user->id]);
+    $usersetting->add(
         get_string('regcode_info', 'local_registrationcodes'),
         $url,
         \navigation_node::TYPE_SETTING,
         null,
         'local_registrationcodes_userinfo'
     );
-    $node->set_force_into_more_menu(false);
 }

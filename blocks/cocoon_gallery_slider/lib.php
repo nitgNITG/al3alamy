@@ -23,8 +23,11 @@ function block_cocoon_gallery_slider_pluginfile($course, $birecord_or_cm, $conte
     }
 
     // If block is in course context, then check if user has capability to access course.
+    // Exception: front-page (site) blocks are public — no login required.
     if ($context->get_course_context(false)) {
-        require_course_login($course);
+        if ($course->id != SITEID) {
+            require_course_login($course);
+        }
     } else if ($CFG->forcelogin) {
         require_login();
     } else {

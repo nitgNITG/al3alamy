@@ -16,7 +16,6 @@ class block_cocoon_gallery_edit_form extends block_edit_form
 
         // Subtitle
         $mform->addElement('text', 'config_subtitle', get_string('config_subtitle', 'theme_edumy'));
-        $mform->setDefault('config_subtitle', 'Cum doctus civibus efficiantur in imperdiet deterruisset.');
         $mform->setType('config_subtitle', PARAM_RAW);
 
         // Image

@@ -331,7 +331,7 @@ class block_cocoon_featured_video extends block_base
         if (!empty($this->config->block_title)) {
             $block_title_html = '
         <div class="container pt20 pb0 text-center">
-          <h3 class="ccn-block-title" style="color:' . htmlspecialchars($color_title) . ';">'
+          <h3 class="ccn-block-title">'
               . htmlspecialchars($this->config->block_title) . '</h3>
         </div>';
         }

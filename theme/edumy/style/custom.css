@@ -1,8 +1,7 @@
 /*
- * al3alamy Custom Theme — file CSS
+ * al3alamy Custom Theme — custom.css
  * Login/register dark theme is in Edumy theme DB setting (custom_css)
  * so it bypasses the RTL CSS flipper and survives cache purges.
- * This file: fonts, CSS variables, social icons only.
  */
 
 /* ── Fonts via Bunny Fonts (Google Fonts mirror — faster, no timeout) ── */
@@ -57,23 +56,28 @@ h1, h2, h3, h4, h5, h6 {
 .ccn-social-round i { line-height: 1 !important; }
 
 /* ══════════════════════════════════════
-   FOOTER SOCIAL ICONS
+   FOOTER SOCIAL ICONS — tight + responsive
 ══════════════════════════════════════ */
 .footer_social_widget ul,
 .footer_social_widget ul.list-inline {
   display: flex !important;
   flex-wrap: wrap !important;
-  gap: 10px !important;
+  gap: 6px !important;
   justify-content: center !important;
   padding: 0 !important;
   list-style: none !important;
+  margin: 0 !important;
+}
+.footer_social_widget ul li {
+  margin: 0 !important;
+  padding: 0 !important;
 }
 .footer_social_widget ul li a {
   display: inline-flex !important;
   align-items: center !important;
   justify-content: center !important;
-  width: 44px !important;
-  height: 44px !important;
+  width: 38px !important;
+  height: 38px !important;
   border-radius: 50% !important;
   background: var(--al-navy-mid) !important;
   border: 1.5px solid var(--al-border) !important;
@@ -88,8 +92,21 @@ h1, h2, h3, h4, h5, h6 {
   transform: translateY(-2px) !important;
   box-shadow: var(--al-shadow-gold) !important;
 }
-.footer_social_widget ul li a i { color: inherit !important; font-size: 18px !important; line-height: 1 !important; }
-.footer_social_widget ul li a svg { display: block !important; }
+.footer_social_widget ul li a i {
+  color: inherit !important;
+  font-size: 16px !important;
+  line-height: 1 !important;
+}
+/* TikTok SVG icon — match gold colour of FA icons */
+.footer_social_widget ul li a svg {
+  fill: var(--al-gold) !important;
+  width: 16px !important;
+  height: 16px !important;
+  display: block !important;
+}
+.footer_social_widget ul li a:hover svg {
+  fill: var(--al-navy-dark) !important;
+}
 
 /* ══════════════════════════════════════
    FOOTER TITLE (حسام هارون) — center
@@ -110,9 +127,6 @@ h1, h2, h3, h4, h5, h6 {
 
 /* ══════════════════════════════════════
    REMOVE GAPS BETWEEN FULLWIDTH BLOCKS
-   Zeros the top/bottom margin+padding on
-   the outermost wrapper inside each block
-   so blocks sit flush against each other.
 ══════════════════════════════════════ */
 #block-region-fullwidth-top  .block .ccnBlockContent > div,
 #block-region-fullwidth-top  .block .ccnBlockContent > section,
@@ -125,8 +139,7 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 /* ══════════════════════════════════════
-   UTILITY BLOCK CLASSES — enter these in
-   the "Custom CSS Class" field on any block
+   UTILITY BLOCK CLASSES
 ══════════════════════════════════════ */
 .ccn-bg-black  { background-color: #000 !important; }
 .ccn-bg-white  { background-color: #fff !important; }
@@ -153,21 +166,8 @@ h1, h2, h3, h4, h5, h6 {
   text-align: center !important;
 }
 
-/* TikTok SVG icon — match gold colour of FA icons */
-.footer_social_widget ul li a svg {
-  fill: var(--al-gold) !important;
-  width: 18px !important;
-  height: 18px !important;
-  display: block !important;
-}
-.footer_social_widget ul li a:hover svg {
-  fill: var(--al-navy-dark) !important;
-}
-
 /* ══════════════════════════════════════
    COURSES SLIDER — image aspect ratio 1678×937
-   object-fit:cover keeps the image cropped to
-   fill the box without distortion
 ══════════════════════════════════════ */
 .block_cocoon_courses_slider .top_courses .thumb img.img-whp,
 .block_cocoon_courses_slider .top_courses .thumb img {
@@ -176,4 +176,87 @@ h1, h2, h3, h4, h5, h6 {
   object-fit: cover !important;
   display: block !important;
   height: auto !important;
+}
+
+/* ══════════════════════════════════════
+   BLOCK TITLES — gold color + uniform spacing
+   Covers: .ccn-block-title (featured video),
+           .main-title h3/h2 (gallery, courses, about)
+══════════════════════════════════════ */
+.ccn-block-title,
+.main-title h3,
+.main-title h2 {
+  color: var(--al-gold) !important;
+}
+/* Consistent gap between the title row and the content below */
+.main-title {
+  margin-bottom: 24px !important;
+}
+.ccn-block-title {
+  margin-bottom: 16px !important;
+  font-size: 36px !important;
+}
+
+/* ══════════════════════════════════════
+   HOME PAGE RESPONSIVE
+   Tablet ≤ 991px  |  Mobile ≤ 576px
+══════════════════════════════════════ */
+
+/* — Tablet — */
+@media (max-width: 991px) {
+  /* Scale section titles down */
+  .main-title h3,
+  .main-title h2,
+  .ccn-block-title {
+    font-size: 28px !important;
+  }
+  .main-title h5 {
+    font-size: 15px !important;
+  }
+  /* About block: reduce large top margin */
+  .container.mt80 {
+    margin-top: 40px !important;
+  }
+  /* Section vertical padding */
+  .pb30 { padding-bottom: 20px !important; }
+  .pt20 { padding-top:    16px !important; }
+  .pb20 { padding-bottom: 16px !important; }
+}
+
+/* — Mobile — */
+@media (max-width: 576px) {
+  /* Titles even smaller */
+  .main-title h3,
+  .main-title h2,
+  .ccn-block-title {
+    font-size: 22px !important;
+  }
+  .main-title h5 {
+    font-size: 13px !important;
+  }
+  /* Tighter section padding */
+  .pb30 { padding-bottom: 12px !important; }
+  .pt20 { padding-top:    12px !important; }
+  .pb20 { padding-bottom: 12px !important; }
+  /* About block top margin */
+  .container.mt80 {
+    margin-top: 20px !important;
+  }
+  /* Courses slider: tighter card content */
+  .top_courses .details .tc_content {
+    padding: 12px !important;
+    font-size: 18px !important;
+  }
+  /* Footer: slightly smaller icons on mobile */
+  .footer_social_widget ul li a {
+    width: 32px !important;
+    height: 32px !important;
+  }
+  .footer_social_widget ul li a i  { font-size: 13px !important; }
+  .footer_social_widget ul li a svg {
+    width: 13px !important;
+    height: 13px !important;
+  }
+  /* Footer spacing */
+  .footer_one { padding: 20px 12px !important; }
 }

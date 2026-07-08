@@ -179,6 +179,63 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 /* ══════════════════════════════════════
+   COURSES SLIDER ARROWS — match ccn-vs-nav style
+   (circular white button, same as video + gallery blocks)
+══════════════════════════════════════ */
+.block_cocoon_courses_slider .shop_product_slider.owl-carousel.owl-theme.owl-loaded .owl-prev,
+.block_cocoon_courses_slider .shop_product_slider.owl-carousel.owl-theme.owl-loaded .owl-next {
+  position: absolute !important;
+  top: 50% !important;
+  transform: translateY(-50%) !important;
+  width: 34px !important;
+  height: 34px !important;
+  border-radius: 50% !important;
+  background: rgba(255,255,255,.9) !important;
+  color: #222 !important;
+  box-shadow: 0 2px 8px rgba(0,0,0,.25) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 0 !important;
+  line-height: 1 !important;
+  margin: 0 !important;
+  border: none !important;
+  font-size: 20px !important;
+  transition: background .2s, transform .2s !important;
+}
+.block_cocoon_courses_slider .shop_product_slider.owl-carousel.owl-theme.owl-loaded .owl-prev {
+  left: -40px !important;
+}
+.block_cocoon_courses_slider .shop_product_slider.owl-carousel.owl-theme.owl-loaded .owl-next {
+  right: -40px !important;
+}
+.block_cocoon_courses_slider .shop_product_slider.owl-carousel.owl-theme.owl-loaded .owl-prev:hover,
+.block_cocoon_courses_slider .shop_product_slider.owl-carousel.owl-theme.owl-loaded .owl-next:hover {
+  background: #fff !important;
+  color: #222 !important;
+  transform: translateY(-50%) scale(1.1) !important;
+  box-shadow: 0 4px 12px rgba(0,0,0,.3) !important;
+}
+.block_cocoon_courses_slider .shop_product_slider.owl-carousel.owl-theme.owl-loaded .owl-nav i {
+  font-size: 18px !important;
+  line-height: 1 !important;
+  display: block !important;
+}
+/* On tablet/mobile bring arrows inside by padding the column */
+@media (max-width: 991px) {
+  .block_cocoon_courses_slider .features-course .col-lg-12 {
+    padding-left: 44px !important;
+    padding-right: 44px !important;
+  }
+  .block_cocoon_courses_slider .shop_product_slider.owl-carousel.owl-theme.owl-loaded .owl-prev {
+    left: 4px !important;
+  }
+  .block_cocoon_courses_slider .shop_product_slider.owl-carousel.owl-theme.owl-loaded .owl-next {
+    right: 4px !important;
+  }
+}
+
+/* ══════════════════════════════════════
    BLOCK TITLES — gold color + uniform spacing
    Covers: .ccn-block-title (featured video),
            .main-title h3/h2 (gallery, courses, about)

@@ -271,9 +271,9 @@ h1, h2, h3, h4, h5, h6 {
   .main-title h5 {
     font-size: 15px !important;
   }
-  /* About block: reduce large top margin */
-  .container.mt80 {
-    margin-top: 40px !important;
+  /* About block top margin */
+  .container.mt40 {
+    margin-top: 24px !important;
   }
   /* Section vertical padding */
   .pb30 { padding-bottom: 20px !important; }

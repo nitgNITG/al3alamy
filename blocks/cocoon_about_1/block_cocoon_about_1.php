@@ -77,18 +77,10 @@ class block_cocoon_about_1 extends block_base
         }
         </style>';
         $this->content->text = '
-        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
-        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/aos/2.3.4/aos.css"/>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/aos/2.3.4/aos.js"></script>
-    
-        <script>
-            AOS.init();
-        </script>
-    
-        <div class="container mt80" data-aos="fade-up" data-aos-duration="1200">
+        <div class="container mt40 mb20">
                 <div class="row ' . $class . '">';
-        
-            $this->content->text .= '<div class="col-lg-6 d-flex justify-content-start" style="align-items: center;" data-aos="fade-left" data-aos-duration="1500" data-aos-delay="300">';
+
+            $this->content->text .= '<div class="col-lg-6 d-flex justify-content-start" style="align-items: center;">';
         
             $this->content->text .= '
             <div class="about_content">
@@ -99,7 +91,7 @@ class block_cocoon_about_1 extends block_base
 
         if ($this->config->image) {
           $this->content->text .= '
-            <div class="col-lg-6 d-flex justify-content-center" data-aos="fade-right" data-aos-duration="1500" data-aos-delay="300">
+            <div class="col-lg-6 d-flex justify-content-center">
                 <div class="about_thumb">
                     <img id="image" data-ccn="image" data-ccn-img="src" class="img-fluid" src="' . $this->config->image . '" alt="">
                 </div>

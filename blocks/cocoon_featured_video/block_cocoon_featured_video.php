@@ -344,7 +344,7 @@ class block_cocoon_featured_video extends block_base
             <div class="ccn-vs-wrap">
               <button class="ccn-vs-nav ccn-vs-prev"
                       onclick="ccnVsScroll_' . $iid . '(-1)"
-                      aria-label="Previous">&#8250;</button>
+                      aria-label="Previous">' . (right_to_left() ? '&#8250;' : '&#8249;') . '</button>
 
               <div class="ccn-vs-strip" id="' . $strip_id . '">
                 ' . $items_html . '
@@ -352,7 +352,7 @@ class block_cocoon_featured_video extends block_base
 
               <button class="ccn-vs-nav ccn-vs-next"
                       onclick="ccnVsScroll_' . $iid . '(1)"
-                      aria-label="Next">&#8249;</button>
+                      aria-label="Next">' . (right_to_left() ? '&#8249;' : '&#8250;') . '</button>
             </div>
           </div>
         </section>';

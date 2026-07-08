@@ -209,7 +209,7 @@ function ccnGSliderScroll_' . $iid . '(dir) {
     <div class="ccn-gslider-wrap-' . $iid . '">
       <button class="ccn-vs-nav ccn-vs-prev"
               onclick="ccnGSliderScroll_' . $iid . '(-1)"
-              aria-label="Previous">&#8250;</button>
+              aria-label="Previous">' . (right_to_left() ? '&#8250;' : '&#8249;') . '</button>
 
       <div class="ccn-gslider-strip" id="' . $strip_id . '">
         ' . $items_html . '
@@ -217,7 +217,7 @@ function ccnGSliderScroll_' . $iid . '(dir) {
 
       <button class="ccn-vs-nav ccn-vs-next"
               onclick="ccnGSliderScroll_' . $iid . '(1)"
-              aria-label="Next">&#8249;</button>
+              aria-label="Next">' . (right_to_left() ? '&#8249;' : '&#8250;') . '</button>
     </div>';
         }
 

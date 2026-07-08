@@ -216,10 +216,11 @@ h1, h2, h3, h4, h5, h6 {
   transform: translateY(-50%) scale(1.1) !important;
   box-shadow: 0 4px 12px rgba(0,0,0,.3) !important;
 }
-.block_cocoon_courses_slider .shop_product_slider.owl-carousel.owl-theme.owl-loaded .owl-nav i {
-  font-size: 18px !important;
+/* Arrow text character sizing */
+.block_cocoon_courses_slider .shop_product_slider.owl-carousel.owl-theme.owl-loaded .owl-nav [class*=owl-] {
+  font-size: 20px !important;
+  font-family: serif !important;
   line-height: 1 !important;
-  display: block !important;
 }
 /* On tablet/mobile bring arrows inside by padding the column */
 @media (max-width: 991px) {

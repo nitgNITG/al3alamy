@@ -1,10 +1,10 @@
 (function($) {
   // always false because of Owl bugs
   var $ccnDirection = $("body").hasClass("dir-rtl") ? false : false;
-  // Direction-aware arrows for OwlCarousel navText
+  // Direction-aware arrows for OwlCarousel navText — same › ‹ chars as ccn-vs-nav buttons
   var $ccnIsRtl    = $("body").hasClass("dir-rtl");
-  var $ccnNavPrev  = $ccnIsRtl ? '<i class="flaticon-right-arrow-1"></i>' : '<i class="flaticon-left-arrow"></i>';
-  var $ccnNavNext  = $ccnIsRtl ? '<i class="flaticon-left-arrow"></i>'    : '<i class="flaticon-right-arrow-1"></i>';
+  var $ccnNavPrev  = $ccnIsRtl ? '\u203A' : '\u2039';
+  var $ccnNavNext  = $ccnIsRtl ? '\u2039' : '\u203A';
 
   (function($) {
     "use strict";

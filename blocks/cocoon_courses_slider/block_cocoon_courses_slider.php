@@ -334,14 +334,7 @@ class block_cocoon_courses_slider extends block_base
     	                 </section>';
     } else {
       $this->content->text .= '
-<!-- أضف روابط AOS إلى الرأس -->
-<link rel="stylesheet" href="https://unpkg.com/aos@2.3.4/dist/aos.css">
-<script src="https://unpkg.com/aos@2.3.4/dist/aos.js"></script>
-<script>
-  AOS.init();
-</script>
-
-<section class="features-course pb20" data-aos="fade-up" data-aos-duration="1500">
+<section class="features-course pb20 pt20">
   <div class="container">
     <div class="row">
       <div class="col-lg-6 offset-lg-3">
@@ -353,7 +346,7 @@ class block_cocoon_courses_slider extends block_base
     </div>
     <div class="row">
       <div class="col-lg-12">
-        <div class="shop_product_slider" data-aos="fade-up" data-aos-duration="1500">
+        <div class="shop_product_slider">
 ';
 
       if (!empty($this->config->courses)) {
@@ -367,7 +360,7 @@ class block_cocoon_courses_slider extends block_base
             $ccnCourseDescription = $ccnCourseHandler->ccnGetCourseDescription($course->id, $maxlength);
 
             $this->content->text .= '
-            <div class="item" data-aos="fade-up" data-aos-duration="1500">
+            <div class="item">
               <div class="top_courses ' . $topCoursesClass . '">';
 
             if ($ccnBlockShowImg) {

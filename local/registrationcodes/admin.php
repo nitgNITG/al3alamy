@@ -23,9 +23,9 @@ $PAGE->set_heading(get_string('manage_codes', 'local_registrationcodes'));
 
 $action = optional_param('action', '', PARAM_ALPHA);
 $ids    = optional_param_array('codeids', [], PARAM_INT);
-$sesskey_ok = confirm_sesskey();
 
-if ($sesskey_ok && in_array($action, ['enable', 'disable', 'delete'])) {
+if ($action && in_array($action, ['enable', 'disable', 'delete'])) {
+    require_sesskey();
     // Single-row quick action.
     $singleid = optional_param('id', 0, PARAM_INT);
     if ($singleid) {

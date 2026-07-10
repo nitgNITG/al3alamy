@@ -124,6 +124,13 @@ $filtergroup  = optional_param('filtergroup', '', PARAM_TEXT);
 $page         = optional_param('page',         0, PARAM_INT);
 $perpage      = optional_param('perpage',     50, PARAM_INT);
 $perpage      = in_array($perpage, [25, 50, 100, 250]) ? $perpage : 50;
+$export       = optional_param('export',      '', PARAM_ALPHA);
+$filetitle    = optional_param('filetitle',   '', PARAM_TEXT);
+
+if ($filetitle === '') {
+    $filetitle = get_string('export_default_title', 'local_registrationcodes');
+}
+$filetitle = preg_replace('/[^a-zA-Z0-9_\- ]/', '', $filetitle);
 
 // ── Query ─────────────────────────────────────────────────────────────────
 
@@ -146,20 +153,88 @@ if ($filtergroup !== '') {
 
 $wheresql = $where ? 'WHERE ' . implode(' AND ', $where) : '';
 
+$selectsql = "SELECT c.*,
+                     " . $DB->sql_fullname('u.firstname', 'u.lastname') . " AS creatorname,
+                     u.id AS creator_id
+                FROM {local_regcodes} c
+           LEFT JOIN {user} u ON u.id = c.created_by
+           $wheresql
+            ORDER BY c.timecreated DESC, c.id DESC";
+
 $totalcount = $DB->count_records_sql("SELECT COUNT(*) FROM {local_regcodes} c $wheresql", $params);
 
-$codes = $DB->get_records_sql(
-    "SELECT c.*,
-            " . $DB->sql_fullname('u.firstname', 'u.lastname') . " AS creatorname,
-            u.id AS creator_id
-       FROM {local_regcodes} c
-  LEFT JOIN {user} u ON u.id = c.created_by
-  $wheresql
-   ORDER BY c.timecreated DESC, c.id DESC",
-    $params,
-    $page * $perpage,
-    $perpage
-);
+// ── Export handling (runs before any HTML output) ─────────────────────────
+
+if ($export !== '') {
+    require_capability('local/registrationcodes:manage', context_system::instance());
+
+    $rows      = $DB->get_records_sql($selectsql, $params);
+    $safetitle = str_replace(' ', '_', trim($filetitle));
+
+    $headers = [
+        get_string('groupname',   'local_registrationcodes'),
+        get_string('code',        'local_registrationcodes'),
+        get_string('status',      'local_registrationcodes'),
+        get_string('created_by',  'local_registrationcodes'),
+        get_string('timecreated', 'local_registrationcodes'),
+        get_string('timeexpiry',  'local_registrationcodes'),
+        get_string('used_by',     'local_registrationcodes'),
+        get_string('timeused',    'local_registrationcodes'),
+        get_string('notes',       'local_registrationcodes'),
+    ];
+
+    if ($export === 'csv') {
+        $filename = $safetitle . '_' . date('Ymd_His') . '.csv';
+        header('Content-Type: text/csv; charset=utf-8');
+        header('Content-Disposition: attachment; filename="' . $filename . '"');
+        $out = fopen('php://output', 'w');
+        fputs($out, "\xEF\xBB\xBF"); // UTF-8 BOM for Excel compatibility.
+        fputcsv($out, $headers);
+        foreach ($rows as $r) {
+            fputcsv($out, [
+                $r->groupname  ?? '',
+                $r->code,
+                get_string('status_' . $r->status, 'local_registrationcodes'),
+                $r->creatorname ?? '',
+                userdate($r->timecreated),
+                $r->timeexpiry ? userdate($r->timeexpiry) : '',
+                $r->used_by    ? $r->used_by : '',
+                $r->timeused   ? userdate($r->timeused)   : '',
+                $r->notes      ?? '',
+            ]);
+        }
+        fclose($out);
+        exit;
+
+    } elseif ($export === 'excel') {
+        require_once($CFG->libdir . '/excellib.class.php');
+        $filename = $safetitle . '_' . date('Ymd_His') . '.xls';
+        $workbook = new MoodleExcelWorkbook('-');
+        $workbook->send($filename);
+        $sheet = $workbook->add_worksheet(get_string('manage_codes', 'local_registrationcodes'));
+        $col = 0;
+        foreach ($headers as $h) { $sheet->write(0, $col++, $h); }
+        $row = 1;
+        foreach ($rows as $r) {
+            $sheet->write($row, 0, $r->groupname  ?? '');
+            $sheet->write($row, 1, $r->code);
+            $sheet->write($row, 2, get_string('status_' . $r->status, 'local_registrationcodes'));
+            $sheet->write($row, 3, $r->creatorname ?? '');
+            $sheet->write($row, 4, userdate($r->timecreated));
+            $sheet->write($row, 5, $r->timeexpiry ? userdate($r->timeexpiry) : '');
+            $sheet->write($row, 6, $r->used_by    ? $r->used_by : '');
+            $sheet->write($row, 7, $r->timeused   ? userdate($r->timeused)   : '');
+            $sheet->write($row, 8, $r->notes      ?? '');
+            $row++;
+        }
+        $workbook->close();
+        exit;
+    }
+}
+
+// ── Paginated fetch ───────────────────────────────────────────────────────
+
+$codes = $DB->get_records_sql($selectsql, $params, $page * $perpage, $perpage);
 
 $stats  = manager::get_stats();
 $groups = manager::get_groups();
@@ -249,6 +324,26 @@ foreach ([25, 50, 100, 250] as $pp) {
     echo '<option value="' . $pp . '"' . $sel . '>' . $pp . ' / page</option>';
 }
 echo '</select>';
+echo '</form>';
+
+// ── Export form ───────────────────────────────────────────────────────────
+$exportbaseurl = new moodle_url('/local/registrationcodes/admin.php');
+echo '<form method="get" action="' . $exportbaseurl->out(false) . '" class="form-inline mb-3 flex-wrap align-items-center">';
+// Pass current filters so the export respects them.
+foreach (['search' => $search, 'filterstatus' => $filterstatus, 'filtergroup' => $filtergroup] as $k => $v) {
+    echo '<input type="hidden" name="' . s($k) . '" value="' . s($v) . '">';
+}
+echo '<label class="mr-2 mb-1"><strong>' . get_string('file_title', 'local_registrationcodes') . ':</strong></label>';
+echo '<input type="text" name="filetitle" class="form-control mr-2 mb-1" style="min-width:180px;"'
+    . ' placeholder="' . get_string('export_default_title', 'local_registrationcodes') . '"'
+    . ' value="' . s($filetitle) . '">';
+echo '<button type="submit" name="export" value="csv"   class="btn btn-outline-secondary mb-1 mr-1">' . get_string('export_csv',   'local_registrationcodes') . '</button>';
+echo '<button type="submit" name="export" value="excel" class="btn btn-outline-secondary mb-1">'      . get_string('export_excel', 'local_registrationcodes') . '</button>';
+if ($search || $filterstatus || $filtergroup) {
+    echo '<small class="text-muted ml-2 mb-1">(' . $totalcount . ' filtered rows)</small>';
+} else {
+    echo '<small class="text-muted ml-2 mb-1">(' . $totalcount . ' total rows)</small>';
+}
 echo '</form>';
 
 // ── Result count ──────────────────────────────────────────────────────────

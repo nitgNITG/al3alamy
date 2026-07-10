@@ -30,6 +30,27 @@
 
         {{{ output.edit_switch }}}
         {{{ blocks_fullwidth_top }}}
+
+        {{! al3alamy: Floating Login/Register split badge — front page, guests only }}
+        {{#notloggedin}}
+          {{#is_frontpage}}
+          <div class="al-split-cta-wrap" role="navigation" aria-label="تسجيل الدخول أو إنشاء حساب">
+            <div class="al-split-cta">
+              <a href="{{{ config.wwwroot }}}/login/index.php" class="al-split-login">
+                <i class="fa fa-sign-in" aria-hidden="true"></i>
+                <strong>تسجيل الدخول</strong>
+                <small>Login</small>
+              </a>
+              <a href="{{{ config.wwwroot }}}/login/signup.php" class="al-split-register">
+                <i class="fa fa-user-plus" aria-hidden="true"></i>
+                <strong>إنشاء حساب</strong>
+                <small>Register</small>
+              </a>
+            </div>
+          </div>
+          {{/is_frontpage}}
+        {{/notloggedin}}
+
         <div id="ccn-main-region">
           <div class="container">
             <div class="row">

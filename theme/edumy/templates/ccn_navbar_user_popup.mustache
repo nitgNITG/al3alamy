@@ -1,46 +1,20 @@
-<style>
-header.header-nav.menu_style_home_one.stricky-fixed .sign_up_btn .btn {
-  color: #C9A227;
-}
-.ccn-nav-btn {
-  display: inline-block;
-  width: 90px;
-  text-align: center;
-  font-weight: 600;
-  border-radius: 4px;
-  padding: 6px 12px;
-  transition: all 0.25s ease;
-  text-decoration: none !important;
-}
-.ccn-nav-btn-login {
-  background-color: #0D1B3E;
-  border: 2px solid #C9A227;
-  color: #C9A227 !important;
-}
-.ccn-nav-btn-login:hover {
-  background-color: #C9A227;
-  color: #0D1B3E !important;
-}
-.ccn-nav-btn-register {
-  background-color: #C9A227;
-  border: 2px solid #C9A227;
-  color: #0D1B3E !important;
-}
-.ccn-nav-btn-register:hover {
-  background-color: #0D1B3E;
-  color: #C9A227 !important;
-}
-</style>
 {{#notloggedin}}
-  <li class="list-inline-item list_s">
+  <li class="list-inline-item list_s al-auth-nav-item">
+    {{! Keep legacy popup icon in case admin enables it }}
     {{#header_login_popup}}
-    <a href="#" class="btn flaticon-user" data-toggle="modal" data-target="#exampleModalCenter">
+    <a href="#" class="btn flaticon-user al-icon-only" data-toggle="modal" data-target="#exampleModalCenter">
       <span class="dn-lg">{{#str}}login_register, theme_edumy{{/str}}</span>
     </a>
     {{/header_login_popup}}
-    {{#header_login_link}}
-    <a href="{{{ config.wwwroot }}}/login" class="btn ccn-nav-btn ccn-nav-btn-login">{{#str}}login, theme_edumy{{/str}}</a>
-    <a href="{{{ config.wwwroot }}}/login/signup.php" class="btn ccn-nav-btn ccn-nav-btn-register">{{#str}}signup, theme_edumy{{/str}}</a>
-    {{/header_login_link}}
+
+    {{! al3alamy: always-visible Login + Register pill buttons }}
+    <a href="{{{ config.wwwroot }}}/login/index.php" class="al-nav-btn al-nav-login">
+      <i class="fa fa-sign-in" aria-hidden="true"></i>
+      <span>{{#str}}login, theme_edumy{{/str}}</span>
+    </a>
+    <a href="{{{ config.wwwroot }}}/login/signup.php" class="al-nav-btn al-nav-register">
+      <i class="fa fa-user-plus" aria-hidden="true"></i>
+      <span>{{#str}}signup, theme_edumy{{/str}}</span>
+    </a>
   </li>
 {{/notloggedin}}

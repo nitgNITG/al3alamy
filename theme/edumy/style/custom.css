@@ -510,7 +510,7 @@ h1, h2, h3, h4, h5, h6 {
   opacity: 0.7;
 }
 
-/* ── Tablet ── */
+/* ── Tablet (768 – 991 px) ── */
 @media (max-width: 991px) {
   .al-split-cta-wrap { margin-top: -44px; }
   .al-split-login,
@@ -524,19 +524,59 @@ h1, h2, h3, h4, h5, h6 {
   .al-split-register i { font-size: 22px; }
 }
 
-/* ── Mobile ── */
-@media (max-width: 576px) {
-  .al-split-cta-wrap { margin-top: -38px; }
-  .al-split-cta { border-radius: 40px; }
+/* ── Mobile (≤ 767 px) — becomes a fixed bottom bar ── */
+@media (max-width: 767px) {
+  /* Wrap snaps to viewport bottom; normal doc flow ignored */
+  .al-split-cta-wrap {
+    position: fixed !important;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    margin-top: 0 !important;
+    padding: 0;
+    z-index: 1050;          /* above Bootstrap navbar (z-index 1000) */
+    pointer-events: all;    /* whole bar is clickable on mobile */
+    display: flex;
+    justify-content: stretch;
+  }
+
+  /* Inner pill becomes full-width; lose the rounded pill shape */
+  .al-split-cta {
+    width: 100%;
+    border-radius: 0;
+    box-shadow: 0 -4px 20px rgba(13, 27, 62, 0.45);
+    display: flex;
+    flex-direction: row;
+    pointer-events: all;
+  }
+
+  /* Each half takes exactly 50% of the bar */
   .al-split-login,
   .al-split-register {
-    min-width: 120px;
-    padding: 14px 20px;
+    flex: 1;
+    min-width: 0;
+    padding: 14px 8px;
+    flex-direction: row;    /* icon + text side-by-side */
+    gap: 8px;
+    justify-content: center;
   }
+
+  /* Shrink text and icon for compact bar */
   .al-split-login strong,
-  .al-split-register strong { font-size: 13px; }
+  .al-split-register strong { font-size: 14px; }
   .al-split-login small,
-  .al-split-register small { display: none; } /* hide English label on small screens */
+  .al-split-register small { display: none; }  /* hide English sub-label */
   .al-split-login i,
-  .al-split-register i { font-size: 18px; }
+  .al-split-register i {
+    font-size: 18px;
+    margin-bottom: 0;
+  }
+
+}
+
+/* Push page content above the fixed bar on mobile for guests */
+@media (max-width: 767px) {
+  body.notloggedin {
+    padding-bottom: 58px;
+  }
 }

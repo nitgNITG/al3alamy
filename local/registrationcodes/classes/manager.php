@@ -57,7 +57,8 @@ class manager {
         string $prefix     = '',
         ?int $timeexpiry   = null,
         string $notes      = '',
-        int $createdby     = 0
+        int $createdby     = 0,
+        string $groupname  = ''
     ): array {
         global $DB;
 
@@ -81,6 +82,7 @@ class manager {
             $record->timeexpiry  = $timeexpiry;
             $record->notes       = $notes;
             $record->prefix      = strtoupper($prefix);
+            $record->groupname   = trim($groupname);
 
             $DB->insert_record('local_regcodes', $record);
             $generated[] = $code;
@@ -191,6 +193,37 @@ class manager {
         $stats['usage_pct'] = $pct;
 
         return $stats;
+    }
+
+    // ── Group helpers ─────────────────────────────────────────────────────────
+
+    /**
+     * Return sorted list of all distinct group names in the DB.
+     *
+     * @return string[]
+     */
+    public static function get_groups(): array {
+        global $DB;
+        $rows = $DB->get_records_sql(
+            "SELECT DISTINCT groupname FROM {local_regcodes}
+              WHERE groupname IS NOT NULL AND " . $DB->sql_isnotempty('local_regcodes', 'groupname', false, false) . "
+              ORDER BY groupname ASC"
+        );
+        return array_column($rows, 'groupname');
+    }
+
+    /**
+     * Delete ALL codes belonging to a group (regardless of status).
+     *
+     * @param string $groupname
+     * @return int  Number of rows deleted.
+     */
+    public static function delete_group(string $groupname): int {
+        global $DB;
+        if ($groupname === '') {
+            return 0;
+        }
+        return $DB->delete_records('local_regcodes', ['groupname' => $groupname]);
     }
 
     // ── Bulk action helpers ───────────────────────────────────────────────────

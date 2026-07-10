@@ -58,6 +58,21 @@ $string['bulk_disable']  = 'Disable selected';
 $string['bulk_delete']   = 'Delete selected';
 $string['action_done']   = 'Action completed successfully.';
 
+// Groups.
+$string['groupname']              = 'Group Name';
+$string['groupname_help']         = 'A label for this batch of codes, e.g. "1stSecBatch01". All codes in a batch share the same group name and can be filtered or deleted together.';
+$string['delete_group']           = 'Delete Group';
+$string['confirm_delete_group']   = 'Delete ALL codes in group "{$a}"? This cannot be undone.';
+$string['group_deleted']          = 'Group deleted: {$a} code(s) removed.';
+$string['all_groups']             = 'All Groups';
+$string['groups']                 = 'Groups';
+$string['stats_groups']           = 'Groups';
+$string['clear_group_filter']     = 'Clear Group Filter';
+
+// Export.
+$string['file_title']             = 'File Title';
+$string['export_default_title']   = 'registration_codes';
+
 // Search / filter.
 $string['search']         = 'Search';
 $string['filter_status']  = 'Filter by status';

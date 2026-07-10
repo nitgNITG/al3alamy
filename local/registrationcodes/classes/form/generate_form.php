@@ -30,6 +30,13 @@ class generate_form extends \moodleform {
         $mform->setType('quantity_custom', PARAM_INT);
         $mform->hideIf('quantity_custom', 'quantity_preset', 'neq', '0');
 
+        // Group name (required — identifies this batch).
+        $mform->addElement('text', 'groupname', get_string('groupname', 'local_registrationcodes'), ['size' => 30, 'maxlength' => 100]);
+        $mform->setType('groupname', PARAM_TEXT);
+        $mform->addRule('groupname', get_string('required'), 'required', null, 'client');
+        $mform->addRule('groupname', get_string('required'), 'required', null, 'server');
+        $mform->addHelpButton('groupname', 'groupname', 'local_registrationcodes');
+
         // Prefix.
         $mform->addElement('text', 'prefix', get_string('prefix', 'local_registrationcodes'), ['size' => 10, 'maxlength' => 10]);
         $mform->setType('prefix', PARAM_ALPHANUMEXT);

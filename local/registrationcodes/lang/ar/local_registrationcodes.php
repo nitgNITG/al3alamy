@@ -58,6 +58,21 @@ $string['bulk_disable']   = 'تعطيل المحدد';
 $string['bulk_delete']    = 'حذف المحدد';
 $string['action_done']    = 'تم تنفيذ الإجراء بنجاح.';
 
+// Groups.
+$string['groupname']              = 'اسم المجموعة';
+$string['groupname_help']         = 'تسمية لهذه الدفعة من الأكواد، مثال "1stSecBatch01". تشترك جميع أكواد الدفعة في نفس اسم المجموعة ويمكن تصفيتها أو حذفها معًا.';
+$string['delete_group']           = 'حذف المجموعة';
+$string['confirm_delete_group']   = 'هل تريد حذف جميع أكواد مجموعة "{$a}"؟ لا يمكن التراجع عن هذا الإجراء.';
+$string['group_deleted']          = 'تم حذف المجموعة: تم إزالة {$a} كود/أكواد.';
+$string['all_groups']             = 'جميع المجموعات';
+$string['groups']                 = 'المجموعات';
+$string['stats_groups']           = 'المجموعات';
+$string['clear_group_filter']     = 'إلغاء تصفية المجموعة';
+
+// Export.
+$string['file_title']             = 'عنوان الملف';
+$string['export_default_title']   = 'registration_codes';
+
 // Search / filter.
 $string['search']         = 'بحث';
 $string['filter_status']  = 'تصفية حسب الحالة';

@@ -14,7 +14,8 @@
         <FIELD NAME="used_by"     TYPE="int"  LENGTH="10" NOTNULL="false"                 COMMENT="User ID of the registrant who consumed this code"/>
         <FIELD NAME="timeused"    TYPE="int"  LENGTH="10" NOTNULL="false"                 COMMENT="Timestamp when the code was consumed"/>
         <FIELD NAME="notes"       TYPE="text"             NOTNULL="false"                 COMMENT="Optional admin notes"/>
-        <FIELD NAME="prefix"      TYPE="char" LENGTH="20" NOTNULL="false"                 COMMENT="Prefix used when generating this code (for display/filter)"/>
+        <FIELD NAME="prefix"      TYPE="char" LENGTH="20"  NOTNULL="false"                 COMMENT="Prefix used when generating this code (for display/filter)"/>
+        <FIELD NAME="groupname"   TYPE="char" LENGTH="100" NOTNULL="false"                 COMMENT="Batch group name assigned when generating this code"/>
       </FIELDS>
       <KEYS>
         <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
@@ -24,6 +25,7 @@
         <INDEX NAME="idx_status"  UNIQUE="false" FIELDS="status"/>
         <INDEX NAME="idx_used_by" UNIQUE="false" FIELDS="used_by"/>
         <INDEX NAME="idx_created_by" UNIQUE="false" FIELDS="created_by"/>
+        <INDEX NAME="idx_groupname"  UNIQUE="false" FIELDS="groupname"/>
       </INDEXES>
     </TABLE>
   </TABLES>

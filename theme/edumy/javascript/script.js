@@ -1,6 +1,6 @@
 (function($) {
-  // always false because of Owl bugs
-  var $ccnDirection = $("body").hasClass("dir-rtl") ? false : false;
+  // true = enable Owl RTL mode when page body has dir-rtl class (Arabic)
+  var $ccnDirection = $("body").hasClass("dir-rtl") ? true  : false;
   // Direction-aware arrows for OwlCarousel navText — same › ‹ chars as ccn-vs-nav buttons
   var $ccnIsRtl    = $("body").hasClass("dir-rtl");
   var $ccnNavPrev  = $ccnIsRtl ? '\u203A' : '\u2039';

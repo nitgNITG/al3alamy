@@ -89,7 +89,7 @@ $context = context_course::instance($course->id, MUST_EXIST);
 
     #page-enrol-index .ccn-enrol-cta-box button:hover,
     #page-enrol-index .ccn-enrol-cta-box a:not(.fheader):hover {
-        color: #0E504D !important;
+        color: #00126C !important;
     }
 
     .box {

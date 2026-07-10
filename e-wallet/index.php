@@ -58,7 +58,7 @@ echo $OUTPUT->header();
         text-decoration: none !important;
     }
     .btn-primary {
-        background-color: #0E504D !important;
+        background-color: #00126C !important;
     }
     .btn-success {
         background-color: #C7AE72 !important;
@@ -119,7 +119,7 @@ echo $OUTPUT->header();
         /* button */
         --button-bg: #C7AE72;
         --button-hover-bg: #464646;
-        --button-text-color: #0E504D;
+        --button-text-color: #00126C;
         --button-hover-text-color: #8bb9fe;
         --button-border-radius: 10px;
         --button-diameter: 36px;

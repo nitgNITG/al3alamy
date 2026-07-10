@@ -461,7 +461,7 @@ echo '<style>
 .course-content ul.topics li.section {
     border-radius: 10px !important;
     padding: 5px !important;
-    background: #0E504D !important;
+    background: #00126C !important;
     margin-bottom: 15px;
 }
 .course-content ul.topics li.section:nth-child(1) {
@@ -498,7 +498,7 @@ background: #fff !important;
 }
 #files {
     margin-left: 2px !important;
-    background-color: #0E504D !important;
+    background-color: #00126C !important;
     padding: 10px !important;
     border-radius: 10px !important;
 }
@@ -511,7 +511,7 @@ background: #fff !important;
     color: #fff !important;
 }
 #files .row .btn:hover {
-    background-color: #0E504D !important;
+    background-color: #00126C !important;
     border: 3px solid #fff !important;
     color: #fff !important;
 }
@@ -522,7 +522,7 @@ echo '<style>
     text-align: center !important;
 }
 .details .cc_tab h4.panel-title {
-    background-color: #0E504D !important;
+    background-color: #00126C !important;
 }
 #accordion .panel-title a {
     color: #fff !important;

@@ -235,13 +235,13 @@ if ($isTeacher) {
         }
         .col h1,
         .col ul li {
-            color: #0E504D;
+            color: #00126C;
         }
         .data_block {
             display: flex;
             flex-direction: column;
             gap: 25px;
-            background-color: #0E504D;
+            background-color: #00126C;
         }
         #data h3 {
             color: #fff;
@@ -253,7 +253,7 @@ if ($isTeacher) {
         #users_confirmed {
             margin-top: 30px !important;
             width: 100% !important;
-            background-color: #0E504D !important;
+            background-color: #00126C !important;
         }
         #users_confirmed:hover {
             color: #fff;
@@ -263,7 +263,7 @@ if ($isTeacher) {
             justify-content: center;
             text-align: center;
             align-items: center;
-            color: #0E504D;
+            color: #00126C;
         }
     </style>';
 
@@ -395,7 +395,7 @@ if ($isTeacher) {
         .item_box {
             padding: 10px;
             border-radius: 0px;
-            border-bottom: 2px solid #0E504D;
+            border-bottom: 2px solid #00126C;
             background: #FFF;
         }
        
@@ -410,13 +410,13 @@ if ($isTeacher) {
         #profession16, #whatsapp5, #youtube4, #facebook3 {display: none;}
     
         .header_container h1 {
-            color: #0E504D;
+            color: #00126C;
             font-size: 30px;
         }
         .profile_cover {
             display: flex;
             justify-content: center;
-            background: #0E504D;
+            background: #00126C;
         }
         #ccn-main-region {
             padding-top: 30px !important;
@@ -437,10 +437,10 @@ if ($isTeacher) {
         </div>
         <div class="container_top" style="display: flex; gap: 15px;padding: 20px 40px; font-size: 20px;" data-aos="fade-left" data-aos-duration="800">
             <a href="' . $editurl . '">
-                <i class="fa fa-edit" style="color: #0E504D;"></i>
+                <i class="fa fa-edit" style="color: #00126C;"></i>
             </a>
             <a href="#">
-                <i class="fa fa-bookmark" style="color: #0E504D;"></i>
+                <i class="fa fa-bookmark" style="color: #00126C;"></i>
             </a>
         </div>
     </div>

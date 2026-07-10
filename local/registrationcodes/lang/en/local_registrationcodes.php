@@ -4,7 +4,7 @@ defined('MOODLE_INTERNAL') || die();
 // Plugin name.
 $string['pluginname'] = 'Registration Codes';
 
-// Signup form.
+// Signup form — registration code.
 $string['regcode']              = 'Registration Code';
 $string['regcode_help']         = 'Enter the registration code provided to you. Without a valid code, you cannot create an account.';
 $string['error_code_required']  = 'A registration code is required.';
@@ -12,6 +12,21 @@ $string['error_code_invalid']   = 'This registration code is not valid.';
 $string['error_code_used']      = 'This registration code has already been used.';
 $string['error_code_disabled']  = 'This registration code has been disabled.';
 $string['error_code_expired']   = 'This registration code has expired.';
+
+// Signup form — student profile fields.
+$string['field_parentphone']             = 'Parent / Guardian Phone';
+$string['field_parentphone_help']        = 'Enter the parent or guardian\'s Egyptian mobile number (e.g. 01012345678). Must be a valid Vodafone, Orange, Etisalat or WE number.';
+$string['field_parentphone_placeholder'] = '01012345678';
+$string['error_invalid_phone']           = 'Please enter a valid Egyptian mobile number (01[0/1/2/5]XXXXXXXX).';
+
+$string['field_governorate']    = 'Governorate';
+$string['field_governorate_help'] = 'Select the Egyptian governorate where the student resides.';
+
+$string['field_track']          = 'Baccalaureate Track';
+$string['field_track_help']     = 'Select the Baccalaureate track the student is enrolled in.';
+
+$string['field_address']        = 'Address';
+$string['field_address_help']   = 'Optional: enter the student\'s full address.';
 
 // Admin navigation.
 $string['manage_codes']   = 'Manage Codes';

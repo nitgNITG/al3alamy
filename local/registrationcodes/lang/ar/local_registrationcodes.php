@@ -4,7 +4,7 @@ defined('MOODLE_INTERNAL') || die();
 // Plugin name.
 $string['pluginname'] = 'أكواد التسجيل';
 
-// Signup form.
+// Signup form — كود التسجيل.
 $string['regcode']              = 'كود التسجيل';
 $string['regcode_help']         = 'أدخل كود التسجيل المقدَّم إليك. بدون كود صحيح لا يمكنك إنشاء حساب.';
 $string['error_code_required']  = 'كود التسجيل مطلوب.';
@@ -12,6 +12,21 @@ $string['error_code_invalid']   = 'كود التسجيل غير صحيح.';
 $string['error_code_used']      = 'تم استخدام هذا الكود مسبقًا.';
 $string['error_code_disabled']  = 'هذا الكود معطَّل.';
 $string['error_code_expired']   = 'انتهت صلاحية هذا الكود.';
+
+// Signup form — بيانات الطالب.
+$string['field_parentphone']             = 'رقم هاتف ولي الأمر';
+$string['field_parentphone_help']        = 'أدخل رقم الهاتف المحمول المصري لولي الأمر (مثال: 01012345678). يجب أن يكون رقم فودافون أو أورنج أو اتصالات أو WE.';
+$string['field_parentphone_placeholder'] = '01012345678';
+$string['error_invalid_phone']           = 'يرجى إدخال رقم هاتف محمول مصري صحيح (01[0/1/2/5]XXXXXXXX).';
+
+$string['field_governorate']      = 'المحافظة';
+$string['field_governorate_help'] = 'اختر المحافظة التي يقيم فيها الطالب.';
+
+$string['field_track']            = 'المسار الدراسي';
+$string['field_track_help']       = 'اختر مسار البكالوريا الذي يدرسه الطالب.';
+
+$string['field_address']          = 'العنوان';
+$string['field_address_help']     = 'اختياري: أدخل عنوان الطالب بالتفصيل.';
 
 // Admin navigation.
 $string['manage_codes']   = 'إدارة الأكواد';

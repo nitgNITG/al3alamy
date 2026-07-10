@@ -318,3 +318,10 @@ h1, h2, h3, h4, h5, h6 {
   /* Footer spacing */
   .footer_one { padding: 20px 12px !important; }
 }
+
+/* ── HubSpot injected div (causes white space below footer) ── */
+.hs-dummy-scrollbar-size {
+  display: none !important;
+  height: 0 !important;
+  overflow: hidden !important;
+}

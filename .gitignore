@@ -7,3 +7,7 @@
 !/local/registrationcodes/
 !/local/autoenrol/
 !/local/videopay/
+
+# Track our custom enrol plugin
+/enrol/*
+!/enrol/autoenrol/

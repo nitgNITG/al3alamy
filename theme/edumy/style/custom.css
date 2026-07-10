@@ -319,8 +319,32 @@ h1, h2, h3, h4, h5, h6 {
   .footer_one { padding: 20px 12px !important; }
 }
 
-/* ── HubSpot injected div (causes white space below footer) ── */
-.hs-dummy-scrollbar-size {
+/* ── Remove white space below footer ─────────────────────────────────────── */
+
+/* 1. Footer section: clip bottom overflow so mb80 on social widget
+      doesn't bleed outside the <section> */
+.footer_one {
+  overflow: hidden !important;
+}
+
+/* 2. Social widget: reduce the excessive mb80 (80 px) to just 20 px
+      so the gap between social icons and copyright stays comfortable */
+.footer_social_widget.home8 {
+  margin-bottom: 20px !important;
+}
+
+/* 3. Moodle message/notification drawer injected after footer:
+      force it to fixed so it doesn't push the page down */
+[data-region="message-drawer"],
+[data-region="right-hand-drawer"],
+[data-region="drawers"],
+#nav-drawer {
+  position: fixed !important;
+}
+
+/* 4. Any other script-injected helper divs (HubSpot, etc.) */
+.hs-dummy-scrollbar-size,
+#hubspot-messages-iframe-container {
   display: none !important;
   height: 0 !important;
   overflow: hidden !important;

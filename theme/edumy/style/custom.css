@@ -580,3 +580,18 @@ h1, h2, h3, h4, h5, h6 {
     padding-bottom: 58px;
   }
 }
+
+/* ══════════════════════════════════════════════════════════════
+   COURSE MODULE — lock icon on restricted/paid videos
+   Moodle renders: .availabilityinfo > .description-inner > i.fa.fa-lock
+   Make it RED and noticeably larger so students don't miss it.
+══════════════════════════════════════════════════════════════ */
+
+.activity .availabilityinfo .description-inner .fa-lock,
+.activity .availabilityinfo .fa-lock,
+.course-content .availabilityinfo .fa-lock,
+li.activity .fa-lock {
+  color: #e63946 !important;   /* vivid red */
+  font-size: 1.6em !important;
+  vertical-align: middle;
+}

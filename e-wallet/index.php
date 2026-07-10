@@ -297,8 +297,18 @@ echo $OUTPUT->footer();
                     <label for="amount" class="form-label"><?php echo get_string('enter_balance_amount', 'theme_edumy'); ?></label>
                     <input type="number" class="form-control" id="amount" name="amount" required>
                 </div>
-                <button type="submit" onclick="deposit('card')" class="btn btn-success">Recharge with Visa</button>
-                <button type="submit" onclick="deposit('wallet')" class="btn btn-success">Recharge with Wallet</button>
+                <div class="mb-2">
+                  <strong style="font-size:13px;color:#555;">شحن عبر المحفظة الإلكترونية (Paymob):</strong>
+                </div>
+                <button type="submit" onclick="deposit('card')"   class="btn btn-success w-100 mb-1">💳 شحن بفيزا / كريدت (Paymob)</button>
+                <button type="submit" onclick="deposit('wallet')" class="btn btn-success w-100 mb-3">📱 شحن بمحفظة إلكترونية (Paymob)</button>
+                <hr>
+                <div class="mb-2">
+                  <strong style="font-size:13px;color:#555;">شحن عبر Kashier:</strong>
+                </div>
+                <button type="button" onclick="depositKashier()" class="btn w-100" style="background:#00126C;color:#fff;font-weight:600;">
+                  💳 شحن بكاشير (Kashier)
+                </button>
             </div>
         </div>
     </div>
@@ -684,7 +694,18 @@ if (is_siteadmin()) {
 </script>
 
 <script>
-    // deposit function
+    // Kashier deposit — redirect to /kashier/deposit.php
+    function depositKashier() {
+        var amount = document.getElementById('amount').value;
+        amount = parseInt(amount);
+        if (isNaN(amount) || amount <= 0) {
+            alert('أدخل مبلغاً صحيحاً. Please enter a valid amount.');
+            return;
+        }
+        window.location.href = '<?php echo $CFG->wwwroot; ?>/kashier/deposit.php?amount=' + amount;
+    }
+
+    // deposit function (Paymob — existing)
     function deposit(type) {
         var amount = document.getElementById('amount').value;
         amount = parseInt(amount); // تحويل القيمة إلى int

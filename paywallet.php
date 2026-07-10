@@ -73,9 +73,35 @@ try {
         throw new Exception('Failed to add user to group.');
     }
 
+    // ── Enroll user in the course via the manual enrolment plugin ──────────
+    $courseid = (int)$_POST['courseid'];
+    $userid   = (int)$_POST['userid'];
+
+    $course_context = context_course::instance($courseid);
+
+    if (!is_enrolled($course_context, $userid)) {
+        // Find the enabled manual enrol instance for this course
+        $enrol_instance = $DB->get_record('enrol', [
+            'courseid' => $courseid,
+            'enrol'    => 'manual',
+            'status'   => 0,   // ENROL_INSTANCE_ENABLED
+        ]);
+
+        if ($enrol_instance) {
+            $enrol_plugin  = enrol_get_plugin('manual');
+            $student_role  = $DB->get_record('role', ['shortname' => 'student']);
+            $roleid        = $student_role ? (int)$student_role->id : 5; // fallback to default student role id
+            $enrol_plugin->enrol_user($enrol_instance, $userid, $roleid);
+        } else {
+            // No manual instance — log a warning but don't fail the payment
+            error_log("paywallet.php: no enabled manual enrol instance for course $courseid; user $userid was NOT enrolled.");
+        }
+    }
+    // ────────────────────────────────────────────────────────────────────────
+
     // Return success response
     header('Content-Type: application/json'); // Ensure the content type is set to JSON
-    $response_data = ['status' => 'success', 'message' => 'Payment successful. User added to the group.'];
+    $response_data = ['status' => 'success', 'message' => 'Payment successful. User enrolled and added to the group.'];
     echo json_encode($response_data);
 
 

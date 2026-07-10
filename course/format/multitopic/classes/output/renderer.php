@@ -144,6 +144,12 @@ class renderer extends section_renderer
 
         global $DB, $USER, $COURSE, $CFG;
 
+        // Load the videopay helper if available.
+        $videopay_lib = $CFG->dirroot . '/local/videopay/lib.php';
+        if (file_exists($videopay_lib)) {
+            require_once($videopay_lib);
+        }
+
         // Fetch all modules for the given section and course
         $modules = $DB->get_records('course_modules', ['course' => $course->id, 'section' => $section->id]);
 
@@ -168,6 +174,23 @@ class renderer extends section_renderer
                     if ($condition['type'] === 'group') {
                         // check if user in this group
                         if (!$DB->get_record('groups_members', array('userid' => $USER->id, 'groupid' => $condition['id']))) {
+
+                            // ── Read price from local_videopay_prices table ──────────────
+                            // Falls back to group description (legacy) if plugin not installed.
+                            if (function_exists('local_videopay_get_price')) {
+                                [$group_price_f, $is_free] = local_videopay_get_price((int)$course_modules->id);
+                                $group_price = (int)$group_price_f;
+                            } else {
+                                $group_price = (int)$DB->get_field('groups', 'description', ['id' => $condition['id']]);
+                                $is_free     = ($group_price === 0);
+                            }
+
+                            // If this item is explicitly free, skip payment popup.
+                            // (Moodle's group restriction still shows the lock, but
+                            //  the teacher must use a code to grant access.)
+                            if ($is_free) {
+                                break; // show only the code form, no payment buttons
+                            }
 
                             // Collect module ID and availability information
                             $module_ids .= '
@@ -281,16 +304,30 @@ class renderer extends section_renderer
                                         </div>
                                         <button type="submit" class="btn btn-primary w-100">Submit</button>
                                       </form>
-                                      <div class="or">
-                                        <span>Or</span>
-                                      </div>
-                                      <h4 class="mt-3">If you have a wallet: </h4>
-                                      <form id="paywalletform" class="w-100 mb-2">
-                                        <input type="hidden" class="form-control" id="GroupId2" name="groupid">
-                                        <input type="hidden" class="form-control" id="ModuleId2" value="' . $course_modules->id . '">
-                                        <button type="submit" class="btn btn-secondary w-100">Pay with Wallet</button>
+                                      <div class="or"><span>أو / Or</span></div>
+
+                                      <!-- ── Pay from wallet balance ──────────────────── -->
+                                      <h4 class="mt-1 mb-2" style="font-size:14px;color:#555;">💰 ادفع من رصيد محفظتك</h4>
+                                      <form id="paywalletform" class="w-100 mb-1">
+                                        <input type="hidden" id="GroupId2" name="groupid">
+                                        <input type="hidden" id="ModuleId2" value="' . $course_modules->id . '">
+                                        <button type="submit" class="btn btn-outline-secondary w-100" style="border-color:#00126C;color:#00126C;">
+                                          💰 الدفع بالمحفظة / Pay with Wallet
+                                        </button>
                                       </form>
-                                      <p style="color: #ccc;">You dont have a wallet? <a href="' . $CFG->wwwroot . '/e-wallet/">Create one</a></p>
+                                      <p style="color:#bbb;font-size:11px;margin:2px 0 8px;">
+                                        ليس لديك محفظة؟ <a href="' . $CFG->wwwroot . '/e-wallet/" style="color:#C9A227;">أنشئ محفظة</a>
+                                        &nbsp;|&nbsp; <a href="' . $CFG->wwwroot . '/kashier/deposit.php?amount=' . $group_price . '" style="color:#C9A227;">اشحن بـ Kashier</a>
+                                      </p>
+
+                                      <div class="or"><span>أو ادفع مباشرة / Or pay directly</span></div>
+
+                                      <!-- ── Pay directly via Kashier ─────────────────── -->
+                                      <a href="' . $CFG->wwwroot . '/kashier/pay.php?cmid=' . $course_modules->id . '&groupid=' . $condition['id'] . '&courseid=' . $COURSE->id . '&amount=' . $group_price . '"
+                                         class="btn w-100 mb-2"
+                                         style="background:#00126C;color:#fff;font-weight:600;">
+                                        💳 ادفع بفيزا أو كريدت كارد / Pay by Card
+                                      </a>
                                     </div>
                                 </div>
                             </div>
@@ -315,7 +352,7 @@ class renderer extends section_renderer
                                             var groupId = "' . $condition['id'] . '";
                                             GroupId.value = groupId; 
                                             GroupId2.value = groupId;
-                                            price.innerHTML = ' . $DB->get_field('groups', 'description', array('id' => $condition['id'])) . ';
+                                            price.innerHTML = ' . $group_price . ';
                                             popup.style.display = "block";
                                         });
                                     }

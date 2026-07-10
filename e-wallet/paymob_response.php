@@ -2,6 +2,8 @@
 require_once('vendor/autoload.php');
 require_once('TCPDF/vendor/autoload.php');
 require_once(__DIR__ . '/../config.php'); // Ensure the correct path to your config file
+require_once($CFG->dirroot . '/lib/enrollib.php');
+require_once($CFG->dirroot . '/group/lib.php');
 
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\RequestException;
@@ -63,9 +65,66 @@ try {
 
     // Validate transaction details and match with request
     if ($responseData['success'] && $responseData['billing_data']['email'] == $USER->email) {
-        $amount = $responseData['amount_cents'] / 100;
+        $amount   = $responseData['amount_cents'] / 100;
         $currency = $responseData['currency'];
-        $order = $responseData['order'];
+        $order    = $responseData['order'];
+
+        // ── Detect enrollment payment ──────────────────────────────────────
+        $merchant_order_id = $order['merchant_order_id'] ?? '';
+        $is_enrol_payment  = (strpos($merchant_order_id, 'enrol-') === 0);
+
+        if ($is_enrol_payment) {
+            // Parse: enrol-{userid}-{courseid}-{groupid}
+            $parts    = explode('-', $merchant_order_id);  // ['enrol', userid, courseid, groupid]
+            $pay_uid  = isset($parts[1]) ? (int)$parts[1] : 0;
+            $courseid = isset($parts[2]) ? (int)$parts[2] : 0;
+            $groupid  = isset($parts[3]) ? (int)$parts[3] : 0;
+
+            // Security: logged-in user must match the intent
+            if ($pay_uid !== (int)$USER->id || !$courseid || !$groupid) {
+                \core\notification::add('Enrollment payment mismatch.', \core\output\notification::NOTIFY_ERROR);
+                redirect(new moodle_url('/e-wallet'));
+                exit;
+            }
+
+            // Record the transaction (prevent replay)
+            $DB->insert_record('transactions', [
+                'transaction_id' => $transaction_id,
+                'user_id'        => $USER->id,
+                'amount'         => $amount,
+                'currency'       => $currency,
+                'status'         => 'successful',
+            ]);
+
+            // ── Enroll in course via manual enrolment plugin ───────────────
+            $course_context = context_course::instance($courseid);
+            if (!is_enrolled($course_context, $USER)) {
+                $enrol_instance = $DB->get_record('enrol', [
+                    'courseid' => $courseid,
+                    'enrol'    => 'manual',
+                    'status'   => 0,   // ENROL_INSTANCE_ENABLED
+                ]);
+                if ($enrol_instance) {
+                    $enrol_plugin = enrol_get_plugin('manual');
+                    $student_role = $DB->get_record('role', ['shortname' => 'student']);
+                    $roleid       = $student_role ? (int)$student_role->id : 5;
+                    $enrol_plugin->enrol_user($enrol_instance, $USER->id, $roleid);
+                } else {
+                    error_log("paymob_response.php: no manual enrol instance for course $courseid");
+                }
+            }
+
+            // ── Add to group ───────────────────────────────────────────────
+            if (!$DB->record_exists('groups_members', ['userid' => $USER->id, 'groupid' => $groupid])) {
+                groups_add_member($groupid, $USER->id);
+            }
+
+            \core\notification::add('تم الدفع والتسجيل بنجاح! Payment successful — you are now enrolled.',
+                \core\output\notification::NOTIFY_SUCCESS);
+            redirect(new moodle_url('/course/view.php', ['id' => $courseid]));
+            exit;
+        }
+        // ── End enrollment branch — continue below for wallet recharge ─────
 
         $invoice = [
             'Payment Status' => 'Successful',

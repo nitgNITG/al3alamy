@@ -1,3 +1,9 @@
 /config.php
 /moodledata/
-/local/
+.DS_Store
+
+# Ignore all /local/ plugins EXCEPT our custom ones
+/local/*
+!/local/registrationcodes/
+!/local/autoenrol/
+!/local/videopay/

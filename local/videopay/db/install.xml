@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<XMLDB PATH="local/videopay/db" VERSION="20260710"
+    COMMENT="XMLDB file for local/videopay — per-module pricing"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:noNamespaceSchemaLocation="../../../lib/xmldb/xmldb.xsd">
+  <TABLES>
+    <TABLE NAME="local_videopay_prices" COMMENT="Price per course module (0 or is_free=1 means free access)">
+      <FIELDS>
+        <FIELD NAME="id"           TYPE="int"    LENGTH="10" NOTNULL="true"  SEQUENCE="true"/>
+        <FIELD NAME="cmid"         TYPE="int"    LENGTH="10" NOTNULL="true"  COMMENT="mdl_course_modules.id"/>
+        <FIELD NAME="price"        TYPE="number" LENGTH="10" DECIMALS="2"    NOTNULL="true" DEFAULT="0.00"/>
+        <FIELD NAME="is_free"      TYPE="int"    LENGTH="1"  NOTNULL="true"  DEFAULT="1" COMMENT="1=free (no payment needed), 0=paid"/>
+        <FIELD NAME="timecreated"  TYPE="int"    LENGTH="10" NOTNULL="true"  DEFAULT="0"/>
+        <FIELD NAME="timemodified" TYPE="int"    LENGTH="10" NOTNULL="true"  DEFAULT="0"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="cmid" UNIQUE="true" FIELDS="cmid"/>
+      </INDEXES>
+    </TABLE>
+  </TABLES>
+</XMLDB>

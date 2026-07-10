@@ -25,6 +25,22 @@ $action    = optional_param('action',    '', PARAM_ALPHA);
 $ids       = optional_param_array('codeids', [], PARAM_INT);
 $delgroup  = optional_param('delgroup',  '', PARAM_TEXT);
 
+// Capture filter state early so redirects can return to the same view.
+$_search       = optional_param('search',      '', PARAM_TEXT);
+$_filterstatus = optional_param('filterstatus','', PARAM_ALPHA);
+$_filtergroup  = optional_param('filtergroup', '', PARAM_TEXT);
+$_page         = optional_param('page',         0, PARAM_INT);
+$_perpage      = optional_param('perpage',     50, PARAM_INT);
+$_perpage      = in_array($_perpage, [25, 50, 100, 250]) ? $_perpage : 50;
+
+$returnurl = new moodle_url('/local/registrationcodes/admin.php', [
+    'search'       => $_search,
+    'filterstatus' => $_filterstatus,
+    'filtergroup'  => $_filtergroup,
+    'page'         => $_page,
+    'perpage'      => $_perpage,
+]);
+
 if ($action && in_array($action, ['enable', 'disable', 'delete', 'deletegroup'])) {
     require_sesskey();
 
@@ -66,7 +82,7 @@ if ($action && in_array($action, ['enable', 'disable', 'delete', 'deletegroup'])
             manager::set_status_bulk($ids, manager::STATUS_DISABLED);
         }
         redirect(
-            new moodle_url('/local/registrationcodes/admin.php'),
+            $returnurl,
             get_string('action_done', 'local_registrationcodes'),
             null,
             \core\output\notification::NOTIFY_SUCCESS
@@ -106,7 +122,8 @@ $search       = optional_param('search',      '', PARAM_TEXT);
 $filterstatus = optional_param('filterstatus','', PARAM_ALPHA);
 $filtergroup  = optional_param('filtergroup', '', PARAM_TEXT);
 $page         = optional_param('page',         0, PARAM_INT);
-$perpage      = 50;
+$perpage      = optional_param('perpage',     50, PARAM_INT);
+$perpage      = in_array($perpage, [25, 50, 100, 250]) ? $perpage : 50;
 
 // ── Query ─────────────────────────────────────────────────────────────────
 
@@ -225,10 +242,33 @@ echo '<button type="submit" class="btn btn-secondary mb-1 mr-2">' . get_string('
 if ($search || $filterstatus || $filtergroup) {
     echo '<a href="' . $filterurl->out(false) . '" class="btn btn-link mb-1">✕ Clear</a>';
 }
+// Per-page selector (preserved across filter submits).
+echo '<select name="perpage" class="custom-select ml-auto mb-1" style="width:auto;" onchange="this.form.submit()">';
+foreach ([25, 50, 100, 250] as $pp) {
+    $sel = ($perpage === $pp) ? ' selected' : '';
+    echo '<option value="' . $pp . '"' . $sel . '>' . $pp . ' / page</option>';
+}
+echo '</select>';
 echo '</form>';
 
+// ── Result count ──────────────────────────────────────────────────────────
+if ($totalcount > 0) {
+    $from = $page * $perpage + 1;
+    $to   = min($from + $perpage - 1, $totalcount);
+    echo '<p class="text-muted small mb-1">'
+        . get_string('showing', 'moodle', (object)['from' => $from, 'to' => $to, 'total' => $totalcount])
+        . '</p>';
+}
+
 // ─ Bulk action form + table ─
-$bulkurl = new moodle_url('/local/registrationcodes/admin.php', ['sesskey' => sesskey()]);
+$bulkurl = new moodle_url('/local/registrationcodes/admin.php', [
+    'sesskey'      => sesskey(),
+    'search'       => $search,
+    'filterstatus' => $filterstatus,
+    'filtergroup'  => $filtergroup,
+    'page'         => $page,
+    'perpage'      => $perpage,
+]);
 
 echo '<form method="post" action="' . $bulkurl->out(false) . '" id="codesform">';
 echo '<input type="hidden" name="sesskey" value="' . sesskey() . '">';
@@ -315,9 +355,10 @@ if (empty($codes)) {
     echo '</tbody></table></div>';
 
     $paginationurl = new moodle_url('/local/registrationcodes/admin.php', [
-        'search'      => $search,
-        'filterstatus'=> $filterstatus,
-        'filtergroup' => $filtergroup,
+        'search'       => $search,
+        'filterstatus' => $filterstatus,
+        'filtergroup'  => $filtergroup,
+        'perpage'      => $perpage,
     ]);
     echo $OUTPUT->paging_bar($totalcount, $page, $perpage, $paginationurl);
 }

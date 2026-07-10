@@ -8,11 +8,11 @@ defined('MOODLE_INTERNAL') || die();
  */
 class manager {
 
-    /** Alphabet used when generating random codes (no O/0/I/1 to avoid confusion). */
-    const CHARSET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    /** Digit-only charset for 8-digit numeric codes. */
+    const CHARSET = '0123456789';
 
-    /** Default code segment length (excluding prefix). */
-    const CODE_LENGTH = 12;
+    /** Default code length: 8 digits. */
+    const CODE_LENGTH = 8;
 
     // ── Status constants ──────────────────────────────────────────────────────
 

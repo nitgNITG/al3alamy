@@ -1,10 +1,11 @@
 (function($) {
-  // true = enable Owl RTL mode when page body has dir-rtl class (Arabic)
-  var $ccnDirection = $("body").hasClass("dir-rtl") ? true  : false;
-  // Direction-aware arrows for OwlCarousel navText — same › ‹ chars as ccn-vs-nav buttons
-  var $ccnIsRtl    = $("body").hasClass("dir-rtl");
-  var $ccnNavPrev  = $ccnIsRtl ? '\u203A' : '\u2039';
-  var $ccnNavNext  = $ccnIsRtl ? '\u2039' : '\u203A';
+  // al3alamy: site is always Arabic/RTL — hardcoded so it works for
+  // both logged-in and logged-out users (dir-rtl body class not always
+  // present for guests if Moodle default lang isn't set to Arabic).
+  var $ccnDirection = true;
+  var $ccnIsRtl     = true;
+  var $ccnNavPrev   = '\u203A';   // ›  right-pointing  (prev, placed on right in RTL)
+  var $ccnNavNext   = '\u2039';   // ‹  left-pointing   (next, placed on left  in RTL)
 
   (function($) {
     "use strict";

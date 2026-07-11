@@ -254,6 +254,10 @@ function local_registrationcodes_before_standard_top_of_body_html(): string {
     if (!isloggedin() || isguestuser()) {
         return '';
     }
+    // Site admins use the free admin panel (admin.php) — skip the paid button for them.
+    if (is_siteadmin()) {
+        return '';
+    }
     if (!has_capability('local/registrationcodes:generate', context_system::instance())) {
         return '';
     }

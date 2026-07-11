@@ -19,6 +19,16 @@ require_login();
 $syscontext = context_system::instance();
 require_capability('local/registrationcodes:generate', $syscontext);
 
+// Site admins use the free admin panel — redirect them rather than charging them.
+if (is_siteadmin()) {
+    redirect(
+        new moodle_url('/local/registrationcodes/admin.php'),
+        'Admins can generate codes for free from the admin panel.',
+        null,
+        \core\output\notification::NOTIFY_INFO
+    );
+}
+
 $PAGE->set_url(new moodle_url('/local/registrationcodes/buy.php'));
 $PAGE->set_context($syscontext);
 $PAGE->set_title(get_string('buycodes_title', 'local_registrationcodes'));

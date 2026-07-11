@@ -179,6 +179,23 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 /* ══════════════════════════════════════
+   OWL CAROUSEL — RTL arrow mirror (site is always Arabic/RTL)
+   Swap .owl-prev to RIGHT and .owl-next to LEFT sitewide.
+══════════════════════════════════════ */
+.owl-carousel.owl-theme .owl-nav .owl-prev {
+  right: -25px !important;
+  left: auto  !important;
+}
+.owl-carousel.owl-theme .owl-nav .owl-next {
+  left:  -25px !important;
+  right: auto  !important;
+}
+@media (max-width: 991px) {
+  .owl-carousel.owl-theme .owl-nav .owl-prev { right: 4px !important; left: auto !important; }
+  .owl-carousel.owl-theme .owl-nav .owl-next { left:  4px !important; right: auto !important; }
+}
+
+/* ══════════════════════════════════════
    COURSES SLIDER ARROWS — match ccn-vs-nav style
    (circular white button, same as video + gallery blocks)
 ══════════════════════════════════════ */
@@ -203,11 +220,14 @@ h1, h2, h3, h4, h5, h6 {
   font-size: 20px !important;
   transition: background .2s, transform .2s !important;
 }
+/* RTL: prev on RIGHT, next on LEFT */
 .block_cocoon_courses_slider .shop_product_slider.owl-carousel.owl-theme.owl-loaded .owl-prev {
-  left: -40px !important;
+  right: -40px !important;
+  left:  auto  !important;
 }
 .block_cocoon_courses_slider .shop_product_slider.owl-carousel.owl-theme.owl-loaded .owl-next {
-  right: -40px !important;
+  left:  -40px !important;
+  right: auto  !important;
 }
 .block_cocoon_courses_slider .shop_product_slider.owl-carousel.owl-theme.owl-loaded .owl-prev:hover,
 .block_cocoon_courses_slider .shop_product_slider.owl-carousel.owl-theme.owl-loaded .owl-next:hover {
@@ -222,17 +242,19 @@ h1, h2, h3, h4, h5, h6 {
   font-family: serif !important;
   line-height: 1 !important;
 }
-/* On tablet/mobile bring arrows inside by padding the column */
+/* On tablet/mobile bring arrows inside */
 @media (max-width: 991px) {
   .block_cocoon_courses_slider .features-course .col-lg-12 {
     padding-left: 44px !important;
     padding-right: 44px !important;
   }
   .block_cocoon_courses_slider .shop_product_slider.owl-carousel.owl-theme.owl-loaded .owl-prev {
-    left: 4px !important;
+    right: 4px !important;
+    left:  auto !important;
   }
   .block_cocoon_courses_slider .shop_product_slider.owl-carousel.owl-theme.owl-loaded .owl-next {
-    right: 4px !important;
+    left:  4px !important;
+    right: auto !important;
   }
 }
 

@@ -2,19 +2,8 @@
 /**
  * Kashier server-to-server webhook.
  *
- * Kashier POSTs payment notifications here (independent of the browser redirect).
- * We use it for extra reliability — if the user closes the tab before the
- * browser redirect fires, the webhook still completes the enrollment.
- *
- * Body (JSON):
- *   {
- *     "merchantOrderId": "vid-...",
- *     "paymentStatus": "SUCCESS",
- *     "amount": "250.00",
- *     "currency": "EGP",
- *     "hash": "...",
- *     "transactionId": "..."
- *   }
+ * Session-based (codes-):  JSON body contains sessionId → verified via GET API.
+ * Legacy redirect (vid-/dep-): JSON body contains hash   → verified via HMAC.
  */
 
 // Webhook runs outside normal Moodle session — bootstrap manually.
@@ -29,7 +18,6 @@ require_once($CFG->dirroot . '/local/registrationcodes/classes/manager.php');
 
 global $DB, $CFG;
 
-// Only accept POST.
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405);
     exit('Method Not Allowed');
@@ -43,22 +31,48 @@ if (!$data) {
     exit('Bad Request');
 }
 
-$order_id       = $data['merchantOrderId'] ?? '';
-$payment_status = $data['paymentStatus']   ?? '';
-$amount_str     = $data['amount']          ?? '0';
-$received_hash  = $data['hash']            ?? '';
-$transaction_id = $data['transactionId']   ?? '';
+$order_id       = $data['orderId']          ?? $data['merchantOrderId'] ?? '';
+$payment_status = $data['paymentStatus']    ?? '';
+$session_id     = $data['sessionId']        ?? '';
+$amount_str     = $data['amount']           ?? '0';
+$received_hash  = $data['hash']             ?? '';
+$transaction_id = $data['transactionId']    ?? '';
 
-// Verify HMAC.
-if (!kashier_verify_hash($order_id, $amount_str, $received_hash)) {
-    error_log("kashier/webhook.php: HMAC mismatch for order $order_id");
-    http_response_code(403);
-    exit('Forbidden');
+if (!$order_id) {
+    http_response_code(400);
+    exit('Bad Request — missing orderId');
 }
 
-if (strtoupper($payment_status) !== 'SUCCESS') {
-    http_response_code(200);
-    exit('OK — not success');
+$account_type = kashier_account_for_order($order_id);
+
+// ── Verification ──────────────────────────────────────────────────────────
+if ($session_id) {
+    // Session-based: verify via Kashier API.
+    $verified        = kashier_verify_session($session_id, $account_type);
+    $verified_status = strtoupper($verified['paymentStatus'] ?? $verified['status'] ?? '');
+
+    if ($verified_status !== 'SUCCESS') {
+        http_response_code(200);
+        exit('OK — not success');
+    }
+    if (!$amount_str || $amount_str === '0') {
+        $amount_str = (string) ($verified['amount'] ?? '0');
+    }
+    if (!$transaction_id) {
+        $transaction_id = $verified['transactionId'] ?? $verified['_id'] ?? '';
+    }
+
+} else {
+    // Legacy: verify HMAC.
+    if (!kashier_verify_hash($order_id, $amount_str, $received_hash, $account_type)) {
+        error_log("kashier/webhook.php: HMAC mismatch for order $order_id");
+        http_response_code(403);
+        exit('Forbidden');
+    }
+    if (strtoupper($payment_status) !== 'SUCCESS') {
+        http_response_code(200);
+        exit('OK — not success');
+    }
 }
 
 // Replay protection.

@@ -51,21 +51,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         );
     }
 
-    $total     = $count * PRICE_PER_CODE;
-    $order_id  = 'codes-' . $USER->id . '-' . $count . '-' . time();
-    $callback  = (new moodle_url('/kashier/callback.php'))->out(false);
-    $webhook   = (new moodle_url('/kashier/webhook.php'))->out(false);
-    $desc      = "شراء {$count} كود تسجيل — al3alamy";
+    $total    = $count * PRICE_PER_CODE;
+    $order_id = 'codes-' . $USER->id . '-' . $count . '-' . time();
+    $callback = (new moodle_url('/kashier/callback.php'))->out(false);
+    $webhook  = (new moodle_url('/kashier/webhook.php'))->out(false);
+    $desc     = "شراء {$count} كود تسجيل — al3alamy";
 
-    $checkout_url = kashier_checkout_url(
-        $order_id,
-        (float) $total,
-        $callback,
-        $webhook,
-        $desc
-    );
-
-    redirect($checkout_url);
+    try {
+        $session = kashier_create_session(
+            $order_id,
+            (float) $total,
+            $callback,
+            $webhook,
+            $desc
+        );
+        redirect($session['sessionUrl']);
+    } catch (\Exception $e) {
+        error_log('kashier buy.php session error: ' . $e->getMessage());
+        redirect(
+            new moodle_url('/local/registrationcodes/buy.php'),
+            'خطأ في الاتصال ببوابة الدفع. حاول مرة أخرى. (' . $e->getMessage() . ')',
+            null,
+            \core\output\notification::NOTIFY_ERROR
+        );
+    }
 }
 
 // ── Render form ────────────────────────────────────────────────────────────────

@@ -2,16 +2,13 @@
 /**
  * Kashier callback — called by Kashier after payment (GET redirect).
  *
- * Kashier sends these GET params back:
- *   merchantOrderId  – our order_id
- *   paymentStatus    – "SUCCESS" | "FAILED" | "PENDING"
- *   amount           – amount charged
- *   currency
- *   hash             – HMAC we must verify
- *   transactionId    – Kashier transaction reference
+ * Session-based flow (codes- orders):
+ *   Kashier sends: orderId, paymentStatus, sessionId, transactionId
+ *   Verification: server-to-server GET /v3/payment/sessions/{id}/payment
  *
- * This file handles both video purchases (order_id starts with "vid-")
- * and wallet deposits (order_id starts with "dep-").
+ * Legacy redirect flow (vid- / dep- orders):
+ *   Kashier sends: merchantOrderId, paymentStatus, amount, hash, transactionId
+ *   Verification: HMAC-SHA256 hash check
  */
 
 require_once(__DIR__ . '/../config.php');
@@ -22,37 +19,69 @@ require_once($CFG->dirroot . '/local/registrationcodes/classes/manager.php');
 
 global $DB, $CFG, $USER;
 
-// ── Parse and validate Kashier params ─────────────────────────────────────
-$order_id      = optional_param('merchantOrderId', '', PARAM_RAW);
-$payment_status = optional_param('paymentStatus',  '', PARAM_ALPHA);
-$amount_str    = optional_param('amount',          '0', PARAM_RAW);
-$received_hash = optional_param('hash',            '', PARAM_RAW);
-$transaction_id = optional_param('transactionId',  '', PARAM_RAW);
+// ── Parse Kashier params (support both session and legacy param names) ─────
+$order_id       = optional_param('orderId',          '', PARAM_RAW)
+               ?: optional_param('merchantOrderId',  '', PARAM_RAW);
+$payment_status = optional_param('paymentStatus',    '', PARAM_ALPHA);
+$session_id     = optional_param('sessionId',        '', PARAM_RAW);
+$amount_str     = optional_param('amount',           '0', PARAM_RAW);
+$received_hash  = optional_param('hash',             '', PARAM_RAW);
+$transaction_id = optional_param('transactionId',    '', PARAM_RAW);
 
 if (!$order_id || !$payment_status) {
     \core\notification::add('Invalid callback parameters.', \core\output\notification::NOTIFY_ERROR);
     redirect(new moodle_url('/'));
 }
 
-// ── Verify HMAC ───────────────────────────────────────────────────────────
-if (!kashier_verify_hash($order_id, $amount_str, $received_hash)) {
-    error_log("kashier/callback.php: HMAC mismatch for order $order_id");
-    \core\notification::add('Payment verification failed.', \core\output\notification::NOTIFY_ERROR);
-    redirect(new moodle_url('/'));
-}
+$account_type = kashier_account_for_order($order_id);
 
-// ── Payment failed or pending ─────────────────────────────────────────────
-if (strtoupper($payment_status) !== 'SUCCESS') {
-    \core\notification::add(
-        'لم تكتمل عملية الدفع. Payment was not completed (' . $payment_status . ').',
-        \core\output\notification::NOTIFY_WARNING
-    );
-    redirect(new moodle_url('/'));
+// ── Verification — session API (new) or hash (legacy) ─────────────────────
+if ($session_id) {
+    // ── Session-based: verify via Kashier GET API ──────────────────────────
+    $verified = kashier_verify_session($session_id, $account_type);
+    $verified_status = strtoupper($verified['paymentStatus'] ?? $verified['status'] ?? '');
+
+    if ($verified_status !== 'SUCCESS') {
+        error_log("kashier/callback.php: session $session_id status=$verified_status for order $order_id");
+        \core\notification::add(
+            'لم تكتمل عملية الدفع. Payment was not completed (' . $verified_status . ').',
+            \core\output\notification::NOTIFY_WARNING
+        );
+        redirect(new moodle_url('/'));
+    }
+
+    // Use amount from verified session if not in GET params.
+    if (!$amount_str || $amount_str === '0') {
+        $amount_str = (string) ($verified['amount'] ?? '0');
+    }
+    if (!$transaction_id) {
+        $transaction_id = $verified['transactionId'] ?? $verified['_id'] ?? '';
+    }
+
+} else {
+    // ── Legacy redirect: verify HMAC ──────────────────────────────────────
+    if (!kashier_verify_hash($order_id, $amount_str, $received_hash, $account_type)) {
+        error_log("kashier/callback.php: HMAC mismatch for order $order_id");
+        \core\notification::add('Payment verification failed.', \core\output\notification::NOTIFY_ERROR);
+        redirect(new moodle_url('/'));
+    }
+
+    if (strtoupper($payment_status) !== 'SUCCESS') {
+        \core\notification::add(
+            'لم تكتمل عملية الدفع. Payment was not completed (' . $payment_status . ').',
+            \core\output\notification::NOTIFY_WARNING
+        );
+        redirect(new moodle_url('/'));
+    }
 }
 
 // ── Replay protection ─────────────────────────────────────────────────────
 if ($DB->record_exists('kashier_transactions', ['order_id' => $order_id, 'status' => 'success'])) {
     \core\notification::add('This payment has already been processed.', \core\output\notification::NOTIFY_INFO);
+    // For codes orders, still redirect to the ready page so manager can see their codes.
+    if ($account_type === 'manager') {
+        redirect(new moodle_url('/local/registrationcodes/codes_ready.php', ['order_id' => $order_id]));
+    }
     redirect(new moodle_url('/'));
 }
 

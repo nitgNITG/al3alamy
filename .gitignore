@@ -1,6 +1,7 @@
 /config.php
 /moodledata/
 .DS_Store
+/.env
 
 # Ignore all /local/ plugins EXCEPT our custom ones
 /local/*

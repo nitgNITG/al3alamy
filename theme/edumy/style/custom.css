@@ -350,69 +350,18 @@ h1, h2, h3, h4, h5, h6 {
   overflow: hidden !important;
 }
 
-/* ══════════════════════════════════════════════════════════════
-   NAVBAR — Login & Register pill buttons (guests only)
-   Shown inside .sign_up_btn / .al-auth-nav-item in the header
-══════════════════════════════════════════════════════════════ */
-
-/* Hide the legacy popup icon — we replaced it with proper buttons */
+/* Hide the legacy popup icon */
 .al-icon-only { display: none !important; }
 
-.al-auth-nav-item {
-  display: inline-flex !important;
-  align-items: center !important;
-  gap: 8px !important;
-}
-
-.al-nav-btn {
-  display: inline-flex !important;
-  align-items: center !important;
-  gap: 6px !important;
-  padding: 8px 18px !important;
-  border-radius: 6px !important;
-  font-family: 'Cairo', 'Tajawal', sans-serif !important;
-  font-size: 14px !important;
-  font-weight: 700 !important;
-  text-decoration: none !important;
-  line-height: 1 !important;
-  transition: background 0.25s ease, color 0.25s ease, border-color 0.25s ease !important;
-  white-space: nowrap !important;
-}
-
-.al-nav-login {
-  background: transparent !important;
-  border: 2px solid var(--al-gold) !important;
-  color: var(--al-gold) !important;
-}
-.al-nav-login:hover,
-.al-nav-login:focus {
-  background: var(--al-gold) !important;
-  color: var(--al-navy-dark) !important;
-}
-
-.al-nav-register {
-  background: var(--al-gold) !important;
-  border: 2px solid var(--al-gold) !important;
-  color: var(--al-navy-dark) !important;
-}
-.al-nav-register:hover,
-.al-nav-register:focus {
-  background: var(--al-gold-light) !important;
-  border-color: var(--al-gold-light) !important;
-  color: var(--al-navy-dark) !important;
-}
-
-/* When header scrolls to fixed (stricky-fixed) keep gold colour */
-.stricky-fixed .al-nav-login { color: var(--al-gold) !important; }
-.stricky-fixed .al-nav-register { color: var(--al-navy-dark) !important; }
-
-/* Mobile: shrink a touch */
-@media (max-width: 991px) {
-  .al-nav-btn { padding: 7px 12px !important; font-size: 13px !important; }
-  .al-nav-btn i { display: none !important; }  /* hide icon on tablet */
-}
-@media (max-width: 576px) {
-  .al-nav-btn { padding: 6px 10px !important; font-size: 12px !important; }
+/* ══════════════════════════════════════════════════════════════
+   SPLIT CTA — desktop visibility rules
+   Mobile (≤767px): position:fixed bottom bar — always visible (all pages)
+   Desktop (≥768px): hero-overlap pill — frontpage ONLY (body.pagehome)
+══════════════════════════════════════════════════════════════ */
+@media (min-width: 768px) {
+  body:not(.pagehome) .al-split-cta-wrap {
+    display: none !important;
+  }
 }
 
 /* ══════════════════════════════════════════════════════════════

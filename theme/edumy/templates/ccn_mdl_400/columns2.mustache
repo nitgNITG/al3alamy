@@ -31,9 +31,10 @@
         {{{ output.edit_switch }}}
         {{{ blocks_fullwidth_top }}}
 
-        {{! al3alamy: Floating Login/Register split badge — front page, guests only }}
+        {{! al3alamy: Login/Register split CTA
+            Desktop: hero-overlap pill (frontpage only, via CSS body.pagehome)
+            Mobile:  fixed bottom bar on ALL pages }}
         {{#notloggedin}}
-          {{#is_frontpage}}
           <div class="al-split-cta-wrap" role="navigation" aria-label="تسجيل الدخول أو إنشاء حساب">
             <div class="al-split-cta">
               <a href="{{{ config.wwwroot }}}/login/index.php" class="al-split-login">
@@ -48,7 +49,6 @@
               </a>
             </div>
           </div>
-          {{/is_frontpage}}
         {{/notloggedin}}
 
         <div id="ccn-main-region">

@@ -532,6 +532,11 @@ h1, h2, h3, h4, h5, h6 {
   opacity: 0.7;
 }
 
+/* ── Large screens (≥768px): hide split CTA — navbar has buttons ── */
+@media (min-width: 768px) {
+  .al-split-cta-wrap { display: none !important; }
+}
+
 /* ── Tablet (768 – 991 px) ── */
 @media (max-width: 991px) {
   .al-split-cta-wrap { margin-top: -44px; }

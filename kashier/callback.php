@@ -18,6 +18,7 @@ require_once(__DIR__ . '/../config.php');
 require_once(__DIR__ . '/config.php');
 require_once($CFG->dirroot . '/lib/enrollib.php');
 require_once($CFG->dirroot . '/group/lib.php');
+require_once($CFG->dirroot . '/local/registrationcodes/classes/manager.php');
 
 global $DB, $CFG, $USER;
 
@@ -167,6 +168,51 @@ if (strpos($order_id, 'vid-') === 0) {
         \core\output\notification::NOTIFY_SUCCESS
     );
     redirect(new moodle_url('/e-wallet/'));
+
+} elseif (strpos($order_id, 'codes-') === 0) {
+    // Registration-code purchase — format: codes-{userid}-{count}-{timestamp}
+    $parts    = explode('-', $order_id);
+    $pay_uid  = isset($parts[1]) ? (int) $parts[1] : 0;
+    $req_count = isset($parts[2]) ? (int) $parts[2] : 0;
+
+    if (!$pay_uid || $req_count < 1) {
+        \core\notification::add('Invalid codes order reference.', \core\output\notification::NOTIFY_ERROR);
+        redirect(new moodle_url('/'));
+    }
+
+    // Security: logged-in user must match the order owner.
+    if ($USER->id && $USER->id !== $pay_uid) {
+        \core\notification::add('User mismatch in codes payment.', \core\output\notification::NOTIFY_ERROR);
+        redirect(new moodle_url('/'));
+    }
+
+    // Record transaction (replay-safe — already checked above).
+    $DB->insert_record('kashier_transactions', [
+        'order_id'       => $order_id,
+        'transaction_id' => $transaction_id,
+        'user_id'        => $pay_uid,
+        'amount'         => $amount,
+        'currency'       => KASHIER_CURRENCY,
+        'type'           => 'codes',
+        'status'         => 'success',
+        'timecreated'    => time(),
+    ]);
+
+    // Generate codes (notes tag lets codes_ready.php retrieve them by order).
+    $notes_tag = 'kashier-order:' . $order_id;
+    \local_registrationcodes\manager::generate_codes(
+        $req_count,
+        '',       // no prefix
+        null,     // no expiry
+        $notes_tag,
+        $pay_uid
+    );
+
+    \core\notification::add(
+        'تم الدفع بنجاح! جاري عرض الأكواد… Payment successful — generating codes.',
+        \core\output\notification::NOTIFY_SUCCESS
+    );
+    redirect(new moodle_url('/local/registrationcodes/codes_ready.php', ['order_id' => $order_id]));
 
 } else {
     \core\notification::add('Unknown payment type.', \core\output\notification::NOTIFY_ERROR);

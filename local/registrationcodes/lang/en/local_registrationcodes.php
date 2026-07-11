@@ -129,3 +129,16 @@ $string['local/registrationcodes:generate']    = 'Generate registration codes';
 $string['local/registrationcodes:manage']      = 'Manage registration codes';
 $string['local/registrationcodes:viewreports'] = 'View registration code reports';
 $string['local/registrationcodes:delete']      = 'Delete unused registration codes';
+
+// Buy-codes flow.
+$string['buycodes_nav']           = 'Buy Codes';
+$string['buycodes_title']         = 'Buy Registration Codes';
+$string['buycodes_count_label']   = 'Number of codes';
+$string['buycodes_price_label']   = 'Price per code';
+$string['buycodes_total_label']   = 'Total';
+$string['buycodes_pay_btn']       = 'Pay with Kashier';
+$string['buycodes_count_error']   = 'Please enter a number between 1 and 500.';
+$string['codesready_title']       = 'Your Registration Codes';
+$string['codesready_intro']       = 'Payment successful. Your codes are listed below — each can be used once at sign-up.';
+$string['codesready_copy']        = 'Copy all codes';
+$string['codesready_notfound']    = 'No codes were found for this order. Please contact support.';

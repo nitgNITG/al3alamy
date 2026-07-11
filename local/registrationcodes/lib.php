@@ -238,7 +238,49 @@ function local_registrationcodes_post_signup_requests($user) {
     }
 }
 
-// ── 4. Extend user profile navigation (admin view) ────────────────────────────
+// ── 4. Manager "Buy Codes" navbar button ──────────────────────────────────────
+
+/**
+ * Inject a "شراء أكواد" button into the navbar for users who hold the
+ * local/registrationcodes:generate capability (i.e. managers/admins).
+ * The button is appended via JS to `ul.sign_up_btn` — the same list that
+ * holds the Login/Register pills — so it matches the existing pill styling.
+ *
+ * @return string  HTML/JS snippet added just before </body>.
+ */
+function local_registrationcodes_before_standard_top_of_body_html(): string {
+    global $USER;
+
+    if (!isloggedin() || isguestuser()) {
+        return '';
+    }
+    if (!has_capability('local/registrationcodes:generate', context_system::instance())) {
+        return '';
+    }
+
+    $url   = (new moodle_url('/local/registrationcodes/buy.php'))->out(false);
+    $label = get_string('buycodes_nav', 'local_registrationcodes');
+
+    // Escape for safe embedding in a JS string literal.
+    $url_js   = addslashes($url);
+    $label_js = addslashes($label);
+
+    $script = <<<JS
+document.addEventListener('DOMContentLoaded', function () {
+    var nav = document.querySelector('ul.sign_up_btn');
+    if (!nav) return;
+    var li = document.createElement('li');
+    li.className = 'list-inline-item list_s al-buy-codes-li';
+    li.innerHTML = '<a href="{$url_js}" class="al-nav-btn al-buy-codes-btn">'
+                 + '<i class="fa fa-ticket" aria-hidden="true"></i> {$label_js}</a>';
+    nav.insertBefore(li, nav.firstChild);
+});
+JS;
+
+    return html_writer::script($script);
+}
+
+// ── 5. Extend user profile navigation (admin view) ──────────────────────────
 
 /**
  * Add a "Registration Code" link to the user settings navigation for managers.

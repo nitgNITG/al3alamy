@@ -129,3 +129,16 @@ $string['local/registrationcodes:generate']    = 'توليد أكواد التس
 $string['local/registrationcodes:manage']      = 'إدارة أكواد التسجيل';
 $string['local/registrationcodes:viewreports'] = 'عرض تقارير أكواد التسجيل';
 $string['local/registrationcodes:delete']      = 'حذف أكواد التسجيل غير المستخدمة';
+
+// Buy-codes flow.
+$string['buycodes_nav']           = 'شراء أكواد';
+$string['buycodes_title']         = 'شراء أكواد التسجيل';
+$string['buycodes_count_label']   = 'عدد الأكواد';
+$string['buycodes_price_label']   = 'سعر الكود الواحد';
+$string['buycodes_total_label']   = 'الإجمالي';
+$string['buycodes_pay_btn']       = 'ادفع الآن عبر Kashier';
+$string['buycodes_count_error']   = 'أدخل عددًا بين 1 و 500.';
+$string['codesready_title']       = 'أكوادك الجديدة جاهزة';
+$string['codesready_intro']       = 'تمت عملية الدفع بنجاح. الأكواد أدناه — كل كود صالح للاستخدام مرة واحدة عند التسجيل.';
+$string['codesready_copy']        = 'نسخ جميع الأكواد';
+$string['codesready_notfound']    = 'لم يُعثر على أكواد لهذا الطلب. يرجى التواصل مع الدعم الفني.';

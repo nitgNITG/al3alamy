@@ -25,6 +25,7 @@ require_once(__DIR__ . '/../config.php');
 require_once(__DIR__ . '/config.php');
 require_once($CFG->dirroot . '/lib/enrollib.php');
 require_once($CFG->dirroot . '/group/lib.php');
+require_once($CFG->dirroot . '/local/registrationcodes/classes/manager.php');
 
 global $DB, $CFG;
 
@@ -144,6 +145,37 @@ if (strpos($order_id, 'vid-') === 0) {
         curl_exec($ch);
         curl_close($ch);
     }
+} elseif (strpos($order_id, 'codes-') === 0) {
+    // Registration-code purchase — format: codes-{userid}-{count}-{timestamp}
+    $parts     = explode('-', $order_id);
+    $pay_uid   = isset($parts[1]) ? (int) $parts[1] : 0;
+    $req_count = isset($parts[2]) ? (int) $parts[2] : 0;
+
+    if (!$pay_uid || $req_count < 1) {
+        http_response_code(400);
+        exit('Bad codes order reference');
+    }
+
+    $DB->insert_record('kashier_transactions', [
+        'order_id'       => $order_id,
+        'transaction_id' => $transaction_id,
+        'user_id'        => $pay_uid,
+        'amount'         => $amount,
+        'currency'       => KASHIER_CURRENCY,
+        'type'           => 'codes',
+        'status'         => 'success',
+        'timecreated'    => time(),
+    ]);
+
+    // Generate codes with the order_id tag so codes_ready.php can look them up.
+    $notes_tag = 'kashier-order:' . $order_id;
+    \local_registrationcodes\manager::generate_codes(
+        $req_count,
+        '',
+        null,
+        $notes_tag,
+        $pay_uid
+    );
 }
 
 http_response_code(200);

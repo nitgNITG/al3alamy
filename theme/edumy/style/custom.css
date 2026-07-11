@@ -607,3 +607,34 @@ h1, h2, h3, h4, h5, h6 {
     padding-bottom: 58px;
   }
 }
+
+/* ── Manager "Buy Codes" navbar button ─────────────────────────────────────── */
+.al-buy-codes-btn {
+  background: var(--al-gold) !important;
+  color: var(--al-navy) !important;
+}
+.al-buy-codes-btn:hover,
+.al-buy-codes-btn:focus {
+  background: var(--al-gold-dim) !important;
+  color: #fff !important;
+}
+
+/* Buy-codes purchase page */
+.al-buycodes-wrap .al-kashier-pay-btn {
+  background: var(--al-gold);
+  border-color: var(--al-gold);
+  color: var(--al-navy);
+  font-weight: 700;
+  font-size: 1rem;
+}
+.al-buycodes-wrap .al-kashier-pay-btn:hover {
+  background: var(--al-gold-dim);
+  border-color: var(--al-gold-dim);
+  color: #fff;
+}
+
+/* Codes-ready page */
+.al-codesready-wrap textarea#al-codes-list {
+  background: #f8f9fa;
+  resize: vertical;
+}

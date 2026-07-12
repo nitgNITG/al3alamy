@@ -133,7 +133,7 @@ echo $OUTPUT->header();
     <div class="plans-grid">
         <?php foreach ($plans as $plan): ?>
         <?php
-            $item_count = $DB->count_records('local_subscriptions_plan_items', ['planid' => $plan->id]);
+            $item_count = $DB->count_records('local_subscriptions_items', ['planid' => $plan->id]);
         ?>
         <div class="plan-card">
             <div class="plan-name"><?php echo s($plan->name); ?></div>

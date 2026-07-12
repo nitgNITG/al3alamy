@@ -154,7 +154,7 @@ class manager {
         if (!$plan) {
             return json_encode([]);
         }
-        $items = $DB->get_records('local_subscriptions_plan_items', ['planid' => $planid]);
+        $items = $DB->get_records('local_subscriptions_items', ['planid' => $planid]);
         $data = (array)$plan;
         $data['items'] = array_values(array_map(fn($i) => (array)$i, $items));
         return json_encode($data);
@@ -203,7 +203,7 @@ class manager {
      */
     public static function get_plan_items(int $planid): array {
         global $DB;
-        return array_values($DB->get_records('local_subscriptions_plan_items', ['planid' => $planid]));
+        return array_values($DB->get_records('local_subscriptions_items', ['planid' => $planid]));
     }
 
     /**
@@ -290,7 +290,7 @@ class manager {
     public static function save_plan_items(int $planid, array $items): void {
         global $DB;
 
-        $DB->delete_records('local_subscriptions_plan_items', ['planid' => $planid]);
+        $DB->delete_records('local_subscriptions_items', ['planid' => $planid]);
 
         foreach ($items as $item) {
             $record = new \stdClass();
@@ -301,7 +301,7 @@ class manager {
                                             ? (int)($item['cmid'] ?? $item->cmid)
                                             : null;
             if ($record->courseid) {
-                $DB->insert_record('local_subscriptions_plan_items', $record);
+                $DB->insert_record('local_subscriptions_items', $record);
             }
         }
     }
@@ -347,7 +347,7 @@ class manager {
         }
 
         self::log_history($planid, 'deleted', null, null, null, $USER->id);
-        $DB->delete_records('local_subscriptions_plan_items', ['planid' => $planid]);
+        $DB->delete_records('local_subscriptions_items', ['planid' => $planid]);
         $DB->delete_records('local_subscriptions_plans', ['id' => $planid]);
     }
 
@@ -450,7 +450,7 @@ class manager {
         }
 
         // Specific access: check plan items.
-        return $DB->record_exists('local_subscriptions_plan_items', [
+        return $DB->record_exists('local_subscriptions_items', [
             'planid'   => $sub->planid,
             'courseid' => $courseid,
         ]);
@@ -487,7 +487,7 @@ class manager {
         }
 
         // Check if there's an item for this course.
-        $item = $DB->get_record('local_subscriptions_plan_items', [
+        $item = $DB->get_record('local_subscriptions_items', [
             'planid'   => $sub->planid,
             'courseid' => $cm->course,
         ]);
@@ -502,7 +502,7 @@ class manager {
         }
 
         // Specific lesson: check exact cmid.
-        return $DB->record_exists('local_subscriptions_plan_items', [
+        return $DB->record_exists('local_subscriptions_items', [
             'planid'   => $sub->planid,
             'courseid' => $cm->course,
             'cmid'     => $cmid,

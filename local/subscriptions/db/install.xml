@@ -26,7 +26,7 @@
         <INDEX NAME="idx_status" UNIQUE="false" FIELDS="status"/>
       </INDEXES>
     </TABLE>
-    <TABLE NAME="local_subscriptions_plan_items" COMMENT="Courses and lessons included in each subscription plan">
+    <TABLE NAME="local_subscriptions_items" COMMENT="Courses and lessons included in each subscription plan">
       <FIELDS>
         <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
         <FIELD NAME="planid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>

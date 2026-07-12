@@ -212,15 +212,20 @@ if (strpos($order_id, 'vid-') === 0) {
         'timecreated'    => time(),
     ]);
 
-    if (!\local_subscriptions\manager::has_active_subscription($pay_uid)) {
-        \local_subscriptions\manager::activate_for_user(
-            $planid,
-            $pay_uid,
-            $amount,
-            \local_subscriptions\manager::SOURCE_ONLINE,
-            $order_id,
-            $transaction_id
-        );
+    // Activate subscription — requires local/subscriptions plugin (pending build).
+    if (class_exists('\local_subscriptions\manager')) {
+        if (!\local_subscriptions\manager::has_active_subscription($pay_uid)) {
+            \local_subscriptions\manager::activate_for_user(
+                $planid,
+                $pay_uid,
+                $amount,
+                \local_subscriptions\manager::SOURCE_ONLINE,
+                $order_id,
+                $transaction_id
+            );
+        }
+    } else {
+        error_log("kashier/webhook.php: local_subscriptions plugin missing — sub order $order_id recorded but not activated");
     }
 }
 

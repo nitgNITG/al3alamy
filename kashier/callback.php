@@ -272,23 +272,32 @@ if (strpos($order_id, 'vid-') === 0) {
         'timecreated'    => time(),
     ]);
 
-    // Activate the subscription (skip if the user is somehow already subscribed).
-    if (!\local_subscriptions\manager::has_active_subscription($pay_uid)) {
-        \local_subscriptions\manager::activate_for_user(
-            $planid,
-            $pay_uid,
-            $amount,
-            \local_subscriptions\manager::SOURCE_ONLINE,
-            $order_id,
-            $transaction_id
+    // Activate the subscription — requires local/subscriptions plugin (pending build).
+    if (class_exists('\local_subscriptions\manager')) {
+        if (!\local_subscriptions\manager::has_active_subscription($pay_uid)) {
+            \local_subscriptions\manager::activate_for_user(
+                $planid,
+                $pay_uid,
+                $amount,
+                \local_subscriptions\manager::SOURCE_ONLINE,
+                $order_id,
+                $transaction_id
+            );
+        }
+        \core\notification::add(
+            get_string('payment_success', 'local_subscriptions'),
+            \core\output\notification::NOTIFY_SUCCESS
         );
+        redirect(new moodle_url('/local/subscriptions/mysubscriptions.php'));
+    } else {
+        // Plugin not yet installed — transaction recorded, redirect home gracefully.
+        error_log("kashier/callback.php: local_subscriptions plugin missing — sub order $order_id recorded but not activated");
+        \core\notification::add(
+            'تم استلام الدفع وسيتم تفعيل الاشتراك قريباً. Payment received — subscription will be activated shortly.',
+            \core\output\notification::NOTIFY_WARNING
+        );
+        redirect(new moodle_url('/'));
     }
-
-    \core\notification::add(
-        get_string('payment_success', 'local_subscriptions'),
-        \core\output\notification::NOTIFY_SUCCESS
-    );
-    redirect(new moodle_url('/local/subscriptions/mysubscriptions.php'));
 
 } else {
     \core\notification::add('Unknown payment type.', \core\output\notification::NOTIFY_ERROR);

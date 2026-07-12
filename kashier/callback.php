@@ -146,6 +146,15 @@ if (strpos($order_id, 'vid-') === 0) {
         'تم الدفع بنجاح! تم فتح الفيديو. Payment successful — video unlocked.',
         \core\output\notification::NOTIFY_SUCCESS
     );
+
+    // Redirect directly to the purchased module if cmid is known.
+    if ($cmid) {
+        $cm = $DB->get_record('course_modules', ['id' => $cmid]);
+        if ($cm) {
+            $module = $DB->get_field('modules', 'name', ['id' => $cm->module]);
+            redirect(new moodle_url('/mod/' . $module . '/view.php', ['id' => $cmid]));
+        }
+    }
     redirect(new moodle_url('/course/view.php', ['id' => $courseid]));
 
 } elseif (strpos($order_id, 'dep-') === 0) {

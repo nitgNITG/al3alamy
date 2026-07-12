@@ -294,9 +294,11 @@ if (isset($_FILES['url']['name'])) {
 	$params_file = $chunks_dir . '/vimeo_params_' . $vimeo_record_id . '.json';
 	file_put_contents($params_file, $params);
 
-	$bg = escapeshellarg($CFG->dirroot . '/test2/vimeo_bg.php');
-	$pf = escapeshellarg($params_file);
-	exec("php $bg $pf > /dev/null 2>&1 &");
+	$bg     = escapeshellarg($CFG->dirroot . '/test2/vimeo_bg.php');
+	$pf     = escapeshellarg($params_file);
+	$php    = escapeshellarg(PHP_BINARY); // full path — avoids PATH issues under PHP-FPM
+	$logfile = escapeshellarg($chunks_dir . '/vimeo_bg.log');
+	exec("$php $bg $pf >> $logfile 2>&1 &");
 
 	// ── 4. Return empty response — JS redirect fires immediately ──────────
 	exit;

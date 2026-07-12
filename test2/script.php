@@ -253,15 +253,12 @@ LEFT OUTER JOIN mo_role_assignments ra ON cx.id = ra.contextid AND ra.roleid = '
 	}
 }
 //add to vimeo
-//echo "Before if";
 if (isset($_FILES['url']['name'])) {
-	//echo "Entered if";
 	$id = $_POST['id'];
 	$name = $_POST['name'];
 	$description = $_POST['description'];
 	$type = $_POST['type'];
 	try {
-	//echo "upload started";
 		$ins = new stdClass();
 		$ins->name = $_POST["name"];
 		$ins->description = $_POST["description"];
@@ -271,6 +268,11 @@ if (isset($_FILES['url']['name'])) {
 		$data->resource2_id = $id;
 		$data->type = $type;
 		$data->id = $DB->insert_record('reda_video_type2', $data);
+
+		// ── Prevent PHP timeout during long Vimeo upload ──────────────────
+		set_time_limit(0);
+		ignore_user_abort(true);
+
 		$output = vimeo($_FILES["url"]["tmp_name"], $ins->name, $ins->description, $id);
 		$last_string = substr($output, strrpos($output, '/') + 1);
 		$first_string = preg_replace('/\s+?(\S+)?$/', '', substr($output, 0, 18));
@@ -278,9 +280,10 @@ if (isset($_FILES['url']['name'])) {
 		$result = str_replace($last_string, '', $result);
 		$ins->url = $result;
 		$ins->id = $DB->insert_record('vimeo_files2', $ins);
+		// Output nothing on success — JS redirect fires when responseText is empty.
 	} catch (Exception $e) {
-		//echo "Entered elses";
-		echo "Failure: " . $e->getMessage();
+		error_log('script.php Vimeo upload error: ' . $e->getMessage());
+		// Output nothing so redirect still fires; error is in PHP error log.
 	}
 }
 //edit to vimeo
@@ -289,7 +292,6 @@ elseif (isset($_POST['update_form'])) {
 	$id = $_POST['id'];
 	$name = $_POST['name'];
 	$description = $_POST['description'];
-	// echo $_FILES["url_update"]["tmp_name"];
 	try {
 		$client = new Vimeo("4dad588b7f47a44426afc26f398fe2367ea49c92", "IHRxCFjq5qvsKlU6DjWGfNQwtZGHGmK1pByyCYWGrkWnE9F91BbNqPdqXY+dHVyvKjvRWYTu3ba2A8KM1GR2gcqqYiz+jXAx6uLrsEb0jFJrUSMIi3KMIyS+Je+nsN3s", "195c95a4e775fca8d6e70cb8db4aca73");
 		$record = $DB->get_record("vimeo_files2", array("resource2_id" => $id));
@@ -297,13 +299,15 @@ elseif (isset($_POST['update_form'])) {
 		$first_string = preg_replace('/\s+?(\S+)?$/', '', substr($record->url, 0, 18));
 		$result = str_replace('videos/', '', $record->url);
 		$uri = "/videos/" . $result;
-		// var_dump('hi'.$result);
 		$response = $client->request($uri, [], 'GET');
 		$ins = new stdClass();
 		$ins->id = $record->id;
 
+		// ── Prevent PHP timeout during long Vimeo replace upload ──────────
+		set_time_limit(0);
+		ignore_user_abort(true);
+
 		if ($_FILES["url_update"]["name"] == "") {
-			//var_dump($response);
 			$request = $client->request($uri, array(
 				'name' => $_POST['name'],
 				'description' => $_POST['description']
@@ -324,7 +328,7 @@ elseif (isset($_POST['update_form'])) {
 				'name' => $_POST['name'],
 				'description' => $_POST['description']
 			), 'PATCH');
-			$last_word_start = strrpos($response, ' ') + 1; // +1 so we don't include the space in our result
+			$last_word_start = strrpos($response, ' ') + 1;
 			$last_word = substr($response, $last_word_start);
 			$last_word = str_replace('videos/', '', $last_word);
 			$ins->name = $_POST['name'];
@@ -337,9 +341,10 @@ elseif (isset($_POST['update_form'])) {
 			$video_type->id=$typeData->id;
 			$video_type->type=$_POST['type'];
 			$DB->update_record('reda_video_type2',$video_type);
-			// echo $_FILES["url_update"]["tmp_name"];
 		}
+		// Output nothing on success — JS redirect fires when responseText is empty.
 	} catch (Exception $e) {
-		echo "Failure5: " . $e->getMessage();
+		error_log('script.php Vimeo update error: ' . $e->getMessage());
+		// Output nothing so redirect still fires; error is in PHP error log.
 	}
 }

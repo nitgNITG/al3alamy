@@ -243,6 +243,53 @@ if (strpos($order_id, 'vid-') === 0) {
     );
     redirect(new moodle_url('/local/registrationcodes/codes_ready.php', ['order_id' => $order_id]));
 
+} elseif (strpos($order_id, 'sub-') === 0) {
+    // Subscription purchase — format: sub-{userid}-{planid}-{timestamp}
+    $parts   = explode('-', $order_id);
+    $pay_uid = isset($parts[1]) ? (int) $parts[1] : 0;
+    $planid  = isset($parts[2]) ? (int) $parts[2] : 0;
+
+    if (!$pay_uid || !$planid) {
+        \core\notification::add('Invalid subscription order reference.', \core\output\notification::NOTIFY_ERROR);
+        redirect(new moodle_url('/local/subscriptions/index.php'));
+    }
+
+    // Security: logged-in user must match the order owner.
+    if ($USER->id && $USER->id !== $pay_uid) {
+        \core\notification::add('User mismatch in subscription payment.', \core\output\notification::NOTIFY_ERROR);
+        redirect(new moodle_url('/local/subscriptions/index.php'));
+    }
+
+    // Record transaction (replay-safe — already checked above).
+    $DB->insert_record('kashier_transactions', [
+        'order_id'       => $order_id,
+        'transaction_id' => $transaction_id,
+        'user_id'        => $pay_uid,
+        'amount'         => $amount,
+        'currency'       => KASHIER_CURRENCY,
+        'type'           => 'subscription',
+        'status'         => 'success',
+        'timecreated'    => time(),
+    ]);
+
+    // Activate the subscription (skip if the user is somehow already subscribed).
+    if (!\local_subscriptions\manager::has_active_subscription($pay_uid)) {
+        \local_subscriptions\manager::activate_for_user(
+            $planid,
+            $pay_uid,
+            $amount,
+            \local_subscriptions\manager::SOURCE_ONLINE,
+            $order_id,
+            $transaction_id
+        );
+    }
+
+    \core\notification::add(
+        get_string('payment_success', 'local_subscriptions'),
+        \core\output\notification::NOTIFY_SUCCESS
+    );
+    redirect(new moodle_url('/local/subscriptions/mysubscriptions.php'));
+
 } else {
     \core\notification::add('Unknown payment type.', \core\output\notification::NOTIFY_ERROR);
     redirect(new moodle_url('/'));

@@ -1,0 +1,18 @@
+# Local dev runtime for Moodle 4.1.5 (al3alamy)
+# Runs PHP 8.1 + Apache in a container, serving the project on http://localhost:8088
+# Database is NOT run here — config.php points at the remote MariaDB.
+services:
+  web:
+    image: moodlehq/moodle-php-apache:8.1
+    container_name: al3alamy_web
+    ports:
+      - "8088:80"
+    volumes:
+      # The Moodle code (this project) becomes the Apache document root
+      - ./:/var/www/html
+      # moodledata lives OUTSIDE the document root so Apache never serves it
+      - ../al3alamy_moodledata:/var/moodledata
+    extra_hosts:
+      # lets the container resolve host.docker.internal if ever needed
+      - "host.docker.internal:host-gateway"
+    restart: unless-stopped

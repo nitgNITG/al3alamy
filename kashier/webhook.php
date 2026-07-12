@@ -190,6 +190,38 @@ if (strpos($order_id, 'vid-') === 0) {
         $notes_tag,
         $pay_uid
     );
+} elseif (strpos($order_id, 'sub-') === 0) {
+    // Subscription purchase — format: sub-{userid}-{planid}-{timestamp}
+    $parts   = explode('-', $order_id);
+    $pay_uid = isset($parts[1]) ? (int) $parts[1] : 0;
+    $planid  = isset($parts[2]) ? (int) $parts[2] : 0;
+
+    if (!$pay_uid || !$planid) {
+        http_response_code(400);
+        exit('Bad subscription order reference');
+    }
+
+    $DB->insert_record('kashier_transactions', [
+        'order_id'       => $order_id,
+        'transaction_id' => $transaction_id,
+        'user_id'        => $pay_uid,
+        'amount'         => $amount,
+        'currency'       => KASHIER_CURRENCY,
+        'type'           => 'subscription',
+        'status'         => 'success',
+        'timecreated'    => time(),
+    ]);
+
+    if (!\local_subscriptions\manager::has_active_subscription($pay_uid)) {
+        \local_subscriptions\manager::activate_for_user(
+            $planid,
+            $pay_uid,
+            $amount,
+            \local_subscriptions\manager::SOURCE_ONLINE,
+            $order_id,
+            $transaction_id
+        );
+    }
 }
 
 http_response_code(200);

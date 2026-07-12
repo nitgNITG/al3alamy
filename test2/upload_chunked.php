@@ -16,18 +16,11 @@ function vimeo($url, $name, $description, $id)
 
 	$response = $client->request($uri . '?fields=transcode.status');
 	if ($response['body']['transcode']['status'] === 'complete') {
-		//       print '
-		//       <div class="alert alert-success" role="alert">
-		//       Your video finished transcoding.
-		//  </div>
-		//       ';
-		// redirect($CFG->wwwroot.'/teacherprofile/profile.php?id='.$id.'');
+		// transcoding done
 	} elseif ($response['body']['transcode']['status'] === 'in_progress') {
-		// print '<div class="spinner-border text-warning"></div>
-		//   <span>Your video is still transcoding Refresh again after a while.</span>
-		//   ';
+		// still transcoding
 	} else {
-		 //print 'Your video encountered an error during transcoding.';
+		 // error during transcoding
 	}
 
 	$response = $client->request($uri . '?fields=link');
@@ -75,7 +68,6 @@ if (!$chunks || $chunk == $chunks - 1) {
 	$type = $_POST['dtype'];
 	if (!isset($_POST['update_form'])) {
 		try {
-			//echo "upload started";
 			$ins = new stdClass();
 			$ins->name = $name;
 			$ins->description = $description;
@@ -85,6 +77,21 @@ if (!$chunks || $chunk == $chunks - 1) {
 			$data->resource2_id = $id;
 			$data->type = $type;
 			$data->id = $DB->insert_record('reda_video_type2', $data);
+
+			// ── Send success response to browser BEFORE the long Vimeo upload ──
+			// This prevents plupload from timing out while we upload to Vimeo.
+			$response_json = '{"OK": 1, "info": "Upload successful.", "filepath":"' . $filePath . '"}';
+			header('Content-Type: application/json');
+			header('Content-Length: ' . strlen($response_json));
+			header('Connection: close');
+			echo $response_json;
+			if (ob_get_level()) ob_end_flush();
+			flush();
+
+			// ── Now upload to Vimeo in the background (no timeout risk) ──
+			ignore_user_abort(true);
+			set_time_limit(0);
+
 			$output = vimeo($filePath, $ins->name, $ins->description, $id);
 			$last_string = substr($output, strrpos($output, '/') + 1);
 			$first_string = preg_replace('/\s+?(\S+)?$/', '', substr($output, 0, 18));
@@ -94,10 +101,10 @@ if (!$chunks || $chunk == $chunks - 1) {
 			$ins->id = $DB->insert_record('vimeo_files2', $ins);
 			unlink($filePath);
 		} catch (Exception $e) {
-			echo "Entered elses";
-			unlink($filePath);
-			echo "Failure: " . $e->getMessage();
+			error_log('upload_chunked.php Vimeo upload error: ' . $e->getMessage());
+			@unlink($filePath);
 		}
+		exit; // response already sent above
 	} else {
 		try {
 			$client = new Vimeo("4dad588b7f47a44426afc26f398fe2367ea49c92", "IHRxCFjq5qvsKlU6DjWGfNQwtZGHGmK1pByyCYWGrkWnE9F91BbNqPdqXY+dHVyvKjvRWYTu3ba2A8KM1GR2gcqqYiz+jXAx6uLrsEb0jFJrUSMIi3KMIyS+Je+nsN3s", "195c95a4e775fca8d6e70cb8db4aca73");
@@ -106,13 +113,23 @@ if (!$chunks || $chunk == $chunks - 1) {
 			$first_string = preg_replace('/\s+?(\S+)?$/', '', substr($record->url, 0, 18));
 			$result = str_replace('videos/', '', $record->url);
 			$uri = "/videos/" . $result;
-			// var_dump('hi'.$result);
 			$response = $client->request($uri, [], 'GET');
 			$ins = new stdClass();
 			$ins->id = $record->id;
 
+			// ── Send success to browser before the long replace upload ──
+			$response_json = '{"OK": 1, "info": "Upload successful.", "filepath":"' . $filePath . '"}';
+			header('Content-Type: application/json');
+			header('Content-Length: ' . strlen($response_json));
+			header('Connection: close');
+			echo $response_json;
+			if (ob_get_level()) ob_end_flush();
+			flush();
+
+			ignore_user_abort(true);
+			set_time_limit(0);
+
 			if (isset($_POST['files_count']) && $_POST['files_count'] == 0) {
-				//var_dump($response);
 				$request = $client->request($uri, array(
 					'name' => $name,
 					'description' => $description
@@ -134,7 +151,7 @@ if (!$chunks || $chunk == $chunks - 1) {
 					'name' => $name,
 					'description' => $description
 				),  'PATCH');
-				$last_word_start = strrpos($response, ' ') + 1; // +1 so we don't include the space in our result
+				$last_word_start = strrpos($response, ' ') + 1;
 				$last_word = substr($response, $last_word_start);
 				$last_word = str_replace('videos/', '', $last_word);
 				$ins->name = $name;
@@ -150,9 +167,10 @@ if (!$chunks || $chunk == $chunks - 1) {
 				unlink($filePath);
 			}
 		} catch (Exception $e) {
-			unlink($filePath);
-			echo "Failure5: " . $e->getMessage();
+			error_log('upload_chunked.php Vimeo replace error: ' . $e->getMessage());
+			@unlink($filePath);
 		}
+		exit; // response already sent above
 	}
 }
 

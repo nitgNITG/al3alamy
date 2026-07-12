@@ -254,37 +254,52 @@ LEFT OUTER JOIN mo_role_assignments ra ON cx.id = ra.contextid AND ra.roleid = '
 }
 //add to vimeo
 if (isset($_FILES['url']['name'])) {
-	$id = $_POST['id'];
-	$name = $_POST['name'];
+	$id          = $_POST['id'];
+	$name        = $_POST['name'];
 	$description = $_POST['description'];
-	$type = $_POST['type'];
-	try {
-		$ins = new stdClass();
-		$ins->name = $_POST["name"];
-		$ins->description = $_POST["description"];
-		$ins->resource2_id = $id;
+	$type        = $_POST['type'];
 
-		$data = new stdClass();
-		$data->resource2_id = $id;
-		$data->type = $type;
-		$data->id = $DB->insert_record('reda_video_type2', $data);
-
-		// ── Prevent PHP timeout during long Vimeo upload ──────────────────
-		set_time_limit(0);
-		ignore_user_abort(true);
-
-		$output = vimeo($_FILES["url"]["tmp_name"], $ins->name, $ins->description, $id);
-		$last_string = substr($output, strrpos($output, '/') + 1);
-		$first_string = preg_replace('/\s+?(\S+)?$/', '', substr($output, 0, 18));
-		$result = str_replace($first_string, '', $output);
-		$result = str_replace($last_string, '', $result);
-		$ins->url = $result;
-		$ins->id = $DB->insert_record('vimeo_files2', $ins);
-		// Output nothing on success — JS redirect fires when responseText is empty.
-	} catch (Exception $e) {
-		error_log('script.php Vimeo upload error: ' . $e->getMessage());
-		// Output nothing so redirect still fires; error is in PHP error log.
+	// ── 1. Move uploaded file to a permanent location ─────────────────────
+	// PHP tmp files are deleted when the request ends — we must move it first.
+	$chunks_dir = __DIR__ . '/chunks';
+	if (!is_dir($chunks_dir)) {
+		mkdir($chunks_dir, 0755, true);
 	}
+	$perm_file = $chunks_dir . '/vimeo_' . $id . '_' . time() . '.mp4';
+	move_uploaded_file($_FILES['url']['tmp_name'], $perm_file);
+
+	// ── 2. Insert DB records now (with placeholder URL) ───────────────────
+	$ins = new stdClass();
+	$ins->name        = $name;
+	$ins->description = $description;
+	$ins->resource2_id = $id;
+	$ins->url         = '';
+	$vimeo_record_id  = $DB->insert_record('vimeo_files2', $ins);
+
+	$data = new stdClass();
+	$data->resource2_id = $id;
+	$data->type = $type;
+	$DB->insert_record('reda_video_type2', $data);
+
+	// ── 3. Spawn background process to upload to Vimeo ────────────────────
+	// This decouples the Vimeo upload from the HTTP request completely.
+	// Apache/PHP-FPM timeouts no longer affect the upload.
+	$params = json_encode([
+		'file'      => $perm_file,
+		'id'        => $id,
+		'name'      => $name,
+		'description' => $description,
+		'record_id' => $vimeo_record_id,
+	]);
+	$params_file = $chunks_dir . '/vimeo_params_' . $vimeo_record_id . '.json';
+	file_put_contents($params_file, $params);
+
+	$bg = escapeshellarg($CFG->dirroot . '/test2/vimeo_bg.php');
+	$pf = escapeshellarg($params_file);
+	exec("php $bg $pf > /dev/null 2>&1 &");
+
+	// ── 4. Return empty response — JS redirect fires immediately ──────────
+	exit;
 }
 //edit to vimeo
 

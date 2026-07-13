@@ -32,7 +32,9 @@ try {
         1.00,
         (new moodle_url('/kashier/callback.php'))->out(false),
         (new moodle_url('/kashier/webhook.php'))->out(false),
-        'diagnostic'
+        'diagnostic',
+        $type,
+        ['reference' => 'diag', 'email' => 'diagnostic@al3alamy.com', 'name' => 'Diagnostic Test']
     );
     fwrite(STDOUT, "SUCCESS — sessionUrl: {$session['sessionUrl']}\n");
     fwrite(STDOUT, "sessionId: {$session['sessionId']}\n");

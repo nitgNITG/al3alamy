@@ -93,10 +93,28 @@ function kashier_create_session(
     string $redirect_url,
     string $webhook_url  = '',
     string $description  = '',
-    string $type         = ''
+    string $type         = '',
+    array  $customer     = []
 ): array {
+    global $USER;
+
     if ($type === '') $type = kashier_account_for_order($order_id);
     $creds = kashier_account($type);
+
+    // Kashier's Sessions API requires a customer object (despite the docs
+    // marking it optional). Default to the logged-in user when not supplied.
+    if (empty($customer)) {
+        $customer = [
+            'reference' => (string)($USER->id ?? '0'),
+        ];
+        if (!empty($USER->email)) {
+            $customer['email'] = $USER->email;
+        }
+        $fullname = trim(($USER->firstname ?? '') . ' ' . ($USER->lastname ?? ''));
+        if ($fullname !== '') {
+            $customer['name'] = $fullname;
+        }
+    }
 
     $body = [
         'amount'              => number_format($amount, 2, '.', ''),
@@ -109,6 +127,7 @@ function kashier_create_session(
         'maxFailureAttempts'  => 3,
         'expireAt'            => gmdate('Y-m-d\TH:i:s.v\Z', time() + 3600),
         'allowedMethods'      => 'card,wallet',
+        'customer'            => $customer,
     ];
 
     if ($webhook_url) $body['serverWebhook'] = $webhook_url;

@@ -151,11 +151,13 @@ function local_videopay_ensure_group(int $courseid, int $cmid, int $existinggrou
         return (int)$existing->id;
     }
 
+    // Keep within column limits (name varchar(254); description may be short on
+    // customised installs). Description is optional, so leave it empty.
     $group = (object)[
         'courseid'    => $courseid,
-        'name'        => 'Paid video: ' . $label,
+        'name'        => core_text::substr('Paid video: ' . $label, 0, 254),
         'idnumber'    => $idnumber,
-        'description' => 'Auto-created by local_videopay for course module ' . $cmid . '.',
+        'description' => '',
     ];
     return (int)groups_create_group($group);
 }

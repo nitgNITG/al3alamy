@@ -638,3 +638,17 @@ h1, h2, h3, h4, h5, h6 {
   background: #f8f9fa;
   resize: vertical;
 }
+
+/* ── Course cover image: show FULL (uncropped) + remove "Image: …, by …" caption ──
+   The course-image banner (Moodle course-image helper, multitopic-style) renders a
+   cropped background slice (#course-header-banner) plus an attribution caption
+   (#course-header-banner_attribution). Show the whole image and drop the caption. */
+#course-header-banner {
+  background-size: contain !important;
+  background-repeat: no-repeat !important;
+  background-position: center center !important;
+}
+#course-header-banner_attribution,
+.section_image_holder > p {
+  display: none !important;
+}

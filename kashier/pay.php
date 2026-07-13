@@ -47,17 +47,9 @@ if ($DB->record_exists('groups_members', ['userid' => $USER->id, 'groupid' => $g
 // Format: vid-{userid}-{courseid}-{groupid}-{cmid}-{timestamp}
 $order_id = 'vid-' . $USER->id . '-' . $courseid . '-' . $groupid . '-' . $cmid . '-' . time();
 
-$redirect_url = $CFG->wwwroot . '/kashier/callback.php';
-$webhook_url  = $CFG->wwwroot . '/kashier/webhook.php';
+$redirect_url = (new moodle_url('/kashier/callback.php'))->out(false);
+$webhook_url  = (new moodle_url('/kashier/webhook.php'))->out(false);
 $description  = 'Video Purchase | Course ' . $courseid . ' | CM ' . $cmid;
-
-$checkout_url = kashier_checkout_url(
-    $order_id,
-    (float)$amount,
-    $redirect_url,
-    $webhook_url,
-    $description
-);
 
 // Store pending purchase in session (backup if order_id parsing fails).
 $SESSION->kashier_pending_video = [
@@ -69,5 +61,24 @@ $SESSION->kashier_pending_video = [
     'amount'   => $amount,
 ];
 
-header('Location: ' . $checkout_url);
-exit;
+// Create a Kashier Payment Session (server-to-server) and hand the student the
+// hosted checkout URL. Verification happens in callback.php / webhook.php via
+// the session GET API — no client-side hash.
+try {
+    $session = kashier_create_session(
+        $order_id,
+        (float)$amount,
+        $redirect_url,
+        $webhook_url,
+        $description
+    );
+    redirect($session['sessionUrl']);
+} catch (\Exception $e) {
+    error_log('kashier/pay.php session error: ' . $e->getMessage());
+    redirect(
+        new moodle_url('/course/view.php', ['id' => $courseid]),
+        'خطأ في الاتصال ببوابة الدفع. حاول مرة أخرى. Payment gateway error, please try again.',
+        null,
+        \core\output\notification::NOTIFY_ERROR
+    );
+}

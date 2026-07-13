@@ -17,7 +17,7 @@
 defined('MOODLE_INTERNAL') || die();
 
 $plugin->component = 'local_subscriptions';
-$plugin->version   = 2026071302;
+$plugin->version   = 2026071303;
 $plugin->requires  = 2022112800; // Moodle 4.1
 $plugin->release   = '1.0.0';
 $plugin->maturity  = MATURITY_STABLE;

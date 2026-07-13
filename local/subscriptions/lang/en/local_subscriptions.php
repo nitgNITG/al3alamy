@@ -68,3 +68,19 @@ $string['source_manual']               = 'Manual Assignment';
 $string['status_active']               = 'Active';
 $string['status_expired']              = 'Expired';
 $string['status_cancelled']            = 'Cancelled';
+
+// Credit-based lesson unlocking.
+$string['unlock_limit']                    = 'Lessons a subscriber can unlock';
+$string['unlock_limit_help']               = 'Number of lessons the student may unlock from the selected lessons (0 = unlimited / all lessons). Unlocked lessons stay accessible forever, even after the subscription expires.';
+$string['unlock_with_subscription']        = 'Unlock with subscription';
+$string['unlocks_remaining']               = 'remaining';
+$string['no_credits_left']                 = 'No unlocks left';
+$string['unlocking']                       = 'Unlocking…';
+$string['unlock_success']                  = 'Lesson unlocked successfully.';
+$string['already_unlocked']                = 'This lesson is already unlocked.';
+$string['unlock_no_active_subscription']   = 'You have no active subscription.';
+$string['unlock_not_credit_plan']          = 'Your subscription plan does not use lesson unlocking.';
+$string['unlock_limit_reached']            = 'You have used all your unlocks.';
+$string['unlock_not_in_plan']              = 'This lesson is not part of your subscription plan.';
+$string['unlocked_lessons']                = 'Unlocked lessons';
+$string['no_unlocks_yet']                  = 'You have not unlocked any lesson yet.';

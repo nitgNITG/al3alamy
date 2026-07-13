@@ -226,6 +226,7 @@ class manager {
         $record->expiry_type        = $data->expiry_type ?? self::EXPIRY_DAYS;
         $record->expiry_days        = isset($data->expiry_days) ? (int)$data->expiry_days : null;
         $record->expiry_date        = isset($data->expiry_date) ? (int)$data->expiry_date : null;
+        $record->unlock_limit       = isset($data->unlock_limit) ? max(0, (int)$data->unlock_limit) : 0;
         $record->timecreated        = $now;
         $record->timemodified       = $now;
         $record->created_by         = $USER->id;
@@ -255,7 +256,7 @@ class manager {
         $now = time();
 
         $fields = ['name', 'description', 'price', 'status', 'course_access_type',
-                   'expiry_type', 'expiry_days', 'expiry_date'];
+                   'expiry_type', 'expiry_days', 'expiry_date', 'unlock_limit'];
 
         $record = new \stdClass();
         $record->id           = $planid;
@@ -596,6 +597,202 @@ class manager {
             'manual'       => $manual,
             'total_amount' => (float)($amount_row->total ?? 0),
             'total_refund' => (float)($refund_row->total ?? 0),
+        ];
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // Credit-based lesson unlocking.
+    // A plan with unlock_limit > 0 lets a subscriber unlock up to N lessons from
+    // the plan's pool. "Unlocking" = adding the user to that lesson's videopay
+    // group (same mechanism paying uses), so access is permanent and survives
+    // subscription expiry.
+    // ─────────────────────────────────────────────────────────────────────────
+
+    /**
+     * Compute the pool of unlockable lessons for a plan: the paid (videopay-gated)
+     * resource2 modules covered by the plan's items.
+     *
+     * @param int $planid
+     * @return array  [cmid => groupid] for every paid lesson in the plan's pool
+     */
+    public static function get_pool_cmids(int $planid): array {
+        global $DB;
+
+        // No videopay = no gated lessons = empty pool.
+        if (!$DB->get_manager()->table_exists('local_videopay_prices')) {
+            return [];
+        }
+
+        $items = self::get_plan_items($planid);
+        if (!$items) {
+            return [];
+        }
+
+        $pool = [];
+
+        // Course-level items where all lessons are included: every paid resource2 in the course.
+        $allcourses = [];
+        $specificcms = [];
+        foreach ($items as $item) {
+            if ($item->lesson_access_type === self::LESSON_ACCESS_SPECIFIC && !empty($item->cmid)) {
+                $specificcms[(int)$item->cmid] = true;
+            } else {
+                $allcourses[(int)$item->courseid] = true;
+            }
+        }
+
+        if ($allcourses) {
+            list($insql, $params) = $DB->get_in_or_equal(array_keys($allcourses), SQL_PARAMS_NAMED);
+            $sql = "SELECT p.cmid, p.groupid
+                      FROM {local_videopay_prices} p
+                      JOIN {course_modules} cm ON cm.id = p.cmid
+                     WHERE cm.course $insql
+                       AND p.is_free = 0
+                       AND p.groupid > 0";
+            foreach ($DB->get_records_sql($sql, $params) as $r) {
+                $pool[(int)$r->cmid] = (int)$r->groupid;
+            }
+        }
+
+        if ($specificcms) {
+            list($insql, $params) = $DB->get_in_or_equal(array_keys($specificcms), SQL_PARAMS_NAMED);
+            $sql = "SELECT p.cmid, p.groupid
+                      FROM {local_videopay_prices} p
+                     WHERE p.cmid $insql
+                       AND p.is_free = 0
+                       AND p.groupid > 0";
+            foreach ($DB->get_records_sql($sql, $params) as $r) {
+                $pool[(int)$r->cmid] = (int)$r->groupid;
+            }
+        }
+
+        return $pool;
+    }
+
+    /**
+     * Get the cmids a subscription has already unlocked.
+     *
+     * @param int $subscriptionid
+     * @return int[] list of cmids
+     */
+    public static function get_unlocked_cmids(int $subscriptionid): array {
+        global $DB;
+        return array_map('intval', $DB->get_fieldset_select(
+            'local_subscriptions_unlocks', 'cmid', 'subscriptionid = :sid', ['sid' => $subscriptionid]
+        ));
+    }
+
+    /**
+     * The unlock limit that applies to a given subscription. Read from the stored
+     * snapshot so later plan edits don't change what an existing buyer paid for;
+     * falls back to the live plan if no snapshot is present.
+     *
+     * @param \stdClass $sub  a local_subscriptions_users record
+     * @return int
+     */
+    public static function get_unlock_limit_for(\stdClass $sub): int {
+        if (!empty($sub->snapshot)) {
+            $snap = json_decode($sub->snapshot, true);
+            if (is_array($snap) && isset($snap['unlock_limit'])) {
+                return max(0, (int)$snap['unlock_limit']);
+            }
+        }
+        $plan = self::get_plan((int)$sub->planid);
+        return $plan ? max(0, (int)$plan->unlock_limit) : 0;
+    }
+
+    /**
+     * How many unlocks remain on a subscription.
+     *
+     * @param \stdClass $sub
+     * @return int
+     */
+    public static function get_remaining_unlocks(\stdClass $sub): int {
+        global $DB;
+        $limit = self::get_unlock_limit_for($sub);
+        if ($limit <= 0) {
+            return 0;
+        }
+        $used = $DB->count_records('local_subscriptions_unlocks', ['subscriptionid' => $sub->id]);
+        return max(0, $limit - $used);
+    }
+
+    /**
+     * Unlock a lesson for a user against their active subscription.
+     * All checks are enforced server-side.
+     *
+     * @param int $userid
+     * @param int $cmid
+     * @return array  ['status' => 'success'|'error', 'message' => string, 'remaining' => int]
+     */
+    public static function unlock_lesson(int $userid, int $cmid): array {
+        global $DB, $CFG;
+
+        $error = function(string $key, int $remaining = 0) {
+            return [
+                'status'    => 'error',
+                'message'   => get_string($key, 'local_subscriptions'),
+                'remaining' => $remaining,
+            ];
+        };
+
+        // 1) Must have an active (non-expired) subscription.
+        $sub = self::get_active_subscription($userid);
+        if (!$sub) {
+            return $error('unlock_no_active_subscription');
+        }
+
+        // 2) Must be a credit plan.
+        $limit = self::get_unlock_limit_for($sub);
+        if ($limit <= 0) {
+            return $error('unlock_not_credit_plan');
+        }
+
+        // 3) Lesson must belong to the plan's pool.
+        $pool = self::get_pool_cmids((int)$sub->planid);
+        if (!isset($pool[$cmid])) {
+            return $error('unlock_not_in_plan');
+        }
+        $groupid = (int)$pool[$cmid];
+
+        // 4) Already unlocked on this subscription → idempotent success.
+        if ($DB->record_exists('local_subscriptions_unlocks',
+                ['subscriptionid' => $sub->id, 'cmid' => $cmid])) {
+            return [
+                'status'    => 'success',
+                'message'   => get_string('already_unlocked', 'local_subscriptions'),
+                'remaining' => self::get_remaining_unlocks($sub),
+            ];
+        }
+
+        // 5) Must have remaining credits.
+        if (self::get_remaining_unlocks($sub) <= 0) {
+            return $error('unlock_limit_reached');
+        }
+
+        // 6) Grant access = add to the lesson's videopay group, then record it.
+        require_once($CFG->dirroot . '/group/lib.php');
+
+        $cm = $DB->get_record('course_modules', ['id' => $cmid], 'id, course', MUST_EXIST);
+
+        if (!$DB->record_exists('groups_members', ['userid' => $userid, 'groupid' => $groupid])) {
+            groups_add_member($groupid, $userid);
+        }
+
+        $rec = new \stdClass();
+        $rec->subscriptionid = (int)$sub->id;
+        $rec->userid         = $userid;
+        $rec->planid         = (int)$sub->planid;
+        $rec->courseid       = (int)$cm->course;
+        $rec->cmid           = $cmid;
+        $rec->groupid        = $groupid;
+        $rec->timecreated    = time();
+        $DB->insert_record('local_subscriptions_unlocks', $rec);
+
+        return [
+            'status'    => 'success',
+            'message'   => get_string('unlock_success', 'local_subscriptions'),
+            'remaining' => self::get_remaining_unlocks($sub),
         ];
     }
 

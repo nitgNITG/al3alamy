@@ -68,3 +68,19 @@ $string['source_manual']               = 'تعيين يدوي';
 $string['status_active']               = 'فعال';
 $string['status_expired']              = 'منتهي';
 $string['status_cancelled']            = 'ملغى';
+
+// فتح الدروس بالرصيد (الاشتراك).
+$string['unlock_limit']                    = 'عدد الدروس المسموح للطالب بفتحها';
+$string['unlock_limit_help']               = 'عدد الدروس التي يمكن للطالب فتحها من الدروس المحددة (0 = غير محدود / كل الدروس). الدروس المفتوحة تظل متاحة للطالب للأبد حتى بعد انتهاء الاشتراك.';
+$string['unlock_with_subscription']        = 'افتح بالاشتراك';
+$string['unlocks_remaining']               = 'المتبقي';
+$string['no_credits_left']                 = 'لا يوجد رصيد للفتح';
+$string['unlocking']                       = 'جارٍ الفتح…';
+$string['unlock_success']                  = 'تم فتح الدرس بنجاح.';
+$string['already_unlocked']                = 'هذا الدرس مفتوح بالفعل.';
+$string['unlock_no_active_subscription']   = 'ليس لديك اشتراك فعّال.';
+$string['unlock_not_credit_plan']          = 'خطة اشتراكك لا تستخدم نظام فتح الدروس.';
+$string['unlock_limit_reached']            = 'لقد استخدمت كل رصيد الفتح المتاح.';
+$string['unlock_not_in_plan']              = 'هذا الدرس ليس ضمن خطة اشتراكك.';
+$string['unlocked_lessons']                = 'الدروس المفتوحة';
+$string['no_unlocks_yet']                  = 'لم تفتح أي درس بعد.';

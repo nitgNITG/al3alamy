@@ -7,6 +7,7 @@
 // (at your option) any later version.
 
 require_once(__DIR__ . '/../../../config.php');
+require_once($CFG->libdir . '/adminlib.php');
 
 defined('MOODLE_INTERNAL') || die();
 
@@ -184,6 +185,7 @@ echo $OUTPUT->header();
             <th><?php echo get_string('plan_price', 'local_subscriptions'); ?></th>
             <th><?php echo get_string('plan_status', 'local_subscriptions'); ?></th>
             <th><?php echo get_string('expiry_type', 'local_subscriptions'); ?></th>
+            <th><?php echo get_string('unlock_limit', 'local_subscriptions'); ?></th>
             <th><?php echo get_string('subscribers_count', 'local_subscriptions'); ?></th>
             <th>الإجراءات</th>
         </tr>
@@ -210,6 +212,13 @@ echo $OUTPUT->header();
                 <?php echo (int)$plan->expiry_days; ?> يوم
             <?php else: ?>
                 <?php echo $plan->expiry_date ? userdate($plan->expiry_date, get_string('strftimedate', 'langconfig')) : '-'; ?>
+            <?php endif; ?>
+        </td>
+        <td>
+            <?php if ((int)$plan->unlock_limit > 0): ?>
+                <?php echo (int)$plan->unlock_limit; ?>
+            <?php else: ?>
+                <span style="color:#888">&infin;</span>
             <?php endif; ?>
         </td>
         <td><?php echo (int)($sub_counts[$plan->id] ?? 0); ?></td>

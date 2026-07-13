@@ -42,6 +42,33 @@ if ($active_items) {
     }
 }
 
+// Credit-plan info: unlock limit, remaining, and the names of already-unlocked lessons.
+$unlock_limit    = 0;
+$unlock_remaining = 0;
+$unlocked_names  = [];
+if ($active_sub) {
+    $unlock_limit = manager::get_unlock_limit_for($active_sub);
+    if ($unlock_limit > 0) {
+        $unlock_remaining = manager::get_remaining_unlocks($active_sub);
+        $unlock_rows = $DB->get_records('local_subscriptions_unlocks',
+            ['subscriptionid' => $active_sub->id], 'timecreated ASC');
+        foreach ($unlock_rows as $ur) {
+            $cm = $DB->get_record('course_modules', ['id' => $ur->cmid], 'id, module, instance', IGNORE_MISSING);
+            $lname = 'درس #' . (int)$ur->cmid;
+            if ($cm) {
+                $modtype = $DB->get_field('modules', 'name', ['id' => $cm->module]);
+                if ($modtype) {
+                    $mn = $DB->get_field($modtype, 'name', ['id' => $cm->instance], IGNORE_MISSING);
+                    if ($mn) {
+                        $lname = $mn;
+                    }
+                }
+            }
+            $unlocked_names[] = $lname;
+        }
+    }
+}
+
 echo $OUTPUT->header();
 ?>
 <style>
@@ -175,6 +202,28 @@ echo $OUTPUT->header();
                     <span class="course-chip"><?php echo s($ci->fullname); ?></span>
                 <?php endforeach; ?>
             </div>
+        </div>
+        <?php endif; ?>
+
+        <!-- Credit-plan: unlocked lessons -->
+        <?php if ($unlock_limit > 0): ?>
+        <div class="courses-included" style="margin-top:18px; border-top:1px solid rgba(255,255,255,0.2); padding-top:14px">
+            <h3>
+                <?php echo get_string('unlocked_lessons', 'local_subscriptions'); ?>
+                (<?php echo count($unlocked_names); ?> / <?php echo (int)$unlock_limit; ?>)
+                &mdash; <?php echo get_string('unlocks_remaining', 'local_subscriptions'); ?>: <?php echo (int)$unlock_remaining; ?>
+            </h3>
+            <?php if (!empty($unlocked_names)): ?>
+            <div class="course-chips">
+                <?php foreach ($unlocked_names as $ln): ?>
+                    <span class="course-chip">🔓 <?php echo s($ln); ?></span>
+                <?php endforeach; ?>
+            </div>
+            <?php else: ?>
+            <p style="opacity:.85; font-size:.9em; margin:0">
+                <?php echo get_string('no_unlocks_yet', 'local_subscriptions'); ?>
+            </p>
+            <?php endif; ?>
         </div>
         <?php endif; ?>
     </div>

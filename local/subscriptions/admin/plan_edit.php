@@ -7,6 +7,7 @@
 // (at your option) any later version.
 
 require_once(__DIR__ . '/../../../config.php');
+require_once($CFG->libdir . '/adminlib.php');
 
 defined('MOODLE_INTERNAL') || die();
 
@@ -80,6 +81,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $expiry_type        = required_param('expiry_type', PARAM_ALPHA);
     $expiry_days        = optional_param('expiry_days', null, PARAM_INT);
     $expiry_date_str    = optional_param('expiry_date', '', PARAM_TEXT);
+    $unlock_limit       = optional_param('unlock_limit', 0, PARAM_INT);
 
     // Validation.
     if (empty($name)) {
@@ -163,6 +165,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $data->expiry_type        = $expiry_type;
         $data->expiry_days        = $expiry_type === manager::EXPIRY_DAYS ? (int)$expiry_days : null;
         $data->expiry_date        = $expiry_type === manager::EXPIRY_DATE ? $expiry_date_ts : null;
+        $data->unlock_limit       = max(0, (int)$unlock_limit);
         $data->items              = $submitted_items;
 
         if ($planid) {
@@ -190,6 +193,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'expiry_type'        => $expiry_type,
         'expiry_days'        => $expiry_days,
         'expiry_date'        => $expiry_date_ts,
+        'unlock_limit'       => $unlock_limit,
     ];
 }
 
@@ -322,6 +326,16 @@ textarea.form-control { min-height: 80px; resize: vertical; }
 
         <!-- Course Access -->
         <div class="section-title"><?php echo get_string('courses_section', 'local_subscriptions'); ?></div>
+
+        <div class="form-group">
+            <label for="unlock_limit"><?php echo get_string('unlock_limit', 'local_subscriptions'); ?></label>
+            <input type="number" id="unlock_limit" name="unlock_limit" class="form-control"
+                   min="0" step="1" style="max-width:200px"
+                   value="<?php echo (int)($plan->unlock_limit ?? 0); ?>">
+            <small style="color:#888; display:block; margin-top:4px">
+                <?php echo get_string('unlock_limit_help', 'local_subscriptions'); ?>
+            </small>
+        </div>
 
         <div class="form-group">
             <label><?php echo get_string('course_access_type', 'local_subscriptions'); ?></label>

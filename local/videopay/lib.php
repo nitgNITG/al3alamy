@@ -91,15 +91,22 @@ function local_videopay_coursemodule_edit_post_actions($data, $course): stdClass
     $existing = $DB->get_record('local_videopay_prices', ['cmid' => $cmid]);
     $groupid  = $existing ? (int)$existing->groupid : 0;
 
-    // ── Auto-manage the gating group + module restriction ─────────────────
-    // Paid → ensure a dedicated group exists and require it on the module.
-    // Free → drop that restriction so the content opens directly.
+    // ── Auto-manage the gating group + section restriction ────────────────
+    // Paid → ensure a dedicated group exists and gate the WHOLE section behind
+    //        it (the video plus every supporting activity), so students must pay
+    //        the video to unlock everything in that lesson.
+    // Free → drop that group from the section. The now-free module may itself be
+    //        a supporting activity under another paid video, so re-inherit any
+    //        remaining paid-video gate in its section.
     if (!$is_free) {
         $groupid = local_videopay_ensure_group((int)$course->id, $cmid, $groupid,
             $data->name ?? ('cm' . $cmid));
-        local_videopay_apply_group_restriction($cmid, (int)$course->id, $groupid);
-    } else if ($groupid) {
-        local_videopay_clear_group_restriction($cmid, (int)$course->id, $groupid);
+        local_videopay_gate_section($cmid, (int)$course->id, $groupid);
+    } else {
+        if ($groupid) {
+            local_videopay_ungate_section($cmid, (int)$course->id, $groupid);
+        }
+        local_videopay_inherit_section_gate($cmid, (int)$course->id);
     }
 
     if ($existing) {
@@ -163,25 +170,48 @@ function local_videopay_ensure_group(int $courseid, int $cmid, int $existinggrou
 }
 
 /**
+ * Add or remove a single group condition on a module's availability, without
+ * rebuilding the course cache (callers batch the rebuild). Preserves any other
+ * pre-existing conditions. When $add is false and no conditions remain, the
+ * availability is cleared entirely.
+ *
+ * @param int  $cmid
+ * @param int  $groupid
+ * @param bool $add  true to require the group, false to drop it.
+ */
+function local_videopay_module_set_group(int $cmid, int $groupid, bool $add): void {
+    global $DB;
+
+    $cm = $DB->get_record('course_modules', ['id' => $cmid], 'id, availability');
+    if (!$cm) {
+        return;
+    }
+    $tree = local_videopay_decode_availability($cm->availability);
+
+    // Drop any existing condition for this same group (avoid duplicates).
+    $tree['c'] = array_values(array_filter($tree['c'], function ($c) use ($groupid) {
+        return !(isset($c['type'], $c['id']) && $c['type'] === 'group' && (int)$c['id'] === $groupid);
+    }));
+    if ($add) {
+        $tree['c'][] = ['type' => 'group', 'id' => $groupid];
+    }
+
+    if (empty($tree['c'])) {
+        $DB->set_field('course_modules', 'availability', null, ['id' => $cmid]);
+        return;
+    }
+    // showc = true → the locked item stays VISIBLE (greyed) so the student can
+    // see it, see the price, and click through to pay. false would hide it.
+    $tree['showc'] = array_fill(0, count($tree['c']), true);
+    $DB->set_field('course_modules', 'availability', json_encode($tree), ['id' => $cmid]);
+}
+
+/**
  * Ensure the module's availability requires membership of $groupid.
  * Preserves any pre-existing conditions; rebuilds the course cache.
  */
 function local_videopay_apply_group_restriction(int $cmid, int $courseid, int $groupid): void {
-    global $DB;
-
-    $cm = $DB->get_record('course_modules', ['id' => $cmid], 'id, availability', MUST_EXIST);
-    $tree = local_videopay_decode_availability($cm->availability);
-
-    // Drop any existing group condition for this same group, then add it fresh.
-    $tree['c'] = array_values(array_filter($tree['c'], function ($c) use ($groupid) {
-        return !(isset($c['type'], $c['id']) && $c['type'] === 'group' && (int)$c['id'] === $groupid);
-    }));
-    $tree['c'][] = ['type' => 'group', 'id' => $groupid];
-    // showc = true → the locked lesson stays VISIBLE (greyed) so the student can
-    // see it, see the price, and click through to pay. false would hide it entirely.
-    $tree['showc'] = array_fill(0, count($tree['c']), true);
-
-    $DB->set_field('course_modules', 'availability', json_encode($tree), ['id' => $cmid]);
+    local_videopay_module_set_group($cmid, $groupid, true);
     rebuild_course_cache($courseid, true);
 }
 
@@ -190,24 +220,89 @@ function local_videopay_apply_group_restriction(int $cmid, int $courseid, int $g
  * If no conditions remain, availability is cleared entirely.
  */
 function local_videopay_clear_group_restriction(int $cmid, int $courseid, int $groupid): void {
+    local_videopay_module_set_group($cmid, $groupid, false);
+    rebuild_course_cache($courseid, true);
+}
+
+/**
+ * Return the course_module ids that share a section with $cmid (excluding it).
+ *
+ * @param int $cmid
+ * @return int[]
+ */
+function local_videopay_section_siblings(int $cmid): array {
     global $DB;
-
-    $cm = $DB->get_record('course_modules', ['id' => $cmid], 'id, availability', MUST_EXIST);
-    if (empty($cm->availability)) {
-        return;
+    $cm = $DB->get_record('course_modules', ['id' => $cmid], 'id, section');
+    if (!$cm) {
+        return [];
     }
-    $tree = local_videopay_decode_availability($cm->availability);
-    $tree['c'] = array_values(array_filter($tree['c'], function ($c) use ($groupid) {
-        return !(isset($c['type'], $c['id']) && $c['type'] === 'group' && (int)$c['id'] === $groupid);
-    }));
+    $ids = $DB->get_fieldset_select('course_modules', 'id',
+        'section = :s AND id <> :cmid', ['s' => $cm->section, 'cmid' => $cmid]);
+    return array_map('intval', $ids);
+}
 
-    if (empty($tree['c'])) {
-        $DB->set_field('course_modules', 'availability', null, ['id' => $cmid]);
-    } else {
-        $tree['showc'] = array_fill(0, count($tree['c']), true);
-        $DB->set_field('course_modules', 'availability', json_encode($tree), ['id' => $cmid]);
+/**
+ * Whether a course module is a PAID videopay item (gates its own section).
+ */
+function local_videopay_is_paid_module(int $cmid): bool {
+    global $DB;
+    $rec = $DB->get_record('local_videopay_prices', ['cmid' => $cmid], 'is_free');
+    return $rec && (int)$rec->is_free === 0;
+}
+
+/**
+ * Gate an entire section behind a paid video: require $groupid on the video and
+ * on every supporting activity in the same section. Other paid videos are left
+ * alone (they keep their own gate). Rebuilds the course cache once.
+ */
+function local_videopay_gate_section(int $videocmid, int $courseid, int $groupid): void {
+    local_videopay_module_set_group($videocmid, $groupid, true);
+    foreach (local_videopay_section_siblings($videocmid) as $sid) {
+        if (local_videopay_is_paid_module($sid)) {
+            continue; // Another paid video keeps its own gate.
+        }
+        local_videopay_module_set_group($sid, $groupid, true);
     }
     rebuild_course_cache($courseid, true);
+}
+
+/**
+ * Remove $groupid gating from the video and every supporting activity in its
+ * section (used when a video is switched back to free). Rebuilds once.
+ */
+function local_videopay_ungate_section(int $videocmid, int $courseid, int $groupid): void {
+    local_videopay_module_set_group($videocmid, $groupid, false);
+    foreach (local_videopay_section_siblings($videocmid) as $sid) {
+        if (local_videopay_is_paid_module($sid)) {
+            continue; // Don't disturb another paid video's own gate.
+        }
+        local_videopay_module_set_group($sid, $groupid, false);
+    }
+    rebuild_course_cache($courseid, true);
+}
+
+/**
+ * For a (non-paid) module, inherit the gate of any paid video already present in
+ * its section, so a freshly added or newly-freed supporting activity is locked
+ * until the section's video is paid for. Rebuilds once if anything changed.
+ */
+function local_videopay_inherit_section_gate(int $cmid, int $courseid): void {
+    global $DB;
+
+    if (local_videopay_is_paid_module($cmid)) {
+        return; // Paid videos gate the section; they don't inherit.
+    }
+    $changed = false;
+    foreach (local_videopay_section_siblings($cmid) as $sid) {
+        $rec = $DB->get_record('local_videopay_prices', ['cmid' => $sid], 'groupid, is_free');
+        if ($rec && (int)$rec->is_free === 0 && (int)$rec->groupid > 0) {
+            local_videopay_module_set_group($cmid, (int)$rec->groupid, true);
+            $changed = true;
+        }
+    }
+    if ($changed) {
+        rebuild_course_cache($courseid, true);
+    }
 }
 
 /**
@@ -280,7 +375,13 @@ function local_videopay_before_footer(): string {
     }
 
     $modinfo = get_fast_modinfo($courseid);
+    $priced = [];               // cmid => true, for every priced video module.
+    foreach ($records as $r) {
+        $priced[(int)$r->cmid] = true;
+    }
+
     $items = [];
+    $lockedsections = [];       // sectionnum => true, sections with a locked paid video.
     foreach ($records as $r) {
         try {
             $cminfo = $modinfo->get_cm((int)$r->cmid);
@@ -298,9 +399,33 @@ function local_videopay_before_footer(): string {
             'groupid'  => (int)$r->groupid,
             'unlocked' => $unlocked,
         ];
+        if ($paid && !$unlocked) {
+            $lockedsections[(int)$cminfo->sectionnum] = true;
+        }
     }
     if (!$items) {
         return '';
+    }
+
+    // Supporting activities that are locked because their section's video isn't
+    // paid yet (Phase 2 gating). We surface a friendly hint instead of Moodle's
+    // raw "Not available unless…" text on these.
+    $gated = [];
+    foreach (array_keys($lockedsections) as $sn) {
+        if (empty($modinfo->sections[$sn])) {
+            continue;
+        }
+        foreach ($modinfo->sections[$sn] as $scmid) {
+            $scmid = (int)$scmid;
+            if (isset($priced[$scmid])) {
+                continue; // The videos themselves are handled as items above.
+            }
+            $scminfo = $modinfo->get_cm($scmid);
+            if ($scminfo->available || !$scminfo->is_visible_on_course_page()) {
+                continue; // Already unlocked for this user, or not shown.
+            }
+            $gated[] = $scmid;
+        }
     }
 
     $config = json_encode([
@@ -308,6 +433,7 @@ function local_videopay_before_footer(): string {
         'courseid' => $courseid,
         'userid'   => (int)$USER->id,
         'items'    => $items,
+        'gated'    => array_values(array_unique($gated)),
     ], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
 
     $js = <<<JS
@@ -441,6 +567,24 @@ function local_videopay_before_footer(): string {
     var clickable = el.querySelector('.activityinstance') || title;
     clickable.style.cursor = 'pointer';
     clickable.addEventListener('click', function(e){ e.preventDefault(); openModal(item); });
+  });
+
+  // ── Supporting activities locked behind their section's video ───────────────
+  // Replace Moodle's raw "Not available unless…" text with a friendly hint.
+  (CFG.gated || []).forEach(function(cmid){
+    var el = document.getElementById('module-' + cmid);
+    if (!el) return;
+    var info = el.querySelector('.availabilityinfo');
+    if (info) info.style.display = 'none';
+    var title = el.querySelector('.activityname') || el.querySelector('.instancename')
+      || el.querySelector('.activityinstance') || el;
+    if (title.querySelector('.vp-lock-hint')) return;
+    var hint = document.createElement('span');
+    hint.className = 'vp-lock-hint';
+    hint.textContent = '🔒 افتح فيديو الدرس أولاً / Unlock by buying the lesson video';
+    hint.style.cssText = 'display:inline-block;margin-inline-start:8px;padding:1px 8px;'
+      + 'border-radius:10px;font-size:12px;font-weight:600;color:#fff;vertical-align:middle;background:#8a6d1f;';
+    title.appendChild(hint);
   });
 })();
 </script>

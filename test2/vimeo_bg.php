@@ -91,6 +91,12 @@ try {
 } catch (Exception $e) {
     error_log('vimeo_bg.php: upload failed — ' . $e->getMessage());
     @unlink($perm_file);
+    // Clean up TUS cache on failure too.
+    $tus_files = glob($tus_cache_dir . '/*');
+    if ($tus_files) {
+        foreach ($tus_files as $f) { @unlink($f); }
+    }
+    @rmdir($tus_cache_dir);
     exit(1);
 }
 

@@ -25,6 +25,16 @@
 
 defined('MOODLE_INTERNAL') || die;
 
+if ($ADMIN->fulltree) {
+    // Delete Vimeo video when module is deleted.
+    $settings->add(new admin_setting_configcheckbox(
+        'resource2/delete_from_vimeo',
+        get_string('delete_from_vimeo', 'resource2'),
+        get_string('delete_from_vimeo_desc', 'resource2'),
+        0   // default: disabled (safe)
+    ));
+}
+
 // if ($ADMIN->fulltree) {
 //     require_once("$CFG->libdir/resource2lib.php");
 

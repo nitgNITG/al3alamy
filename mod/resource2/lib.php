@@ -217,9 +217,29 @@ function resource2_delete_instance($id) {
         } catch (Exception $e) {
             echo "Failure: " . $e->getMessage();
         }
+
+    } elseif (!empty($vimeo_files) && !empty($vimeo_files->url) && ctype_digit(trim($vimeo_files->url))) {
+        // ── Vimeo-hosted video (url is a numeric Vimeo video ID) ─────────────
+        // Optionally delete from Vimeo API (admin setting: Site admin → resource2 → delete_from_vimeo).
+        if (get_config('mod_resource2', 'delete_from_vimeo')) {
+            try {
+                require_once($CFG->dirroot . '/vimeo/vendor/autoload.php');
+                $vimeoclient = new \Vimeo\Vimeo(
+                    "4dad588b7f47a44426afc26f398fe2367ea49c92",
+                    "IHRxCFjq5qvsKlU6DjWGfNQwtZGHGmK1pByyCYWGrkWnE9F91BbNqPdqXY+dHVyvKjvRWYTu3ba2A8KM1GR2gcqqYiz+jXAx6uLrsEb0jFJrUSMIi3KMIyS+Je+nsN3s",
+                    "195c95a4e775fca8d6e70cb8db4aca73"
+                );
+                $vimeoclient->request('/videos/' . trim($vimeo_files->url), [], 'DELETE');
+                error_log('resource2_delete_instance: deleted Vimeo video ' . $vimeo_files->url . ' for resource2 id=' . $resource2->id);
+            } catch (Exception $e) {
+                error_log('resource2_delete_instance: Vimeo DELETE failed for video ' . $vimeo_files->url . ' — ' . $e->getMessage());
+            }
+        }
+        // Always remove the DB record regardless of whether Vimeo API was called.
+        $DB->delete_records('vimeo_files2', ['id' => $vimeo_files->id]);
     }
-  
- 
+
+
     $DB->delete_records('resource2', array('id' => $resource2->id));
 
     return true;

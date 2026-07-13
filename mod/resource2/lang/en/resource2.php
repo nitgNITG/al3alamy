@@ -128,3 +128,5 @@ If there are multiple files in this resource2, the start file type is displayed.
 
 If the file type is not known to the system, it will not display.';
 $string['uploadeddate'] = 'Uploaded {$a}';
+$string['delete_from_vimeo'] = 'Delete video from Vimeo when module is deleted';
+$string['delete_from_vimeo_desc'] = 'When enabled, deleting a resource2 module that has a Vimeo-hosted video will also permanently delete that video from the Vimeo account via the API. Leave disabled to keep videos on Vimeo even after removing them from the academy.';

@@ -140,9 +140,29 @@
   
   <div class="form-group position-relative">
       <label for="password" class="form-label">{{#str}} password {{/str}}</label>
-      <input type="password" name="password" id="password" class="form-control pl-5" placeholder="" autocomplete="current-password">
+      <input type="password" name="password" id="password" class="form-control pl-5 pr-5" placeholder="" autocomplete="current-password">
       <i class="fa fa-lock position-absolute" style="left: 5px; top: 70%; transform: translateY(-50%); color: #c7ae72;font-size: 24px;"></i>
+      <i id="togglePassword" class="fa fa-eye position-absolute" role="button" tabindex="0" aria-label="Show password"
+         style="right: 10px; top: 70%; transform: translateY(-50%); color: #c7ae72; font-size: 20px; cursor: pointer;"></i>
   </div>
+  <script>
+    (function () {
+      var toggle = document.getElementById('togglePassword');
+      var pwd = document.getElementById('password');
+      if (!toggle || !pwd) { return; }
+      function flip() {
+        var show = pwd.type === 'password';
+        pwd.type = show ? 'text' : 'password';
+        toggle.classList.toggle('fa-eye', !show);
+        toggle.classList.toggle('fa-eye-slash', show);
+        toggle.setAttribute('aria-label', show ? 'Hide password' : 'Show password');
+      }
+      toggle.addEventListener('click', flip);
+      toggle.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); flip(); }
+      });
+    })();
+  </script>
 
   <div class="form-group custom-control custom-checkbox">
     {{#rememberusername}}

@@ -296,7 +296,14 @@ if (isset($_FILES['url']['name'])) {
 
 	$bg     = escapeshellarg($CFG->dirroot . '/test2/vimeo_bg.php');
 	$pf     = escapeshellarg($params_file);
-	$php    = escapeshellarg(PHP_BINARY); // full path — avoids PATH issues under PHP-FPM
+	// PHP_BINARY in FPM returns the FPM binary, not CLI php. Find the CLI binary.
+	$php_cli = trim(shell_exec('which php') ?: '');
+	if (!$php_cli) {
+		foreach (['/usr/bin/php', '/usr/bin/php8.1', '/usr/bin/php8.0', '/usr/bin/php7.4', '/usr/local/bin/php'] as $try) {
+			if (is_executable($try)) { $php_cli = $try; break; }
+		}
+	}
+	$php    = escapeshellarg($php_cli);
 	$logfile = escapeshellarg($chunks_dir . '/vimeo_bg.log');
 	exec("$php $bg $pf >> $logfile 2>&1 &");
 

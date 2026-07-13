@@ -17,6 +17,14 @@ if ($hassiteconfig) {
         'local/subscriptions:manage'
     ));
 
+    // Admin page: Assign a subscription manually.
+    $ADMIN->add('users', new admin_externalpage(
+        'local_subscriptions_assign',
+        get_string('assign_subscription', 'local_subscriptions'),
+        new moodle_url('/local/subscriptions/admin/assign.php'),
+        'local/subscriptions:manage'
+    ));
+
     // Admin page: Reports.
     $ADMIN->add('users', new admin_externalpage(
         'local_subscriptions_report',

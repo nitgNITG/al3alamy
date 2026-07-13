@@ -412,7 +412,7 @@ class manager {
         string $reason,
         float $refund = 0.0
     ): void {
-        global $DB;
+        global $DB, $CFG;
 
         $now = time();
         $record = new \stdClass();
@@ -424,6 +424,18 @@ class manager {
         $record->refund_amount  = $refund > 0 ? $refund : null;
 
         $DB->update_record('local_subscriptions_users', $record);
+
+        // Immediately revoke access granted by this subscription (US-AD-2-2):
+        // remove the user from the videopay groups its unlocks added. Unlock rows
+        // are kept as history; only the live access (group membership) is revoked.
+        require_once($CFG->dirroot . '/group/lib.php');
+        $unlocks = $DB->get_records('local_subscriptions_unlocks', ['subscriptionid' => $sub_id]);
+        foreach ($unlocks as $u) {
+            if ((int)$u->groupid > 0
+                    && $DB->record_exists('groups_members', ['userid' => $u->userid, 'groupid' => $u->groupid])) {
+                groups_remove_member((int)$u->groupid, (int)$u->userid);
+            }
+        }
     }
 
     /**

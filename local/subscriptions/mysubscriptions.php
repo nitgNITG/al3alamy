@@ -251,18 +251,34 @@ echo $OUTPUT->header();
                 <th><?php echo get_string('start_date', 'local_subscriptions'); ?></th>
                 <th><?php echo get_string('expiry_date_field', 'local_subscriptions'); ?></th>
                 <th><?php echo get_string('amount_paid', 'local_subscriptions'); ?></th>
+                <th><?php echo get_string('payment_method', 'local_subscriptions'); ?></th>
+                <th><?php echo get_string('payment_status', 'local_subscriptions'); ?></th>
                 <th>الحالة</th>
-                <th>المصدر</th>
+                <th></th>
             </tr>
         </thead>
         <tbody>
         <?php foreach ($all_subs as $sub): ?>
+        <?php
+            $pay_method = $sub->source === 'online'
+                ? get_string('pay_method_online', 'local_subscriptions')
+                : get_string('pay_method_offline', 'local_subscriptions');
+            if ($sub->status === 'cancelled') {
+                $pay_status = $sub->refund_amount
+                    ? get_string('pay_status_refunded', 'local_subscriptions')
+                    : get_string('pay_status_cancelled', 'local_subscriptions');
+            } else {
+                $pay_status = get_string('pay_status_paid', 'local_subscriptions');
+            }
+        ?>
         <tr>
             <td><?php echo $sub->id; ?></td>
             <td><strong><?php echo s($sub->plan_name); ?></strong></td>
             <td><?php echo $sub->start_time ? userdate($sub->start_time, '%d/%m/%Y') : '-'; ?></td>
             <td><?php echo $sub->expiry_time ? userdate($sub->expiry_time, '%d/%m/%Y') : '-'; ?></td>
             <td><?php echo number_format((float)$sub->amount_paid, 2); ?> ج</td>
+            <td><?php echo $pay_method; ?></td>
+            <td><?php echo $pay_status; ?></td>
             <td>
                 <?php if ($sub->status === 'active'): ?>
                     <span class="badge-active"><?php echo get_string('status_active', 'local_subscriptions'); ?></span>
@@ -272,9 +288,36 @@ echo $OUTPUT->header();
                     <span class="badge-cancelled"><?php echo get_string('status_cancelled', 'local_subscriptions'); ?></span>
                 <?php endif; ?>
             </td>
-            <td><?php echo $sub->source === 'online'
-                ? get_string('source_online', 'local_subscriptions')
-                : get_string('source_manual', 'local_subscriptions'); ?>
+            <td>
+                <button type="button" class="hist-toggle" data-target="det-<?php echo $sub->id; ?>"
+                        style="background:#eef3f9;border:1px solid #cfe0f0;border-radius:5px;padding:3px 10px;cursor:pointer;font-size:.82em;color:#2d6a9f">
+                    <?php echo get_string('details', 'local_subscriptions'); ?>
+                </button>
+            </td>
+        </tr>
+        <tr id="det-<?php echo $sub->id; ?>" class="hist-detail" style="display:none">
+            <td colspan="9" style="background:#fbfcfe">
+                <?php
+                    $snap = !empty($sub->snapshot) ? json_decode($sub->snapshot, true) : null;
+                ?>
+                <div style="display:flex; gap:24px; flex-wrap:wrap; font-size:.88em; color:#444">
+                    <div><strong><?php echo get_string('order_id_label', 'local_subscriptions'); ?>:</strong>
+                        <?php echo s($sub->order_id ?: '-'); ?></div>
+                    <div><strong><?php echo get_string('transaction_id_label', 'local_subscriptions'); ?>:</strong>
+                        <?php echo s($sub->transaction_id ?: '-'); ?></div>
+                    <?php if ($sub->refund_amount): ?>
+                    <div><strong><?php echo get_string('refund_amount', 'local_subscriptions'); ?>:</strong>
+                        <?php echo number_format((float)$sub->refund_amount, 2); ?> ج</div>
+                    <?php endif; ?>
+                    <?php if ($sub->status === 'cancelled' && $sub->cancel_reason): ?>
+                    <div><strong><?php echo get_string('unsubscribe_reason', 'local_subscriptions'); ?>:</strong>
+                        <?php echo s($sub->cancel_reason); ?></div>
+                    <?php endif; ?>
+                    <?php if ($snap && isset($snap['price'])): ?>
+                    <div><strong><?php echo get_string('plan_price', 'local_subscriptions'); ?> (<?php echo get_string('at_purchase', 'local_subscriptions'); ?>):</strong>
+                        <?php echo number_format((float)$snap['price'], 2); ?> ج</div>
+                    <?php endif; ?>
+                </div>
             </td>
         </tr>
         <?php endforeach; ?>
@@ -292,5 +335,16 @@ echo $OUTPUT->header();
         </a>
     </p>
 </div>
+
+<script>
+(function () {
+  document.querySelectorAll('.hist-toggle').forEach(function (b) {
+    b.addEventListener('click', function () {
+      var row = document.getElementById(b.dataset.target);
+      if (row) { row.style.display = (row.style.display === 'none') ? '' : 'none'; }
+    });
+  });
+})();
+</script>
 
 <?php echo $OUTPUT->footer(); ?>

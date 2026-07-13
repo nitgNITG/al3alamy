@@ -136,6 +136,8 @@ echo $OUTPUT->header();
             $item_count = $DB->count_records('local_subscriptions_items', ['planid' => $plan->id]);
         ?>
         <div class="plan-card">
+            <a href="<?php echo (new moodle_url('/local/subscriptions/plan.php', ['id' => $plan->id]))->out(); ?>"
+               style="text-decoration:none; color:inherit">
             <div class="plan-name"><?php echo s($plan->name); ?></div>
             <div class="plan-price">
                 <?php echo number_format((float)$plan->price, 0); ?>
@@ -157,6 +159,7 @@ echo $OUTPUT->header();
                     <span>حتى <?php echo $plan->expiry_date ? userdate($plan->expiry_date, '%d/%m/%Y') : '-'; ?></span>
                 <?php endif; ?>
             </div>
+            </a>
 
             <?php if ($user_sub): ?>
                 <div class="btn-subscribed">

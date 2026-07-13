@@ -33,7 +33,9 @@ kashier_load_env();
 
 define('KASHIER_CURRENCY',     getenv('KASHIER_CURRENCY')     ?: 'EGP');
 define('KASHIER_CHECKOUT_URL', 'https://checkout.kashier.io/');
-define('KASHIER_API_BASE',     'https://api.kashier.io');
+// Base URLs are configurable so we can point at test-api / production.
+define('KASHIER_API_BASE',     rtrim(getenv('KASHIER_BASE_URL') ?: 'https://api.kashier.io', '/'));
+define('KASHIER_REFUND_BASE',  rtrim(getenv('KASHIER_REFUND_BASE_URL') ?: 'https://fep.kashier.io', '/'));
 
 // ── Account registry ──────────────────────────────────────────────────────────
 
@@ -47,19 +49,24 @@ function kashier_account(string $type): array {
     $type = strtolower(trim($type));
     $T    = strtoupper($type);
 
-    $creds = [
-        'merchant_id' => getenv("KASHIER_{$T}_MERCHANT_ID") ?: '',
-        'api_key'     => getenv("KASHIER_{$T}_API_KEY")     ?: '',
-        'secret_key'  => getenv("KASHIER_{$T}_SECRET_KEY")  ?: '',
-        // legacy hash key — kept for old redirect flows
-        'hash_key'    => getenv("KASHIER_{$T}_HASH_KEY")    ?: '',
-    ];
-
     if (!in_array($type, ['manager', 'student'], true)) {
         throw new \coding_exception("kashier_account(): unknown type '$type'.");
     }
+
+    // Single-account config (KASHIER_API_KEY / _SECRET_KEY / _MERCHANT_ID) is the
+    // primary source and is used for every flow. The older per-account keys
+    // (KASHIER_MANAGER_* / KASHIER_STUDENT_*) are only a fallback for legacy
+    // deployments that still split money between two merchants.
+    $creds = [
+        'merchant_id' => getenv('KASHIER_MERCHANT_ID') ?: (getenv("KASHIER_{$T}_MERCHANT_ID") ?: ''),
+        'api_key'     => getenv('KASHIER_API_KEY')     ?: (getenv("KASHIER_{$T}_API_KEY")     ?: ''),
+        'secret_key'  => getenv('KASHIER_SECRET_KEY')  ?: (getenv("KASHIER_{$T}_SECRET_KEY")  ?: ''),
+        // legacy hash key — kept for old redirect flows
+        'hash_key'    => getenv('KASHIER_HASH_KEY')    ?: (getenv("KASHIER_{$T}_HASH_KEY")    ?: ''),
+    ];
+
     if (empty($creds['merchant_id'])) {
-        throw new \coding_exception("Kashier '$type' MERCHANT_ID missing in .env.");
+        throw new \coding_exception("Kashier MERCHANT_ID missing in .env (checked KASHIER_MERCHANT_ID and KASHIER_{$T}_MERCHANT_ID).");
     }
 
     return $creds;

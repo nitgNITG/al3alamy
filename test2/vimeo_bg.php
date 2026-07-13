@@ -64,11 +64,11 @@ try {
 
     error_log('vimeo_bg.php: uploaded, uri=' . $uri);
 
-    $response = $client->request($uri . '?fields=link');
-    $output   = $response['body']['link'] ?? '';
-
-    // Extract just the numeric video ID from the Vimeo URL.
-    $video_id = basename(rtrim($output, '/'));
+    // $uri is "/videos/1209351976" — extract the numeric ID directly.
+    // Do NOT use the link URL: Vimeo may append a privacy hash like
+    // "https://vimeo.com/1209351976/9108e2cca5" making basename() return
+    // the hash instead of the ID.
+    $video_id = basename($uri); // = "1209351976"
 
     // ── Update DB record with real video ID ───────────────────────────────
     $upd = new stdClass();
@@ -78,7 +78,15 @@ try {
 
     error_log('vimeo_bg.php: DB updated, video_id=' . $video_id);
 
+    // ── Clean up temp files ───────────────────────────────────────────────
     @unlink($perm_file);
+
+    // Remove TUS cache directory (no longer needed after upload).
+    $tus_files = glob($tus_cache_dir . '/*');
+    if ($tus_files) {
+        foreach ($tus_files as $f) { @unlink($f); }
+    }
+    @rmdir($tus_cache_dir);
 
 } catch (Exception $e) {
     error_log('vimeo_bg.php: upload failed — ' . $e->getMessage());

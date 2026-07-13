@@ -10,6 +10,7 @@
         <FIELD NAME="cmid"         TYPE="int"    LENGTH="10" NOTNULL="true"  COMMENT="mdl_course_modules.id"/>
         <FIELD NAME="price"        TYPE="number" LENGTH="10" DECIMALS="2"    NOTNULL="true" DEFAULT="0.00"/>
         <FIELD NAME="is_free"      TYPE="int"    LENGTH="1"  NOTNULL="true"  DEFAULT="1" COMMENT="1=free (no payment needed), 0=paid"/>
+        <FIELD NAME="groupid"      TYPE="int"    LENGTH="10" NOTNULL="true"  DEFAULT="0" COMMENT="Auto-created group that gates this paid module (0 = none)"/>
         <FIELD NAME="timecreated"  TYPE="int"    LENGTH="10" NOTNULL="true"  DEFAULT="0"/>
         <FIELD NAME="timemodified" TYPE="int"    LENGTH="10" NOTNULL="true"  DEFAULT="0"/>
       </FIELDS>

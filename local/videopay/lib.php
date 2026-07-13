@@ -89,10 +89,23 @@ function local_videopay_coursemodule_edit_post_actions($data, $course): stdClass
 
     $now      = time();
     $existing = $DB->get_record('local_videopay_prices', ['cmid' => $cmid]);
+    $groupid  = $existing ? (int)$existing->groupid : 0;
+
+    // ── Auto-manage the gating group + module restriction ─────────────────
+    // Paid → ensure a dedicated group exists and require it on the module.
+    // Free → drop that restriction so the content opens directly.
+    if (!$is_free) {
+        $groupid = local_videopay_ensure_group((int)$course->id, $cmid, $groupid,
+            $data->name ?? ('cm' . $cmid));
+        local_videopay_apply_group_restriction($cmid, (int)$course->id, $groupid);
+    } else if ($groupid) {
+        local_videopay_clear_group_restriction($cmid, (int)$course->id, $groupid);
+    }
 
     if ($existing) {
         $existing->price        = $price;
         $existing->is_free      = $is_free;
+        $existing->groupid      = $groupid;
         $existing->timemodified = $now;
         $DB->update_record('local_videopay_prices', $existing);
     } else {
@@ -100,12 +113,112 @@ function local_videopay_coursemodule_edit_post_actions($data, $course): stdClass
             'cmid'         => $cmid,
             'price'        => $price,
             'is_free'      => $is_free,
+            'groupid'      => $groupid,
             'timecreated'  => $now,
             'timemodified' => $now,
         ]);
     }
 
     return $data;
+}
+
+// ── Group automation helpers ──────────────────────────────────────────────
+
+/**
+ * Return a valid gating group id for a paid module, creating one if needed.
+ *
+ * @param int    $courseid
+ * @param int    $cmid
+ * @param int    $existinggroupid  Previously stored group id (0 if none).
+ * @param string $label            Human-readable name for the group.
+ * @return int   The group id to gate this module with.
+ */
+function local_videopay_ensure_group(int $courseid, int $cmid, int $existinggroupid, string $label): int {
+    global $DB, $CFG;
+    require_once($CFG->dirroot . '/group/lib.php');
+
+    // Reuse the stored group if it still exists in this course.
+    if ($existinggroupid
+        && $DB->record_exists('groups', ['id' => $existinggroupid, 'courseid' => $courseid])) {
+        return $existinggroupid;
+    }
+
+    $idnumber = 'videopay-cm' . $cmid;
+
+    // Reuse a group previously created for this cm (matched by idnumber).
+    $existing = $DB->get_record('groups', ['courseid' => $courseid, 'idnumber' => $idnumber]);
+    if ($existing) {
+        return (int)$existing->id;
+    }
+
+    $group = (object)[
+        'courseid'    => $courseid,
+        'name'        => 'Paid video: ' . $label,
+        'idnumber'    => $idnumber,
+        'description' => 'Auto-created by local_videopay for course module ' . $cmid . '.',
+    ];
+    return (int)groups_create_group($group);
+}
+
+/**
+ * Ensure the module's availability requires membership of $groupid.
+ * Preserves any pre-existing conditions; rebuilds the course cache.
+ */
+function local_videopay_apply_group_restriction(int $cmid, int $courseid, int $groupid): void {
+    global $DB;
+
+    $cm = $DB->get_record('course_modules', ['id' => $cmid], 'id, availability', MUST_EXIST);
+    $tree = local_videopay_decode_availability($cm->availability);
+
+    // Drop any existing group condition for this same group, then add it fresh.
+    $tree['c'] = array_values(array_filter($tree['c'], function ($c) use ($groupid) {
+        return !(isset($c['type'], $c['id']) && $c['type'] === 'group' && (int)$c['id'] === $groupid);
+    }));
+    $tree['c'][] = ['type' => 'group', 'id' => $groupid];
+    $tree['showc'] = array_fill(0, count($tree['c']), false);
+
+    $DB->set_field('course_modules', 'availability', json_encode($tree), ['id' => $cmid]);
+    rebuild_course_cache($courseid, true);
+}
+
+/**
+ * Remove the group condition for $groupid from the module's availability.
+ * If no conditions remain, availability is cleared entirely.
+ */
+function local_videopay_clear_group_restriction(int $cmid, int $courseid, int $groupid): void {
+    global $DB;
+
+    $cm = $DB->get_record('course_modules', ['id' => $cmid], 'id, availability', MUST_EXIST);
+    if (empty($cm->availability)) {
+        return;
+    }
+    $tree = local_videopay_decode_availability($cm->availability);
+    $tree['c'] = array_values(array_filter($tree['c'], function ($c) use ($groupid) {
+        return !(isset($c['type'], $c['id']) && $c['type'] === 'group' && (int)$c['id'] === $groupid);
+    }));
+
+    if (empty($tree['c'])) {
+        $DB->set_field('course_modules', 'availability', null, ['id' => $cmid]);
+    } else {
+        $tree['showc'] = array_fill(0, count($tree['c']), false);
+        $DB->set_field('course_modules', 'availability', json_encode($tree), ['id' => $cmid]);
+    }
+    rebuild_course_cache($courseid, true);
+}
+
+/**
+ * Decode an availability JSON string into a normalised tree with keys op/c/showc.
+ */
+function local_videopay_decode_availability(?string $json): array {
+    $tree = !empty($json) ? json_decode($json, true) : null;
+    if (!is_array($tree)) {
+        $tree = [];
+    }
+    $tree += ['op' => '&', 'c' => [], 'showc' => []];
+    if (!is_array($tree['c'])) {
+        $tree['c'] = [];
+    }
+    return $tree;
 }
 
 // ── Helper: fetch price for a CM (used by renderer) ──────────────────────

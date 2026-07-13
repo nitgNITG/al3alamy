@@ -163,6 +163,34 @@ class renderer extends section_renderer
             $module_info = $DB->get_record('modules', array('id' => $course_modules->module));
             $module_name = $module_info->name;
 
+            // ── Price / Free badge for video modules ──────────────────────
+            if ($module_name === 'resource2') {
+                $vp = $DB->get_record('local_videopay_prices', ['cmid' => (int)$course_modules->id]);
+                $paid = $vp && (int)$vp->is_free === 0;
+                if ($paid) {
+                    $badge_text = ((int)$vp->price) . ' LE';
+                    $badge_bg   = '#00126C';
+                } else {
+                    $badge_text = 'Free / مجاني';
+                    $badge_bg   = '#1a9c5b';
+                }
+                $module_ids .= '
+                <script>
+                  (function(){
+                    var el = document.getElementById("module-' . $module->id . '");
+                    if (!el || el.querySelector(".videopay-badge")) return;
+                    var b = document.createElement("span");
+                    b.className = "videopay-badge";
+                    b.textContent = ' . json_encode($badge_text) . ';
+                    b.style.cssText = "display:inline-block;margin-inline-start:8px;padding:1px 8px;"
+                      + "border-radius:10px;font-size:12px;font-weight:600;color:#fff;'
+                      . 'background:' . $badge_bg . ';vertical-align:middle;";
+                    var target = el.querySelector(".instancename") || el.querySelector(".activityinstance") || el;
+                    target.appendChild(b);
+                  })();
+                </script>';
+            }
+
 
             // Check if availability is set and decode it
             $availability_json = $module->availability ?? '';

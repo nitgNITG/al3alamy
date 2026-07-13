@@ -37,6 +37,16 @@ if (!$perm_file || !file_exists($perm_file) || !$record_id) {
     exit(1);
 }
 
+// ── Point TUS file cache to a writable directory ─────────────────────────
+// The default TUS cache dir (vendor/.cache/) is owned by root and not
+// writable by www-data. Without a writable cache, TUS can't store the
+// upload URL and falls back to creating a broken upload → 404-not-found.
+$tus_cache_dir = dirname($perm_file) . '/tus_cache';
+if (!is_dir($tus_cache_dir)) {
+    mkdir($tus_cache_dir, 0775, true);
+}
+putenv('TUS_CACHE_HOME=' . $tus_cache_dir);
+
 error_log('vimeo_bg.php: starting upload for resource_id=' . $id . ' file=' . $perm_file);
 
 // ── Upload to Vimeo ───────────────────────────────────────────────────────

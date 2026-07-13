@@ -177,7 +177,9 @@ function local_videopay_apply_group_restriction(int $cmid, int $courseid, int $g
         return !(isset($c['type'], $c['id']) && $c['type'] === 'group' && (int)$c['id'] === $groupid);
     }));
     $tree['c'][] = ['type' => 'group', 'id' => $groupid];
-    $tree['showc'] = array_fill(0, count($tree['c']), false);
+    // showc = true → the locked lesson stays VISIBLE (greyed) so the student can
+    // see it, see the price, and click through to pay. false would hide it entirely.
+    $tree['showc'] = array_fill(0, count($tree['c']), true);
 
     $DB->set_field('course_modules', 'availability', json_encode($tree), ['id' => $cmid]);
     rebuild_course_cache($courseid, true);
@@ -202,7 +204,7 @@ function local_videopay_clear_group_restriction(int $cmid, int $courseid, int $g
     if (empty($tree['c'])) {
         $DB->set_field('course_modules', 'availability', null, ['id' => $cmid]);
     } else {
-        $tree['showc'] = array_fill(0, count($tree['c']), false);
+        $tree['showc'] = array_fill(0, count($tree['c']), true);
         $DB->set_field('course_modules', 'availability', json_encode($tree), ['id' => $cmid]);
     }
     rebuild_course_cache($courseid, true);

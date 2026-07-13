@@ -75,9 +75,15 @@ try {
     redirect($session['sessionUrl']);
 } catch (\Exception $e) {
     error_log('kashier/pay.php session error: ' . $e->getMessage());
+    // Show the raw gateway error to site admins so they can diagnose; students
+    // just see the friendly bilingual message.
+    $msg = 'خطأ في الاتصال ببوابة الدفع. حاول مرة أخرى. Payment gateway error, please try again.';
+    if (is_siteadmin()) {
+        $msg .= ' [admin] ' . s($e->getMessage());
+    }
     redirect(
         new moodle_url('/course/view.php', ['id' => $courseid]),
-        'خطأ في الاتصال ببوابة الدفع. حاول مرة أخرى. Payment gateway error, please try again.',
+        $msg,
         null,
         \core\output\notification::NOTIFY_ERROR
     );

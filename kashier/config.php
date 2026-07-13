@@ -114,6 +114,19 @@ function kashier_create_session(
     if ($webhook_url) $body['serverWebhook'] = $webhook_url;
     if ($description) $body['metaData']      = ['description' => $description];
 
+    // Diagnostic: log the outgoing request WITHOUT secrets. Confirms which
+    // account/keys are in play and whether credentials are even present.
+    error_log(sprintf(
+        'kashier_create_session[%s] → order=%s amount=%s merchant=%s api_key(len=%d) secret(len=%d) body=%s',
+        $type,
+        $order_id,
+        $body['amount'],
+        $creds['merchant_id'] !== '' ? $creds['merchant_id'] : 'MISSING',
+        strlen($creds['api_key']),
+        strlen($creds['secret_key']),
+        json_encode($body, JSON_UNESCAPED_SLASHES)
+    ));
+
     $ch = curl_init(KASHIER_API_BASE . '/v3/payment/sessions');
     curl_setopt_array($ch, [
         CURLOPT_POST           => true,
@@ -131,6 +144,16 @@ function kashier_create_session(
     $http_code    = curl_getinfo($ch, CURLINFO_HTTP_CODE);
     $curl_error   = curl_error($ch);
     curl_close($ch);
+
+    // Diagnostic: log the raw gateway response so failures are inspectable.
+    error_log(sprintf(
+        'kashier_create_session[%s] ← order=%s http=%d curl_err=%s response=%s',
+        $type,
+        $order_id,
+        $http_code,
+        $curl_error !== '' ? $curl_error : 'none',
+        $raw_response !== false ? $raw_response : '(false)'
+    ));
 
     if ($curl_error) {
         throw new \Exception("Kashier session cURL error: $curl_error");

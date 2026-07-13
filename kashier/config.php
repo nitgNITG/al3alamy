@@ -266,6 +266,83 @@ function kashier_session_is_paid(array $verified): bool {
     return $captured > 0 && $captured >= $amount;
 }
 
+/**
+ * Record a not-yet-paid order so the callback can recover its session id by
+ * order id alone — independent of whatever params Kashier's redirect carries.
+ * The Kashier session id is parked in transaction_id until payment completes.
+ */
+function kashier_store_pending(string $order_id, string $session_id, int $userid, float $amount, string $type): void {
+    global $DB;
+    $existing = $DB->get_record('kashier_transactions', ['order_id' => $order_id]);
+    if ($existing) {
+        if ($existing->status === 'success') {
+            return; // Never downgrade a completed order.
+        }
+        $existing->transaction_id = $session_id;
+        $existing->user_id        = $userid;
+        $existing->amount         = $amount;
+        $existing->type           = $type;
+        $existing->status         = 'pending';
+        $DB->update_record('kashier_transactions', $existing);
+        return;
+    }
+    $DB->insert_record('kashier_transactions', [
+        'order_id'       => $order_id,
+        'transaction_id' => $session_id,
+        'user_id'        => $userid,
+        'amount'         => $amount,
+        'currency'       => KASHIER_CURRENCY,
+        'type'           => $type,
+        'status'         => 'pending',
+        'timecreated'    => time(),
+    ]);
+}
+
+/**
+ * Return the stored Kashier session id for a pending order (empty if none or
+ * already completed).
+ */
+function kashier_lookup_session_id(string $order_id): string {
+    global $DB;
+    $rec = $DB->get_record('kashier_transactions', ['order_id' => $order_id], 'transaction_id, status');
+    return ($rec && $rec->status !== 'success') ? (string)$rec->transaction_id : '';
+}
+
+/**
+ * Idempotently mark an order paid (upsert). Safe to call from both the browser
+ * callback and the server webhook — the first one wins, the rest no-op.
+ *
+ * @return bool  true if this call transitioned the order to success (i.e. the
+ *               caller should now grant access), false if already processed.
+ */
+function kashier_mark_success(string $order_id, string $transaction_id, int $userid, float $amount, string $type): bool {
+    global $DB;
+    $existing = $DB->get_record('kashier_transactions', ['order_id' => $order_id]);
+    if ($existing) {
+        if ($existing->status === 'success') {
+            return false; // Already processed.
+        }
+        $existing->transaction_id = $transaction_id ?: $existing->transaction_id;
+        $existing->user_id        = $userid ?: (int)$existing->user_id;
+        $existing->amount         = $amount ?: (float)$existing->amount;
+        $existing->type           = $type ?: $existing->type;
+        $existing->status         = 'success';
+        $DB->update_record('kashier_transactions', $existing);
+        return true;
+    }
+    $DB->insert_record('kashier_transactions', [
+        'order_id'       => $order_id,
+        'transaction_id' => $transaction_id,
+        'user_id'        => $userid,
+        'amount'         => $amount,
+        'currency'       => KASHIER_CURRENCY,
+        'type'           => $type,
+        'status'         => 'success',
+        'timecreated'    => time(),
+    ]);
+    return true;
+}
+
 // ── Legacy helpers (kept for existing vid- / dep- redirect flows) ─────────────
 
 function kashier_build_hash(string $order_id, string $amount, string $type = 'student'): string {

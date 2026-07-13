@@ -48,6 +48,11 @@ if (!$order_id && !$session_id) {
     exit('Bad Request — missing orderId/sessionId');
 }
 
+// Recover the Kashier session id from the pending row if the body lacked it.
+if (!$session_id && $order_id) {
+    $session_id = kashier_lookup_session_id($order_id);
+}
+
 $account_type = $order_id ? kashier_account_for_order($order_id) : 'student';
 
 // ── Verification ──────────────────────────────────────────────────────────
@@ -105,16 +110,7 @@ if (strpos($order_id, 'vid-') === 0) {
         exit('Bad order reference');
     }
 
-    $DB->insert_record('kashier_transactions', [
-        'order_id'       => $order_id,
-        'transaction_id' => $transaction_id,
-        'user_id'        => $pay_uid,
-        'amount'         => $amount,
-        'currency'       => KASHIER_CURRENCY,
-        'type'           => 'video',
-        'status'         => 'success',
-        'timecreated'    => time(),
-    ]);
+    kashier_mark_success($order_id, $transaction_id, $pay_uid, $amount, 'video');
 
     // Enroll.
     $course_context = context_course::instance($courseid);

@@ -20,9 +20,11 @@ require_once($CFG->dirroot . '/local/registrationcodes/classes/manager.php');
 global $DB, $CFG, $USER, $SESSION;
 
 // ── Parse Kashier params (support both session and legacy param names) ─────
+$k_order        = optional_param('k_order',          '', PARAM_RAW); // our own marker
 $order_id       = optional_param('orderId',          '', PARAM_RAW)
                ?: optional_param('merchantOrderId',  '', PARAM_RAW)
-               ?: optional_param('orderReference',   '', PARAM_RAW);
+               ?: optional_param('orderReference',   '', PARAM_RAW)
+               ?: $k_order;
 $payment_status = optional_param('paymentStatus',    '', PARAM_ALPHA);
 $session_id     = optional_param('sessionId',        '', PARAM_RAW);
 $amount_str     = optional_param('amount',           '0', PARAM_RAW);
@@ -34,11 +36,16 @@ error_log('kashier/callback.php GET: ' . json_encode($_GET, JSON_UNESCAPED_SLASH
 // Fall back to the pending purchase saved when the session was created — the
 // session redirect does not reliably echo our order/session ids.
 $pending = $SESSION->kashier_pending_video ?? null;
-if (!$session_id && !empty($pending['sessionId'])) {
-    $session_id = $pending['sessionId'];
-}
 if (!$order_id && !empty($pending['order_id'])) {
     $order_id = $pending['order_id'];
+}
+// Recover the Kashier session id: from the redirect, the DB pending row (keyed
+// by our order id), or the session backup — in that order.
+if (!$session_id && $order_id) {
+    $session_id = kashier_lookup_session_id($order_id);
+}
+if (!$session_id && !empty($pending['sessionId'])) {
+    $session_id = $pending['sessionId'];
 }
 
 if (!$order_id && !$session_id) {
@@ -129,17 +136,8 @@ if (strpos($order_id, 'vid-') === 0) {
         redirect(new moodle_url('/'));
     }
 
-    // Record transaction.
-    $DB->insert_record('kashier_transactions', [
-        'order_id'       => $order_id,
-        'transaction_id' => $transaction_id,
-        'user_id'        => $pay_uid,
-        'amount'         => $amount,
-        'currency'       => KASHIER_CURRENCY,
-        'type'           => 'video',
-        'status'         => 'success',
-        'timecreated'    => time(),
-    ]);
+    // Record transaction (upsert — a pending row already exists from pay.php).
+    kashier_mark_success($order_id, $transaction_id, $pay_uid, $amount, 'video');
 
     // ── Enroll in course ────────────────────────────────────────────────
     $course_context = context_course::instance($courseid);

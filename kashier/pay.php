@@ -47,7 +47,9 @@ if ($DB->record_exists('groups_members', ['userid' => $USER->id, 'groupid' => $g
 // Format: vid-{userid}-{courseid}-{groupid}-{cmid}-{timestamp}
 $order_id = 'vid-' . $USER->id . '-' . $courseid . '-' . $groupid . '-' . $cmid . '-' . time();
 
-$redirect_url = (new moodle_url('/kashier/callback.php'))->out(false);
+// Carry our order id in the redirect URL so the callback can always identify
+// the purchase, no matter what params Kashier appends.
+$redirect_url = (new moodle_url('/kashier/callback.php', ['k_order' => $order_id]))->out(false);
 $webhook_url  = (new moodle_url('/kashier/webhook.php'))->out(false);
 $description  = 'Video Purchase | Course ' . $courseid . ' | CM ' . $cmid;
 
@@ -75,6 +77,9 @@ try {
     // Remember the session id so the callback can verify + grant access even if
     // Kashier's redirect omits the order/session query params.
     $SESSION->kashier_pending_video['sessionId'] = $session['sessionId'];
+    // Persist a pending row keyed by order id → the callback recovers the
+    // session id from the DB regardless of redirect params or session cookies.
+    kashier_store_pending($order_id, $session['sessionId'], (int)$USER->id, (float)$amount, 'video');
     redirect($session['sessionUrl']);
 } catch (\Exception $e) {
     error_log('kashier/pay.php session error: ' . $e->getMessage());

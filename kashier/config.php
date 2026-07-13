@@ -452,6 +452,101 @@ function kashier_fulfill_order(string $order_id, string $transaction_id, float $
     return $r;
 }
 
+/**
+ * Reconcile pending orders against Kashier — the reliable delivery path.
+ *
+ * Kashier's browser redirect (callback.php) and server webhook (webhook.php) are
+ * best-effort: a student who closes the tab never triggers the redirect, and the
+ * webhook is not always delivered. This walks every pending order, asks Kashier
+ * directly whether it was paid, and grants access via kashier_fulfill_order().
+ *
+ * Shared by the CLI script (kashier/reconcile.php) and the Moodle scheduled task
+ * (local_videopay\task\reconcile_payments) so both behave identically.
+ *
+ * @param int           $max_age    Only consider orders created within this many
+ *                                  seconds (0 = no age limit).
+ * @param string        $one_order  Reconcile just this order id (ignores age).
+ * @param callable|null $log        fn(string $msg): void for progress output.
+ * @return array{examined:int,granted:int,skipped:int,failed:int}
+ */
+function kashier_reconcile(int $max_age = 0, string $one_order = '', ?callable $log = null): array {
+    global $DB;
+    $log = $log ?: function (string $m): void { error_log('kashier/reconcile: ' . $m); };
+
+    if ($one_order !== '') {
+        $pending = $DB->get_records('kashier_transactions', ['order_id' => $one_order]);
+    } else {
+        $params = ['status' => 'pending'];
+        $where  = 'status = :status';
+        if ($max_age > 0) {
+            $where .= ' AND timecreated >= :since';
+            $params['since'] = time() - $max_age;
+        }
+        $pending = $DB->get_records_select('kashier_transactions', $where, $params, 'timecreated ASC');
+    }
+
+    $stats = ['examined' => count($pending), 'granted' => 0, 'skipped' => 0, 'failed' => 0];
+    if (!$pending) {
+        return $stats;
+    }
+
+    foreach ($pending as $row) {
+        $order_id   = $row->order_id;
+        $session_id = (string)$row->transaction_id; // sessionId is parked here until paid.
+
+        if ($session_id === '') {
+            $log("$order_id — no session id parked; cannot verify, skipping.");
+            $stats['skipped']++;
+            continue;
+        }
+
+        $account  = kashier_account_for_order($order_id);
+        $verified = kashier_verify_session($session_id, $account);
+
+        if (!$verified) {
+            $log("$order_id — verify returned empty response; will retry next run.");
+            $stats['failed']++;
+            continue;
+        }
+        if (!kashier_session_is_paid($verified)) {
+            $stats['skipped']++;
+            continue;
+        }
+
+        $amount = (float)($verified['capturedAmount'] ?? $verified['amount'] ?? $row->amount);
+        if ($amount <= 0) { $amount = (float)$row->amount; }
+        $txn_id = (string)($verified['transactionId']
+            ?? $verified['orderId']
+            ?? ($verified['history'][0]['transactionId'] ?? '')
+            ?: $session_id);
+
+        try {
+            $res = kashier_fulfill_order($order_id, $txn_id, $amount);
+        } catch (\Throwable $e) {
+            $log("$order_id — fulfilment error: " . $e->getMessage());
+            $stats['failed']++;
+            continue;
+        }
+
+        if (!$res['valid']) {
+            $log("$order_id — paid but order reference is malformed; needs manual review.");
+            $stats['failed']++;
+            continue;
+        }
+        if ($res['already']) {
+            $stats['skipped']++;
+            continue;
+        }
+        if ($res['done']) {
+            $log(sprintf('%s — GRANTED (%s) user=%d amount=%.2f txn=%s',
+                $order_id, $res['type'], $res['userid'], $amount, $txn_id));
+            $stats['granted']++;
+        }
+    }
+
+    return $stats;
+}
+
 // ── Legacy helpers (kept for existing vid- / dep- redirect flows) ─────────────
 
 function kashier_build_hash(string $order_id, string $amount, string $type = 'student'): string {

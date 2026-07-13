@@ -3,6 +3,9 @@ defined('MOODLE_INTERNAL') || die();
 
 $string['pluginname'] = 'Per-Module Pricing (Video Pay)';
 
+// Scheduled task.
+$string['task_reconcile_payments'] = 'Reconcile pending Kashier payments';
+
 // Form section.
 $string['pricing_header']  = 'Pricing';
 $string['is_free']         = 'Free access';

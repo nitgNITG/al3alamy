@@ -3,6 +3,9 @@ defined('MOODLE_INTERNAL') || die();
 
 $string['pluginname'] = 'تسعير الفيديوهات والأنشطة';
 
+// Scheduled task.
+$string['task_reconcile_payments'] = 'مطابقة مدفوعات كاشير المعلقة';
+
 // Form section.
 $string['pricing_header']  = 'التسعير';
 $string['is_free']         = 'وصول مجاني';

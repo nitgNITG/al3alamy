@@ -72,6 +72,9 @@ try {
         $webhook_url,
         $description
     );
+    // Remember the session id so the callback can verify + grant access even if
+    // Kashier's redirect omits the order/session query params.
+    $SESSION->kashier_pending_video['sessionId'] = $session['sessionId'];
     redirect($session['sessionUrl']);
 } catch (\Exception $e) {
     error_log('kashier/pay.php session error: ' . $e->getMessage());

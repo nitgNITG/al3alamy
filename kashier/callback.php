@@ -17,31 +17,51 @@ require_once($CFG->dirroot . '/lib/enrollib.php');
 require_once($CFG->dirroot . '/group/lib.php');
 require_once($CFG->dirroot . '/local/registrationcodes/classes/manager.php');
 
-global $DB, $CFG, $USER;
+global $DB, $CFG, $USER, $SESSION;
 
 // ── Parse Kashier params (support both session and legacy param names) ─────
 $order_id       = optional_param('orderId',          '', PARAM_RAW)
-               ?: optional_param('merchantOrderId',  '', PARAM_RAW);
+               ?: optional_param('merchantOrderId',  '', PARAM_RAW)
+               ?: optional_param('orderReference',   '', PARAM_RAW);
 $payment_status = optional_param('paymentStatus',    '', PARAM_ALPHA);
 $session_id     = optional_param('sessionId',        '', PARAM_RAW);
 $amount_str     = optional_param('amount',           '0', PARAM_RAW);
 $received_hash  = optional_param('hash',             '', PARAM_RAW);
 $transaction_id = optional_param('transactionId',    '', PARAM_RAW);
 
-if (!$order_id || !$payment_status) {
+error_log('kashier/callback.php GET: ' . json_encode($_GET, JSON_UNESCAPED_SLASHES));
+
+// Fall back to the pending purchase saved when the session was created — the
+// session redirect does not reliably echo our order/session ids.
+$pending = $SESSION->kashier_pending_video ?? null;
+if (!$session_id && !empty($pending['sessionId'])) {
+    $session_id = $pending['sessionId'];
+}
+if (!$order_id && !empty($pending['order_id'])) {
+    $order_id = $pending['order_id'];
+}
+
+if (!$order_id && !$session_id) {
     \core\notification::add('Invalid callback parameters.', \core\output\notification::NOTIFY_ERROR);
     redirect(new moodle_url('/'));
 }
 
-$account_type = kashier_account_for_order($order_id);
+$account_type = $order_id ? kashier_account_for_order($order_id) : 'student';
 
 // ── Verification — session API (new) or hash (legacy) ─────────────────────
 if ($session_id) {
     // ── Session-based: verify via Kashier GET API ──────────────────────────
     $verified = kashier_verify_session($session_id, $account_type);
-    $verified_status = strtoupper($verified['paymentStatus'] ?? $verified['status'] ?? '');
 
-    if ($verified_status !== 'SUCCESS') {
+    // Recover the merchant order id straight from the verified session if the
+    // redirect didn't carry it.
+    if (!$order_id && !empty($verified['merchantOrderId'])) {
+        $order_id     = $verified['merchantOrderId'];
+        $account_type = kashier_account_for_order($order_id);
+    }
+
+    if (!kashier_session_is_paid($verified)) {
+        $verified_status = strtoupper((string)($verified['status'] ?? $verified['paymentStatus'] ?? '?'));
         error_log("kashier/callback.php: session $session_id status=$verified_status for order $order_id");
         \core\notification::add(
             'لم تكتمل عملية الدفع. Payment was not completed (' . $verified_status . ').',
@@ -55,7 +75,7 @@ if ($session_id) {
         $amount_str = (string) ($verified['amount'] ?? '0');
     }
     if (!$transaction_id) {
-        $transaction_id = $verified['transactionId'] ?? $verified['_id'] ?? '';
+        $transaction_id = $verified['transactionId'] ?? $verified['orderId'] ?? $verified['sessionId'] ?? '';
     }
 
 } else {
@@ -141,6 +161,8 @@ if (strpos($order_id, 'vid-') === 0) {
     if (!$DB->record_exists('groups_members', ['userid' => $pay_uid, 'groupid' => $groupid])) {
         groups_add_member($groupid, $pay_uid);
     }
+
+    unset($SESSION->kashier_pending_video);
 
     \core\notification::add(
         'تم الدفع بنجاح! تم فتح الفيديو. Payment successful — video unlocked.',

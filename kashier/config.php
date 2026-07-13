@@ -227,14 +227,43 @@ function kashier_verify_session(string $session_id, string $type): array {
         CURLOPT_TIMEOUT        => 10,
         CURLOPT_HTTPHEADER     => [
             'Authorization: ' . $creds['secret_key'],
+            'api-key: '       . $creds['api_key'],
         ],
     ]);
 
-    $raw      = curl_exec($ch);
+    $raw       = curl_exec($ch);
+    $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
     curl_close($ch);
+
+    error_log(sprintf(
+        'kashier_verify_session[%s] session=%s http=%d response=%s',
+        $type, $session_id, $http_code, $raw !== false ? $raw : '(false)'
+    ));
 
     $data = json_decode($raw, true);
     return $data['data'] ?? $data ?? [];
+}
+
+/**
+ * Decide whether a verified session represents a completed payment.
+ *
+ * Kashier's session GET returns status values like CREATED / PENDING / PAID /
+ * CAPTURED (NOT the "SUCCESS" string used by the old redirect flow), plus a
+ * capturedAmount. Treat the payment as done when the status is a paid one, or
+ * when the captured amount covers the order amount.
+ *
+ * @param array $verified  Response from kashier_verify_session()
+ * @return bool
+ */
+function kashier_session_is_paid(array $verified): bool {
+    $status = strtoupper((string)($verified['status'] ?? $verified['paymentStatus'] ?? ''));
+    $paidstatuses = ['PAID', 'SUCCESS', 'CAPTURED', 'COMPLETED', 'SUCCEEDED'];
+    if (in_array($status, $paidstatuses, true)) {
+        return true;
+    }
+    $amount   = (float)($verified['amount'] ?? 0);
+    $captured = (float)($verified['capturedAmount'] ?? 0);
+    return $captured > 0 && $captured >= $amount;
 }
 
 // ── Legacy helpers (kept for existing vid- / dep- redirect flows) ─────────────

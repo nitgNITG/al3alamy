@@ -26,32 +26,43 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 $raw  = file_get_contents('php://input');
 $data = json_decode($raw, true);
 
+error_log('kashier/webhook.php body: ' . $raw);
+
 if (!$data) {
     http_response_code(400);
     exit('Bad Request');
 }
 
-$order_id       = $data['orderId']          ?? $data['merchantOrderId'] ?? '';
-$payment_status = $data['paymentStatus']    ?? '';
-$session_id     = $data['sessionId']        ?? '';
-$amount_str     = $data['amount']           ?? '0';
-$received_hash  = $data['hash']             ?? '';
-$transaction_id = $data['transactionId']    ?? '';
+// Kashier may nest the payload under 'data'.
+$payload = $data['data'] ?? $data;
 
-if (!$order_id) {
+$order_id       = $payload['orderId']       ?? $payload['merchantOrderId'] ?? '';
+$payment_status = $payload['paymentStatus'] ?? $payload['status']          ?? '';
+$session_id     = $payload['sessionId']     ?? $payload['_id']             ?? '';
+$amount_str     = $payload['amount']        ?? '0';
+$received_hash  = $payload['hash']          ?? '';
+$transaction_id = $payload['transactionId'] ?? '';
+
+if (!$order_id && !$session_id) {
     http_response_code(400);
-    exit('Bad Request — missing orderId');
+    exit('Bad Request — missing orderId/sessionId');
 }
 
-$account_type = kashier_account_for_order($order_id);
+$account_type = $order_id ? kashier_account_for_order($order_id) : 'student';
 
 // ── Verification ──────────────────────────────────────────────────────────
 if ($session_id) {
     // Session-based: verify via Kashier API.
-    $verified        = kashier_verify_session($session_id, $account_type);
-    $verified_status = strtoupper($verified['paymentStatus'] ?? $verified['status'] ?? '');
+    $verified = kashier_verify_session($session_id, $account_type);
 
-    if ($verified_status !== 'SUCCESS') {
+    // Recover the merchant order id from the verified session if the webhook
+    // body didn't carry it.
+    if (!$order_id && !empty($verified['merchantOrderId'])) {
+        $order_id     = $verified['merchantOrderId'];
+        $account_type = kashier_account_for_order($order_id);
+    }
+
+    if (!kashier_session_is_paid($verified)) {
         http_response_code(200);
         exit('OK — not success');
     }
@@ -59,7 +70,7 @@ if ($session_id) {
         $amount_str = (string) ($verified['amount'] ?? '0');
     }
     if (!$transaction_id) {
-        $transaction_id = $verified['transactionId'] ?? $verified['_id'] ?? '';
+        $transaction_id = $verified['transactionId'] ?? $verified['orderId'] ?? $verified['sessionId'] ?? '';
     }
 
 } else {

@@ -25,6 +25,25 @@ fwrite(STDOUT, 'api_key len : ' . strlen($creds['api_key']) . "\n");
 fwrite(STDOUT, 'secret len  : ' . strlen($creds['secret_key']) . "\n");
 fwrite(STDOUT, "----\n");
 
+// Dump every KASHIER_* key found in .env so we can see exactly what's present
+// (values masked — only name + length + a short prefix shown).
+fwrite(STDOUT, ".env KASHIER_* keys found:\n");
+$envfile = rtrim($GLOBALS['CFG']->dirroot, '/') . '/.env';
+if (is_readable($envfile)) {
+    foreach (file($envfile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) as $line) {
+        $line = trim($line);
+        if ($line === '' || $line[0] === '#' || strpos($line, '=') === false) continue;
+        [$k, $v] = explode('=', $line, 2);
+        $k = trim($k); $v = trim($v, " \t\"'");
+        if (strpos($k, 'KASHIER_') !== 0) continue;
+        $prefix = $v === '' ? '(EMPTY)' : substr($v, 0, 6) . '…';
+        fwrite(STDOUT, sprintf("  %-32s len=%-4d %s\n", $k, strlen($v), $prefix));
+    }
+} else {
+    fwrite(STDOUT, "  .env NOT readable at $envfile\n");
+}
+fwrite(STDOUT, "----\n");
+
 $order_id = 'diag-' . time();
 try {
     $session = kashier_create_session(

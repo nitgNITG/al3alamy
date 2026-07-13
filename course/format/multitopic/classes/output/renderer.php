@@ -144,14 +144,11 @@ class renderer extends section_renderer
 
         global $DB, $USER, $COURSE, $CFG;
 
-        // Load the videopay helper if available.
-        $videopay_lib = $CFG->dirroot . '/local/videopay/lib.php';
-        if (file_exists($videopay_lib)) {
-            require_once($videopay_lib);
-        }
-
-        // Fetch all modules for the given section and course
-        $modules = $DB->get_records('course_modules', ['course' => $course->id, 'section' => $section->id]);
+        // Per-lesson payment UI (price badge, Buy button, Kashier popup) is now
+        // injected globally by local_videopay_before_footer() so it works across
+        // ALL course formats (topics, multitopic, …). The legacy popup loop below
+        // is left inert ($modules empty) and should be deleted in a cleanup pass.
+        $modules = [];
 
         // Initialize variable to hold module IDs and availability information
         $module_ids = '';

@@ -343,6 +343,115 @@ function kashier_mark_success(string $order_id, string $transaction_id, int $use
     return true;
 }
 
+/**
+ * Fulfil a PAID order: enrol + group (video), wallet recharge (deposit), code
+ * generation (codes), or subscription activation (sub). Idempotent and safe to
+ * call from the browser callback, the server webhook, and the reconcile cron —
+ * membership/enrolment are guarded and the transaction is upserted to success.
+ *
+ * Does NOT redirect or emit notifications; the caller decides what to show.
+ *
+ * @return array{type:string,valid:bool,already:bool,done:bool,userid:int,courseid:int,cmid:int,planid:int}
+ */
+function kashier_fulfill_order(string $order_id, string $transaction_id, float $amount): array {
+    global $DB, $CFG;
+    require_once($CFG->dirroot . '/lib/enrollib.php');
+    require_once($CFG->dirroot . '/group/lib.php');
+
+    $r = ['type' => 'unknown', 'valid' => false, 'already' => false, 'done' => false,
+          'userid' => 0, 'courseid' => 0, 'cmid' => 0, 'planid' => 0];
+
+    $already = $DB->record_exists('kashier_transactions', ['order_id' => $order_id, 'status' => 'success']);
+    $r['already'] = $already;
+    $parts = explode('-', $order_id);
+
+    if (strpos($order_id, 'vid-') === 0) {
+        // vid-{userid}-{courseid}-{groupid}-{cmid}-{timestamp}
+        $r['type'] = 'video';
+        $uid = (int)($parts[1] ?? 0); $cid = (int)($parts[2] ?? 0);
+        $gid = (int)($parts[3] ?? 0); $cmid = (int)($parts[4] ?? 0);
+        $r['userid'] = $uid; $r['courseid'] = $cid; $r['cmid'] = $cmid;
+        if (!$uid || !$cid || !$gid) { return $r; }
+        $r['valid'] = true;
+        if ($already) { return $r; }
+
+        $ctx = context_course::instance($cid);
+        if (!is_enrolled($ctx, $uid)) {
+            $instance = $DB->get_record('enrol', ['courseid' => $cid, 'enrol' => 'manual', 'status' => 0]);
+            if ($instance) {
+                $srole = $DB->get_record('role', ['shortname' => 'student']);
+                enrol_get_plugin('manual')->enrol_user($instance, $uid, $srole ? (int)$srole->id : 5);
+            }
+        }
+        if (!$DB->record_exists('groups_members', ['userid' => $uid, 'groupid' => $gid])) {
+            groups_add_member($gid, $uid);
+        }
+        kashier_mark_success($order_id, $transaction_id, $uid, $amount, 'video');
+        $r['done'] = true;
+        return $r;
+
+    } elseif (strpos($order_id, 'dep-') === 0) {
+        // dep-{userid}-{amount_egp}-{timestamp}
+        $r['type'] = 'deposit';
+        $uid = (int)($parts[1] ?? 0);
+        $r['userid'] = $uid;
+        if (!$uid) { return $r; }
+        $r['valid'] = true;
+        if ($already) { return $r; }
+
+        kashier_mark_success($order_id, $transaction_id, $uid, $amount, 'deposit');
+        $wallet_uuid = $DB->get_field('user_wallet', 'wallet_uuid', ['user_id' => $uid]);
+        if ($wallet_uuid) {
+            $ch = curl_init('https://salem-mar3y.com/e-wallet/src/api/recharge_wallet.php');
+            curl_setopt_array($ch, [
+                CURLOPT_POST => true,
+                CURLOPT_POSTFIELDS => json_encode(['wallet_uuid' => $wallet_uuid, 'amount' => $amount, 'description' => 'Kashier deposit']),
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_HTTPHEADER => ['Authorization: Bearer 8b5a0e6d266ae2c3250a98ac3a568a95', 'Content-Type: application/json'],
+            ]);
+            curl_exec($ch); curl_close($ch);
+        }
+        $r['done'] = true;
+        return $r;
+
+    } elseif (strpos($order_id, 'codes-') === 0) {
+        // codes-{userid}-{count}-{timestamp}
+        $r['type'] = 'codes';
+        $uid = (int)($parts[1] ?? 0); $count = (int)($parts[2] ?? 0);
+        $r['userid'] = $uid;
+        if (!$uid || $count < 1) { return $r; }
+        $r['valid'] = true;
+        if ($already) { return $r; }
+
+        kashier_mark_success($order_id, $transaction_id, $uid, $amount, 'codes');
+        require_once($CFG->dirroot . '/local/registrationcodes/classes/manager.php');
+        \local_registrationcodes\manager::generate_codes($count, '', null, 'kashier-order:' . $order_id, $uid);
+        $r['done'] = true;
+        return $r;
+
+    } elseif (strpos($order_id, 'sub-') === 0) {
+        // sub-{userid}-{planid}-{timestamp}
+        $r['type'] = 'subscription';
+        $uid = (int)($parts[1] ?? 0); $planid = (int)($parts[2] ?? 0);
+        $r['userid'] = $uid; $r['planid'] = $planid;
+        if (!$uid || !$planid) { return $r; }
+        $r['valid'] = true;
+        if ($already) { return $r; }
+
+        kashier_mark_success($order_id, $transaction_id, $uid, $amount, 'subscription');
+        if (class_exists('\local_subscriptions\manager')) {
+            if (!\local_subscriptions\manager::has_active_subscription($uid)) {
+                \local_subscriptions\manager::activate_for_user(
+                    $planid, $uid, $amount, \local_subscriptions\manager::SOURCE_ONLINE, $order_id, $transaction_id);
+            }
+        }
+        $r['done'] = true;
+        return $r;
+    }
+
+    return $r;
+}
+
 // ── Legacy helpers (kept for existing vid- / dep- redirect flows) ─────────────
 
 function kashier_build_hash(string $order_id, string $amount, string $type = 'student'): string {

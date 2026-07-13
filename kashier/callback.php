@@ -114,221 +114,68 @@ if ($DB->record_exists('kashier_transactions', ['order_id' => $order_id, 'status
 
 $amount = (float)$amount_str;
 
-// ── Route by order type ───────────────────────────────────────────────────
-if (strpos($order_id, 'vid-') === 0) {
-    // Format: vid-{userid}-{courseid}-{groupid}-{cmid}-{timestamp}
-    $parts    = explode('-', $order_id);
-    // parts: [0]=vid [1]=userid [2]=courseid [3]=groupid [4]=cmid [5]=timestamp
-    $pay_uid  = isset($parts[1]) ? (int)$parts[1] : 0;
-    $courseid = isset($parts[2]) ? (int)$parts[2] : 0;
-    $groupid  = isset($parts[3]) ? (int)$parts[3] : 0;
-    $cmid     = isset($parts[4]) ? (int)$parts[4] : 0;
+// Security: a logged-in user may only complete their own order.
+$order_uid = (int)(explode('-', $order_id)[1] ?? 0);
+if ($USER->id && $order_uid && $USER->id !== $order_uid) {
+    \core\notification::add('User mismatch in payment.', \core\output\notification::NOTIFY_ERROR);
+    redirect(new moodle_url('/'));
+}
 
-    if (!$pay_uid || !$courseid || !$groupid) {
-        \core\notification::add('Invalid order reference.', \core\output\notification::NOTIFY_ERROR);
-        redirect(new moodle_url('/'));
-    }
+// ── Fulfil (enrol/group/wallet/codes/sub) via the shared idempotent path ───
+$res = kashier_fulfill_order($order_id, $transaction_id, $amount);
 
-    // Security: must be the same logged-in user (or we use pay_uid directly).
-    $userid = $USER->id ?: $pay_uid;
-    if ($USER->id && $USER->id !== $pay_uid) {
-        \core\notification::add('User mismatch in payment.', \core\output\notification::NOTIFY_ERROR);
-        redirect(new moodle_url('/'));
-    }
+if (!$res['valid']) {
+    \core\notification::add('Invalid order reference.', \core\output\notification::NOTIFY_ERROR);
+    redirect(new moodle_url('/'));
+}
 
-    // Record transaction (upsert — a pending row already exists from pay.php).
-    kashier_mark_success($order_id, $transaction_id, $pay_uid, $amount, 'video');
+unset($SESSION->kashier_pending_video);
 
-    // ── Enroll in course ────────────────────────────────────────────────
-    $course_context = context_course::instance($courseid);
-    if (!is_enrolled($course_context, $pay_uid)) {
-        $instance = $DB->get_record('enrol', [
-            'courseid' => $courseid,
-            'enrol'    => 'manual',
-            'status'   => 0,
-        ]);
-        if ($instance) {
-            $enrol_plugin = enrol_get_plugin('manual');
-            $student_role = $DB->get_record('role', ['shortname' => 'student']);
-            $roleid       = $student_role ? (int)$student_role->id : 5;
-            $enrol_plugin->enrol_user($instance, $pay_uid, $roleid);
-        }
-    }
-
-    // ── Add to group (unlocks video + associated quizzes) ───────────────
-    if (!$DB->record_exists('groups_members', ['userid' => $pay_uid, 'groupid' => $groupid])) {
-        groups_add_member($groupid, $pay_uid);
-    }
-
-    unset($SESSION->kashier_pending_video);
-
+// ── Redirect to the right place for the order type ─────────────────────────
+if ($res['type'] === 'video') {
     \core\notification::add(
         'تم الدفع بنجاح! تم فتح الفيديو. Payment successful — video unlocked.',
         \core\output\notification::NOTIFY_SUCCESS
     );
-
-    // Redirect directly to the purchased module if cmid is known.
-    if ($cmid) {
-        $cm = $DB->get_record('course_modules', ['id' => $cmid]);
+    // Jump straight to the purchased module when we know it.
+    if (!empty($res['cmid'])) {
+        $cm = $DB->get_record('course_modules', ['id' => $res['cmid']]);
         if ($cm) {
             $module = $DB->get_field('modules', 'name', ['id' => $cm->module]);
-            redirect(new moodle_url('/mod/' . $module . '/view.php', ['id' => $cmid]));
+            redirect(new moodle_url('/mod/' . $module . '/view.php', ['id' => $res['cmid']]));
         }
     }
-    redirect(new moodle_url('/course/view.php', ['id' => $courseid]));
+    redirect(new moodle_url('/course/view.php', ['id' => $res['courseid']]));
 
-} elseif (strpos($order_id, 'dep-') === 0) {
-    // Wallet deposit — format: dep-{userid}-{amount_egp}-{timestamp}
-    $parts   = explode('-', $order_id);
-    $pay_uid = isset($parts[1]) ? (int)$parts[1] : 0;
-
-    if (!$pay_uid) {
-        \core\notification::add('Invalid deposit reference.', \core\output\notification::NOTIFY_ERROR);
-        redirect(new moodle_url('/e-wallet/'));
-    }
-
-    // Record transaction.
-    $DB->insert_record('kashier_transactions', [
-        'order_id'       => $order_id,
-        'transaction_id' => $transaction_id,
-        'user_id'        => $pay_uid,
-        'amount'         => $amount,
-        'currency'       => KASHIER_CURRENCY,
-        'type'           => 'deposit',
-        'status'         => 'success',
-        'timecreated'    => time(),
-    ]);
-
-    // Recharge the e-wallet via the existing external API.
-    $wallet_api_key = '8b5a0e6d266ae2c3250a98ac3a568a95';
-    $wallet_uuid    = $DB->get_field('user_wallet', 'wallet_uuid', ['user_id' => $pay_uid]);
-
-    if ($wallet_uuid) {
-        $ch = curl_init();
-        curl_setopt($ch, CURLOPT_URL, 'https://salem-mar3y.com/e-wallet/src/api/recharge_wallet.php');
-        curl_setopt($ch, CURLOPT_POST, true);
-        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode([
-            'wallet_uuid' => $wallet_uuid,
-            'amount'      => $amount,
-            'description' => 'Kashier deposit',
-        ]));
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_HTTPHEADER, [
-            'Authorization: Bearer ' . $wallet_api_key,
-            'Content-Type: application/json',
-        ]);
-        curl_exec($ch);
-        curl_close($ch);
-    }
-
+} elseif ($res['type'] === 'deposit') {
     \core\notification::add(
         'تم شحن المحفظة بنجاح! Wallet topped up successfully.',
         \core\output\notification::NOTIFY_SUCCESS
     );
     redirect(new moodle_url('/e-wallet/'));
 
-} elseif (strpos($order_id, 'codes-') === 0) {
-    // Registration-code purchase — format: codes-{userid}-{count}-{timestamp}
-    $parts    = explode('-', $order_id);
-    $pay_uid  = isset($parts[1]) ? (int) $parts[1] : 0;
-    $req_count = isset($parts[2]) ? (int) $parts[2] : 0;
-
-    if (!$pay_uid || $req_count < 1) {
-        \core\notification::add('Invalid codes order reference.', \core\output\notification::NOTIFY_ERROR);
-        redirect(new moodle_url('/'));
-    }
-
-    // Security: logged-in user must match the order owner.
-    if ($USER->id && $USER->id !== $pay_uid) {
-        \core\notification::add('User mismatch in codes payment.', \core\output\notification::NOTIFY_ERROR);
-        redirect(new moodle_url('/'));
-    }
-
-    // Record transaction (replay-safe — already checked above).
-    $DB->insert_record('kashier_transactions', [
-        'order_id'       => $order_id,
-        'transaction_id' => $transaction_id,
-        'user_id'        => $pay_uid,
-        'amount'         => $amount,
-        'currency'       => KASHIER_CURRENCY,
-        'type'           => 'codes',
-        'status'         => 'success',
-        'timecreated'    => time(),
-    ]);
-
-    // Generate codes (notes tag lets codes_ready.php retrieve them by order).
-    $notes_tag = 'kashier-order:' . $order_id;
-    \local_registrationcodes\manager::generate_codes(
-        $req_count,
-        '',       // no prefix
-        null,     // no expiry
-        $notes_tag,
-        $pay_uid
-    );
-
+} elseif ($res['type'] === 'codes') {
     \core\notification::add(
         'تم الدفع بنجاح! جاري عرض الأكواد… Payment successful — generating codes.',
         \core\output\notification::NOTIFY_SUCCESS
     );
     redirect(new moodle_url('/local/registrationcodes/codes_ready.php', ['order_id' => $order_id]));
 
-} elseif (strpos($order_id, 'sub-') === 0) {
-    // Subscription purchase — format: sub-{userid}-{planid}-{timestamp}
-    $parts   = explode('-', $order_id);
-    $pay_uid = isset($parts[1]) ? (int) $parts[1] : 0;
-    $planid  = isset($parts[2]) ? (int) $parts[2] : 0;
-
-    if (!$pay_uid || !$planid) {
-        \core\notification::add('Invalid subscription order reference.', \core\output\notification::NOTIFY_ERROR);
-        redirect(new moodle_url('/local/subscriptions/index.php'));
-    }
-
-    // Security: logged-in user must match the order owner.
-    if ($USER->id && $USER->id !== $pay_uid) {
-        \core\notification::add('User mismatch in subscription payment.', \core\output\notification::NOTIFY_ERROR);
-        redirect(new moodle_url('/local/subscriptions/index.php'));
-    }
-
-    // Record transaction (replay-safe — already checked above).
-    $DB->insert_record('kashier_transactions', [
-        'order_id'       => $order_id,
-        'transaction_id' => $transaction_id,
-        'user_id'        => $pay_uid,
-        'amount'         => $amount,
-        'currency'       => KASHIER_CURRENCY,
-        'type'           => 'subscription',
-        'status'         => 'success',
-        'timecreated'    => time(),
-    ]);
-
-    // Activate the subscription — requires local/subscriptions plugin (pending build).
+} elseif ($res['type'] === 'subscription') {
     if (class_exists('\local_subscriptions\manager')) {
-        if (!\local_subscriptions\manager::has_active_subscription($pay_uid)) {
-            \local_subscriptions\manager::activate_for_user(
-                $planid,
-                $pay_uid,
-                $amount,
-                \local_subscriptions\manager::SOURCE_ONLINE,
-                $order_id,
-                $transaction_id
-            );
-        }
         \core\notification::add(
             get_string('payment_success', 'local_subscriptions'),
             \core\output\notification::NOTIFY_SUCCESS
         );
         redirect(new moodle_url('/local/subscriptions/mysubscriptions.php'));
-    } else {
-        // Plugin not yet installed — transaction recorded, redirect home gracefully.
-        error_log("kashier/callback.php: local_subscriptions plugin missing — sub order $order_id recorded but not activated");
-        \core\notification::add(
-            'تم استلام الدفع وسيتم تفعيل الاشتراك قريباً. Payment received — subscription will be activated shortly.',
-            \core\output\notification::NOTIFY_WARNING
-        );
-        redirect(new moodle_url('/'));
     }
-
-} else {
-    \core\notification::add('Unknown payment type.', \core\output\notification::NOTIFY_ERROR);
+    error_log("kashier/callback.php: local_subscriptions plugin missing — sub order $order_id recorded but not activated");
+    \core\notification::add(
+        'تم استلام الدفع وسيتم تفعيل الاشتراك قريباً. Payment received — subscription will be activated shortly.',
+        \core\output\notification::NOTIFY_WARNING
+    );
     redirect(new moodle_url('/'));
 }
+
+\core\notification::add('Unknown payment type.', \core\output\notification::NOTIFY_ERROR);
+redirect(new moodle_url('/'));

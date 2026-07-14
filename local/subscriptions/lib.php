@@ -131,10 +131,21 @@ function local_subscriptions_before_standard_top_of_body_html() {
         document.body.appendChild(box);
     }
 
-    function run() {
+    var floatingTries = 0;
+    function ensure() {
+        // Already placed among the nav titles? Nothing to do.
+        if (document.getElementById('local-subscriptions-nav-link')) return;
         if (!insertSubscriptionsLink()) {
-            insertFloating();
+            // No known container yet — keep the floating pill as a last resort.
+            if (floatingTries++ > 6) { insertFloating(); }
         }
+    }
+
+    function run() {
+        ensure();
+        // The theme's responsive-menu JS can rebuild the nav after load and drop
+        // our item; re-assert it a few times so it survives that re-render.
+        [300, 800, 1500, 2500].forEach(function (d) { setTimeout(ensure, d); });
     }
 
     if (document.readyState === 'loading') {

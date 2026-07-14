@@ -36,7 +36,24 @@ if (!$data) {
 // Kashier may nest the payload under 'data'.
 $payload = $data['data'] ?? $data;
 
-$order_id       = $payload['orderId']       ?? $payload['merchantOrderId'] ?? '';
+// Prefer OUR merchant order reference (e.g. "sub-123-4-...", "vid-123-...") over
+// Kashier's internal `orderId`; using Kashier's id makes fulfilment fail with
+// "Bad order reference". See kashier/callback.php for the full reasoning.
+$order_candidates = array_values(array_filter([
+    $payload['merchantOrderId'] ?? '',
+    $payload['orderReference']  ?? '',
+    $payload['orderId']         ?? '',
+]));
+$order_id = '';
+foreach ($order_candidates as $order_candidate) {
+    if (preg_match('/^(sub|vid|dep|codes)-/', (string)$order_candidate)) {
+        $order_id = (string)$order_candidate;
+        break;
+    }
+}
+if ($order_id === '' && !empty($order_candidates)) {
+    $order_id = (string)$order_candidates[0];
+}
 $payment_status = $payload['paymentStatus'] ?? $payload['status']          ?? '';
 $session_id     = $payload['sessionId']     ?? $payload['_id']             ?? '';
 $amount_str     = $payload['amount']        ?? '0';
@@ -61,10 +78,13 @@ if ($session_id) {
     $verified = kashier_verify_session($session_id, $account_type);
 
     // Recover the merchant order id from the verified session if the webhook
-    // body didn't carry it.
-    if (!$order_id && !empty($verified['merchantOrderId'])) {
-        $order_id     = $verified['merchantOrderId'];
-        $account_type = kashier_account_for_order($order_id);
+    // body didn't carry it — or carried only Kashier's internal id.
+    if (!preg_match('/^(sub|vid|dep|codes)-/', (string)$order_id)) {
+        $recovered = $verified['merchantOrderId'] ?? $verified['order'] ?? '';
+        if ($recovered !== '') {
+            $order_id     = $recovered;
+            $account_type = kashier_account_for_order($order_id);
+        }
     }
 
     if (!kashier_session_is_paid($verified)) {

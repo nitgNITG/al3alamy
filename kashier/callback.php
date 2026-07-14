@@ -21,10 +21,31 @@ global $DB, $CFG, $USER, $SESSION;
 
 // ── Parse Kashier params (support both session and legacy param names) ─────
 $k_order        = optional_param('k_order',          '', PARAM_RAW); // our own marker
-$order_id       = optional_param('orderId',          '', PARAM_RAW)
-               ?: optional_param('merchantOrderId',  '', PARAM_RAW)
-               ?: optional_param('orderReference',   '', PARAM_RAW)
-               ?: $k_order;
+// IMPORTANT: Kashier appends its OWN `orderId` (an internal Kashier reference)
+// to the redirect URL. Our real order reference — the one that encodes the
+// buyer id + purchase, e.g. "sub-123-4-..." / "vid-123-..." — is the `k_order`
+// marker we set in merchantRedirect (also echoed back as `merchantOrderId`).
+// Prefer OUR reference; only fall back to Kashier's `orderId` when nothing that
+// looks like one of our orders is present. Picking Kashier's `orderId` here
+// breaks the buyer check further down ("User mismatch in payment.") and order
+// fulfilment ("Invalid order reference.").
+$order_candidates = array_values(array_filter([
+    $k_order,
+    optional_param('merchantOrderId', '', PARAM_RAW),
+    optional_param('orderReference',  '', PARAM_RAW),
+    optional_param('orderId',         '', PARAM_RAW),
+]));
+$order_id = '';
+foreach ($order_candidates as $order_candidate) {
+    if (preg_match('/^(sub|vid|dep|codes)-/', $order_candidate)) {
+        $order_id = $order_candidate;
+        break;
+    }
+}
+if ($order_id === '' && !empty($order_candidates)) {
+    // Nothing matched a known prefix — prefer our own markers over Kashier's id.
+    $order_id = $order_candidates[0];
+}
 $payment_status = optional_param('paymentStatus',    '', PARAM_ALPHA);
 $session_id     = optional_param('sessionId',        '', PARAM_RAW);
 $amount_str     = optional_param('amount',           '0', PARAM_RAW);
@@ -67,10 +88,13 @@ if ($session_id) {
     $verified = kashier_verify_session($session_id, $account_type);
 
     // Recover the merchant order id straight from the verified session if the
-    // redirect didn't carry it.
-    if (!$order_id && !empty($verified['merchantOrderId'])) {
-        $order_id     = $verified['merchantOrderId'];
-        $account_type = kashier_account_for_order($order_id);
+    // redirect didn't carry it — or carried only Kashier's internal id.
+    if (!preg_match('/^(sub|vid|dep|codes)-/', (string)$order_id)) {
+        $recovered = $verified['merchantOrderId'] ?? $verified['order'] ?? '';
+        if ($recovered !== '') {
+            $order_id     = $recovered;
+            $account_type = kashier_account_for_order($order_id);
+        }
     }
 
     if (!kashier_session_is_paid($verified)) {

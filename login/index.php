@@ -231,35 +231,33 @@ if ($frm and isset($frm->username)) {                             // Login WITH 
         /// Let's get them all set up.
         complete_user_login($user);
 
-        // --- Device Registration: block NEW login if user already has max sessions ---
-        // This runs BEFORE apply_concurrent_login_limit so the OLD session stays alive.
-        if (file_exists($CFG->dirroot . '/local/deviceregistration/lib.php')) {
-            require_once($CFG->dirroot . '/local/deviceregistration/lib.php');
-            if (local_deviceregistration_is_enabled() && !is_siteadmin($user->id)) {
-                $maxdevices = local_deviceregistration_max_devices();
-                if ($maxdevices > 0) {
-                    $timeout = !empty($CFG->sessiontimeout) ? $CFG->sessiontimeout : 86400;
-                    $cutoff  = time() - $timeout;
-                    $sid     = session_id();
-                    $sql = "SELECT COUNT(*)
-                              FROM {sessions}
-                             WHERE userid = :userid
-                               AND sid <> :sid
-                               AND timemodified > :cutoff";
-                    $other = $DB->count_records_sql($sql, [
-                        'userid' => $user->id,
-                        'sid'    => $sid,
-                        'cutoff' => $cutoff,
-                    ]);
-                    if ($other >= $maxdevices) {
-                        // Block this new login — keep the existing session alive.
-                        local_deviceregistration_block_login();
-                        // block_login calls require_logout() + redirect, never returns.
-                    }
-                }
+        // --- Block concurrent logins: only 1 session per user ---
+        // If user already has an active session on another device, block this new login.
+        if (!is_siteadmin($user->id)) {
+            $timeout = !empty($CFG->sessiontimeout) ? $CFG->sessiontimeout : 86400;
+            $cutoff  = time() - $timeout;
+            $sid     = session_id();
+            $sql = "SELECT COUNT(*)
+                      FROM {sessions}
+                     WHERE userid = :userid
+                       AND sid <> :sid
+                       AND timemodified > :cutoff";
+            $othersessions = $DB->count_records_sql($sql, [
+                'userid' => $user->id,
+                'sid'    => $sid,
+                'cutoff' => $cutoff,
+            ]);
+            if ($othersessions >= 1) {
+                require_logout();
+                redirect(
+                    new moodle_url('/login/index.php'),
+                    'You are already logged in on another device. Please log out from your other device first.',
+                    null,
+                    \core\output\notification::NOTIFY_ERROR
+                );
             }
         }
-        // --- End Device Registration ---
+        // --- End Block concurrent logins ---
 
         \core\session\manager::apply_concurrent_login_limit($user->id, session_id());
 

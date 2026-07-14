@@ -18,17 +18,17 @@ defined('MOODLE_INTERNAL') || die();
 class observer {
 
     /**
-     * Enforce the per-user device limit right after a successful login.
+     * Enforce the per-user concurrent session limit right after a successful login.
      *
-     * Recognises the current browser via a persistent device-token cookie.
-     * A known device is allowed (and refreshed). A new device is registered
-     * while the user is under their limit; once at the limit, the new device
-     * is refused and the just-created session is terminated (hard block).
+     * Checks how many OTHER active sessions this user already has.
+     * If the count is >= the configured maximum, the new login is refused
+     * and the just-created session is terminated. The user must log out
+     * from an existing device before they can log in from a new one.
      *
      * @param \core\event\user_loggedin $event
      */
     public static function user_loggedin(\core\event\user_loggedin $event) {
-        global $DB;
+        global $DB, $CFG;
 
         require_once(__DIR__ . '/../lib.php');
 
@@ -48,56 +48,38 @@ class observer {
             return; // 0 = unlimited.
         }
 
-        $now   = time();
-        $token = local_deviceregistration_get_cookie_token();
+        // Get the current session ID (the one just created by this login).
+        $currentsid = session_id();
 
-        // Read current device state. Fail open on any DB problem (e.g. the
-        // table not yet created) so this plugin can never break site login.
+        // Count OTHER active sessions for this user (excluding the current one).
         try {
-            // Known device for this user → allow and refresh its last-seen info.
-            if ($token) {
-                $existing = $DB->get_record('local_devreg_device', [
-                    'userid'      => $userid,
-                    'devicetoken' => $token,
-                ]);
-                if ($existing) {
-                    $existing->timelastseen = $now;
-                    $existing->lastip       = getremoteaddr();
-                    $existing->useragent    = local_deviceregistration_useragent();
-                    $DB->update_record('local_devreg_device', $existing);
-                    return;
-                }
-            }
-            $count = $DB->count_records('local_devreg_device', ['userid' => $userid]);
+            $sql = "SELECT COUNT(*)
+                      FROM {sessions}
+                     WHERE userid = :userid
+                       AND sid != :sid
+                       AND timemodified > :cutoff";
+
+            // Consider sessions active if they were touched within the last 24 hours,
+            // or use Moodle's session timeout if configured.
+            $timeout = !empty($CFG->sessiontimeout) ? $CFG->sessiontimeout : 86400;
+            $cutoff = time() - $timeout;
+
+            $params = [
+                'userid' => $userid,
+                'sid'    => $currentsid,
+                'cutoff' => $cutoff,
+            ];
+
+            $othersessions = $DB->count_records_sql($sql, $params);
         } catch (\dml_exception $e) {
             debugging('local_deviceregistration: skipping enforcement - ' . $e->getMessage(), DEBUG_DEVELOPER);
-            return;
+            return; // Fail open — never break login.
         }
 
-        // New device, and the user is at their limit → refuse and end session.
-        if ($count >= $max) {
+        // If user already has max sessions active on other devices → block this login.
+        if ($othersessions >= $max) {
             local_deviceregistration_block_login(); // Redirects and exits.
-            return; // Guard, in case block_login() ever returns.
-        }
-
-        // Under the limit → register this device.
-        if (!$token) {
-            $token = random_string(40);
-            local_deviceregistration_set_cookie_token($token);
-        }
-
-        $record = (object) [
-            'userid'       => $userid,
-            'devicetoken'  => $token,
-            'useragent'    => local_deviceregistration_useragent(),
-            'lastip'       => getremoteaddr(),
-            'timecreated'  => $now,
-            'timelastseen' => $now,
-        ];
-        try {
-            $DB->insert_record('local_devreg_device', $record);
-        } catch (\dml_exception $e) {
-            debugging('local_deviceregistration: could not register device - ' . $e->getMessage(), DEBUG_DEVELOPER);
+            return; // Guard.
         }
     }
 }

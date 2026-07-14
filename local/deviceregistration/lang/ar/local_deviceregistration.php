@@ -39,7 +39,7 @@ $string['status_disabled']      = 'متوقّفة';
 $string['unlimited']            = 'غير محدود';
 
 // Enforcement.
-$string['devicelimitreached'] = 'لقد بلغت الحد الأقصى لعدد الأجهزة المسموح بها. يُرجى إزالة أحد الأجهزة من جهاز مسجَّل بالفعل قبل تسجيل الدخول من هنا.';
+$string['devicelimitreached'] = 'أنت مسجّل الدخول حالياً على جهاز آخر. يُرجى تسجيل الخروج من الجهاز الآخر أولاً قبل تسجيل الدخول من هنا.';
 
 // My devices page.
 $string['mydevices']          = 'أجهزتي';

@@ -39,7 +39,7 @@ $string['status_disabled']     = 'Disabled';
 $string['unlimited']           = 'Unlimited';
 
 // Enforcement.
-$string['devicelimitreached'] = 'Device limit reached. You have already registered the maximum number of devices allowed. Please remove a device from one of your existing devices before signing in here.';
+$string['devicelimitreached'] = 'You are already logged in on another device. Please log out from your other device first before signing in here.';
 
 // My devices page.
 $string['mydevices']          = 'My devices';

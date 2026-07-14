@@ -99,6 +99,17 @@ echo $OUTPUT->header();
 .active-banner a { background: rgba(255,255,255,0.2); color: #fff; padding: 8px 18px; border-radius: 6px; text-decoration: none; font-size: .9em; }
 .active-banner a:hover { background: rgba(255,255,255,0.35); }
 .no-plans { text-align: center; padding: 60px 20px; color: #888; font-size: 1.1em; }
+.plan-card { position: relative; }
+.plan-card.current-plan { border: 2px solid #c8a84b; box-shadow: 0 4px 16px rgba(200,168,75,0.25); }
+.plan-card .current-plan-badge {
+    position: absolute; top: -12px; inset-inline-start: 20px;
+    background: #c8a84b; color: #fff; font-size: .78em; font-weight: 700;
+    padding: 4px 12px; border-radius: 20px; box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+}
+.btn-current-plan {
+    display: block; text-align: center; background: #c8a84b; color: #fff;
+    padding: 11px; border-radius: 8px; font-size: 1em; font-weight: 600; cursor: default;
+}
 </style>
 
 <div class="subs-page">
@@ -134,8 +145,12 @@ echo $OUTPUT->header();
         <?php foreach ($plans as $plan): ?>
         <?php
             $item_count = $DB->count_records('local_subscriptions_items', ['planid' => $plan->id]);
+            $is_current_plan = $user_sub && (int)$user_sub->planid === (int)$plan->id;
         ?>
-        <div class="plan-card">
+        <div class="plan-card<?php echo $is_current_plan ? ' current-plan' : ''; ?>">
+            <?php if ($is_current_plan): ?>
+                <div class="current-plan-badge">★ <?php echo get_string('current_plan_badge', 'local_subscriptions'); ?></div>
+            <?php endif; ?>
             <a href="<?php echo (new moodle_url('/local/subscriptions/plan.php', ['id' => $plan->id]))->out(); ?>"
                style="text-decoration:none; color:inherit">
             <div class="plan-name"><?php echo s($plan->name); ?></div>
@@ -161,7 +176,11 @@ echo $OUTPUT->header();
             </div>
             </a>
 
-            <?php if ($user_sub): ?>
+            <?php if ($is_current_plan): ?>
+                <div class="btn-current-plan">
+                    ✓ <?php echo get_string('current_plan', 'local_subscriptions'); ?>
+                </div>
+            <?php elseif ($user_sub): ?>
                 <div class="btn-subscribed">
                     ✓ <?php echo get_string('already_subscribed', 'local_subscriptions'); ?>
                 </div>

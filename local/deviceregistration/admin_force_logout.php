@@ -90,7 +90,7 @@ echo $OUTPUT->header();
 
   <form method="get" class="fl-search">
     <input type="hidden" name="userid" value="0">
-    <input type="text" name="search" placeholder="<?php echo s(get_string('forcelogout_search_placeholder', 'local_deviceregistration')); ?>" value="<?php echo s($search); ?>">
+    <input type="text" name="search" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="<?php echo s(get_string('forcelogout_search_placeholder', 'local_deviceregistration')); ?>" value="<?php echo s($search); ?>">
     <button type="submit"><?php echo get_string('forcelogout_search_btn', 'local_deviceregistration'); ?></button>
   </form>
 

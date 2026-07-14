@@ -194,8 +194,15 @@ function local_subscriptions_home_plans_script($active_sub) {
         .ls-home-title { color: #2d6a9f; text-align: center; font-size: 1.9em; font-weight: 800; margin: 0 0 6px; }
         .ls-home-sub { color: #666; text-align: center; margin: 0 0 32px; font-size: 1em; }
         .ls-home-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 24px; }
-        .ls-home-card { background: #fff; border: 1px solid #dee2e6; border-radius: 12px; padding: 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); display: flex; flex-direction: column; transition: box-shadow 0.2s; }
+        .ls-home-card { position: relative; background: #fff; border: 1px solid #dee2e6; border-radius: 12px; padding: 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); display: flex; flex-direction: column; transition: box-shadow 0.2s; }
         .ls-home-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.12); }
+        .ls-home-card.current-plan { border: 2px solid #c8a84b; box-shadow: 0 4px 16px rgba(200,168,75,0.25); }
+        .ls-home-card .current-plan-badge {
+            position: absolute; top: -12px; inset-inline-start: 20px;
+            background: #c8a84b; color: #fff; font-size: .78em; font-weight: 700;
+            padding: 4px 12px; border-radius: 20px; box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+        }
+        .ls-home-btn.current-plan-btn { background: #c8a84b; cursor: default; }
         .ls-home-cardlink { text-decoration: none; color: inherit; display: block; }
         .ls-home-name { font-size: 1.25em; font-weight: 700; color: #1a1a1a; margin-bottom: 8px; }
         .ls-home-price { font-size: 2em; font-weight: 800; color: #c8a84b; margin-bottom: 12px; }
@@ -212,8 +219,14 @@ function local_subscriptions_home_plans_script($active_sub) {
         <p class="ls-home-sub">اختر الخطة المناسبة لك واستمتع بالوصول إلى المحتوى التعليمي</p>
         <div class="ls-home-grid">
           <?php foreach ($plans as $plan): ?>
-            <?php $item_count = $DB->count_records('local_subscriptions_items', ['planid' => $plan->id]); ?>
-            <div class="ls-home-card">
+            <?php
+              $item_count = $DB->count_records('local_subscriptions_items', ['planid' => $plan->id]);
+              $is_current_plan = $active_sub && (int)$active_sub->planid === (int)$plan->id;
+            ?>
+            <div class="ls-home-card<?php echo $is_current_plan ? ' current-plan' : ''; ?>">
+              <?php if ($is_current_plan): ?>
+                <div class="current-plan-badge">★ <?php echo get_string('current_plan_badge', 'local_subscriptions'); ?></div>
+              <?php endif; ?>
               <a class="ls-home-cardlink" href="<?php echo (new moodle_url('/local/subscriptions/plan.php', ['id' => $plan->id]))->out(); ?>">
                 <div class="ls-home-name"><?php echo s($plan->name); ?></div>
                 <div class="ls-home-price"><?php echo number_format((float)$plan->price, 0); ?><span>جنيه مصري</span></div>
@@ -233,7 +246,9 @@ function local_subscriptions_home_plans_script($active_sub) {
                   <?php endif; ?>
                 </div>
               </a>
-              <?php if ($active_sub): ?>
+              <?php if ($is_current_plan): ?>
+                <div class="ls-home-btn current-plan-btn">✓ <?php echo get_string('current_plan', 'local_subscriptions'); ?></div>
+              <?php elseif ($active_sub): ?>
                 <div class="ls-home-btn subscribed">✓ <?php echo get_string('already_subscribed', 'local_subscriptions'); ?></div>
               <?php else: ?>
                 <a class="ls-home-btn" href="<?php echo (new moodle_url('/local/subscriptions/buy.php', ['planid' => $plan->id]))->out(); ?>"><?php echo get_string('subscribe_now', 'local_subscriptions'); ?></a>

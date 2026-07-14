@@ -358,12 +358,15 @@ function kashier_fulfill_order(string $order_id, string $transaction_id, float $
     require_once($CFG->dirroot . '/lib/enrollib.php');
     require_once($CFG->dirroot . '/group/lib.php');
 
+    error_log("kashier_fulfill_order: order_id=$order_id transaction_id=$transaction_id amount=$amount");
+
     $r = ['type' => 'unknown', 'valid' => false, 'already' => false, 'done' => false,
           'userid' => 0, 'courseid' => 0, 'cmid' => 0, 'planid' => 0];
 
     $already = $DB->record_exists('kashier_transactions', ['order_id' => $order_id, 'status' => 'success']);
     $r['already'] = $already;
     $parts = explode('-', $order_id);
+    error_log("kashier_fulfill_order: parts=" . json_encode($parts) . " count=" . count($parts));
 
     if (strpos($order_id, 'vid-') === 0) {
         // vid-{userid}-{courseid}-{groupid}-{cmid}-{timestamp}

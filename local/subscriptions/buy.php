@@ -78,9 +78,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $order_id = 'sub-' . $USER->id . '-' . $planid . '-' . $ts;
     $amount   = number_format((float)$plan->price, 2, '.', '');
 
-    $redirect_url = $CFG->wwwroot . '/kashier/callback.php';
+    $redirect_url = (new moodle_url('/kashier/callback.php', ['k_order' => $order_id]))->out(false);
     $webhook_url  = $CFG->wwwroot . '/kashier/webhook.php';
     $description  = 'اشتراك: ' . $plan->name . ' - ' . fullname($USER);
+
+    // Store pending purchase in session (backup if order_id parsing fails).
+    $SESSION->kashier_pending_subscription = [
+        'order_id' => $order_id,
+        'userid'   => $USER->id,
+        'planid'   => $planid,
+        'amount'   => $amount,
+    ];
 
     // kashier_create_session(order_id, amount, redirect_url, webhook_url, description, type)
     $session = kashier_create_session(
@@ -93,6 +101,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     );
 
     if (!empty($session['sessionUrl'])) {
+        // Remember the session id so the callback can verify + grant access even if
+        // Kashier's redirect omits the order/session query params.
+        $SESSION->kashier_pending_subscription['sessionId'] = $session['sessionId'];
+        // Persist a pending row keyed by order id → the callback recovers the
+        // session id from the DB regardless of redirect params or session cookies.
+        kashier_store_pending($order_id, $session['sessionId'], (int)$USER->id, (float)$amount, 'subscription');
         redirect($session['sessionUrl']);
     } else {
         $error_msg = $session['message'] ?? 'حدث خطأ أثناء الاتصال ببوابة الدفع. حاول مرة أخرى.';

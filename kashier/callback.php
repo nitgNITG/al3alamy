@@ -32,10 +32,16 @@ $received_hash  = optional_param('hash',             '', PARAM_RAW);
 $transaction_id = optional_param('transactionId',    '', PARAM_RAW);
 
 error_log('kashier/callback.php GET: ' . json_encode($_GET, JSON_UNESCAPED_SLASHES));
+error_log('kashier/callback.php SESSION: ' . json_encode([
+    'kashier_pending_video' => isset($SESSION->kashier_pending_video),
+    'kashier_pending_subscription' => isset($SESSION->kashier_pending_subscription),
+    'USER_id' => $USER->id ?? 'not set',
+    'isloggedin' => isloggedin() ? 'yes' : 'no'
+], JSON_UNESCAPED_SLASHES));
 
 // Fall back to the pending purchase saved when the session was created — the
 // session redirect does not reliably echo our order/session ids.
-$pending = $SESSION->kashier_pending_video ?? null;
+$pending = $SESSION->kashier_pending_video ?? $SESSION->kashier_pending_subscription ?? null;
 if (!$order_id && !empty($pending['order_id'])) {
     $order_id = $pending['order_id'];
 }
@@ -145,6 +151,7 @@ if (!$res['valid']) {
 }
 
 unset($SESSION->kashier_pending_video);
+unset($SESSION->kashier_pending_subscription);
 
 // ── Redirect to the right place for the order type ─────────────────────────
 if ($res['type'] === 'video') {

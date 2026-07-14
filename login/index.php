@@ -76,6 +76,15 @@ $PAGE->set_pagelayout('login');
 $errormsg = '';
 $errorcode = 0;
 
+$inputerrorcode = optional_param('errorcode', 0, PARAM_INT);
+if ($inputerrorcode === 3) {
+    if (current_language() === 'ar') {
+        $errormsg = 'أنت مسجل الدخول بالفعل على جهاز آخر. يرجى تسجيل الخروج من جهازك الآخر أولاً.';
+    } else {
+        $errormsg = 'You are already logged in on another device. Please log out from your other device first.';
+    }
+}
+
 // login page requested session test
 if ($testsession) {
     if ($testsession == $USER->id) {
@@ -232,30 +241,25 @@ if ($frm and isset($frm->username)) {                             // Login WITH 
         complete_user_login($user);
 
         // --- Block concurrent logins: only 1 session per user ---
-        // If user already has an active session on another device, block this new login.
-        if (!is_siteadmin($user->id)) {
-            $timeout = !empty($CFG->sessiontimeout) ? $CFG->sessiontimeout : 86400;
-            $cutoff  = time() - $timeout;
-            $sid     = session_id();
-            $sql = "SELECT COUNT(*)
-                      FROM {sessions}
-                     WHERE userid = :userid
-                       AND sid <> :sid
-                       AND timemodified > :cutoff";
-            $othersessions = $DB->count_records_sql($sql, [
-                'userid' => $user->id,
-                'sid'    => $sid,
-                'cutoff' => $cutoff,
-            ]);
-            if ($othersessions >= 1) {
-                require_logout();
-                redirect(
-                    new moodle_url('/login/index.php'),
-                    'You are already logged in on another device. Please log out from your other device first.',
-                    null,
-                    \core\output\notification::NOTIFY_ERROR
-                );
-            }
+        // If user already has an active session on another device, block this new login (applies to admins too).
+        $timeout = !empty($CFG->sessiontimeout) ? $CFG->sessiontimeout : 86400;
+        $cutoff  = time() - $timeout;
+        $sid     = session_id();
+        $sql = "SELECT COUNT(*)
+                  FROM {sessions}
+                 WHERE userid = :userid
+                   AND sid <> :sid
+                   AND timemodified > :cutoff";
+        $othersessions = $DB->count_records_sql($sql, [
+            'userid' => $user->id,
+            'sid'    => $sid,
+            'cutoff' => $cutoff,
+        ]);
+        if ($othersessions >= 1) {
+            require_logout();
+            redirect(
+                new moodle_url('/login/index.php', ['errorcode' => 3])
+            );
         }
         // --- End Block concurrent logins ---
 

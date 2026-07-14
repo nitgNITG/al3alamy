@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<XMLDB PATH="local/deviceregistration/db" VERSION="20260713" COMMENT="XMLDB file for local_deviceregistration"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:noNamespaceSchemaLocation="../../../lib/xmldb/xmldb.xsd">
+  <TABLES>
+    <TABLE NAME="local_devreg_device" COMMENT="Registered devices per user for device-limit enforcement">
+      <FIELDS>
+        <FIELD NAME="id"           TYPE="int"  LENGTH="10"  NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="userid"       TYPE="int"  LENGTH="10"  NOTNULL="true" DEFAULT="0" COMMENT="Owner user ID"/>
+        <FIELD NAME="devicetoken"  TYPE="char" LENGTH="64"  NOTNULL="true" COMMENT="Persistent per-browser device token (from cookie)"/>
+        <FIELD NAME="useragent"    TYPE="char" LENGTH="255" NOTNULL="false" COMMENT="Browser user agent at registration (for display)"/>
+        <FIELD NAME="lastip"       TYPE="char" LENGTH="45"  NOTNULL="false" COMMENT="Last IP address seen for this device"/>
+        <FIELD NAME="timecreated"  TYPE="int"  LENGTH="10"  NOTNULL="true" DEFAULT="0" COMMENT="When the device was first registered"/>
+        <FIELD NAME="timelastseen" TYPE="int"  LENGTH="10"  NOTNULL="true" DEFAULT="0" COMMENT="Last login time from this device"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="user_token_unique" TYPE="unique" FIELDS="userid, devicetoken"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="idx_userid" UNIQUE="false" FIELDS="userid"/>
+      </INDEXES>
+    </TABLE>
+  </TABLES>
+</XMLDB>

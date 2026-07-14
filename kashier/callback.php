@@ -115,8 +115,12 @@ if ($DB->record_exists('kashier_transactions', ['order_id' => $order_id, 'status
 $amount = (float)$amount_str;
 
 // Security: a logged-in user may only complete their own order.
+// Cast both sides to int — $USER->id may be a string from the session, and a
+// strict comparison would wrongly reject the legitimate buyer.
 $order_uid = (int)(explode('-', $order_id)[1] ?? 0);
-if ($USER->id && $order_uid && $USER->id !== $order_uid) {
+if ((int)$USER->id && $order_uid && (int)$USER->id !== $order_uid) {
+    error_log("kashier/callback.php: user mismatch USER->id=" . $USER->id
+        . " order_uid=$order_uid order=$order_id");
     \core\notification::add('User mismatch in payment.', \core\output\notification::NOTIFY_ERROR);
     redirect(new moodle_url('/'));
 }

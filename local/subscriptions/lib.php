@@ -28,7 +28,9 @@ function local_subscriptions_before_standard_top_of_body_html() {
         return '';
     }
 
-    $mysubsurl = $CFG->wwwroot . '/local/subscriptions/mysubscriptions.php';
+    // Primary destination is the plans catalogue (the cards). From there the
+    // active-subscription banner links to "my subscriptions".
+    $plansurl  = $CFG->wwwroot . '/local/subscriptions/index.php';
 
     // Compute days remaining if there is an active subscription.
     $days_badge = '';
@@ -36,56 +38,74 @@ function local_subscriptions_before_standard_top_of_body_html() {
         $sub = \local_subscriptions\manager::get_active_subscription($USER->id);
         if ($sub) {
             $days_left = max(0, (int)ceil(($sub->expiry_time - time()) / 86400));
-            $days_badge = '<span style="
-                background: #c8a84b;
-                color: #fff;
-                font-size: 11px;
-                padding: 2px 7px;
-                border-radius: 10px;
-                margin-right: 5px;
-                font-weight: bold;
-                vertical-align: middle;
-            ">' . $days_left . ' يوم</span>';
+            $days_badge = '<span style="background:#c8a84b;color:#fff;font-size:11px;'
+                . 'padding:2px 7px;border-radius:10px;margin-inline-start:5px;font-weight:bold;'
+                . 'vertical-align:middle;">' . $days_left . ' يوم</span>';
         }
     } catch (\Throwable $e) {
         // Silently ignore if tables not yet installed.
     }
 
-    $label = 'اشتراكاتي';
+    $label = 'الاشتراكات';
 
     $js = <<<JS
 <script>
 (function() {
-    function insertSubscriptionsLink() {
-        var container = document.querySelector('ul.sign_up_btn');
-        if (!container) {
-            // Try alternative selectors used by some Moodle themes.
-            container = document.querySelector('.usermenu') ||
-                        document.querySelector('.navbar-nav') ||
-                        document.querySelector('nav .nav');
-        }
-        if (!container) return;
+    var URL = '{$plansurl}';
+    var LABEL = '{$label}';
+    var BADGE = '{$days_badge}';
 
-        // Avoid duplicate insertion.
-        if (document.getElementById('local-subscriptions-nav-link')) return;
+    function makeLink(padding, color) {
+        var a = document.createElement('a');
+        a.href = URL;
+        a.style.cssText = 'text-decoration:none;color:' + color + ';padding:' + padding
+            + ';display:inline-flex;align-items:center;gap:4px;';
+        a.innerHTML = BADGE + '<span>' + LABEL + '</span>';
+        return a;
+    }
+
+    function insertSubscriptionsLink() {
+        if (document.getElementById('local-subscriptions-nav-link')) return true;
+
+        var container = document.querySelector('ul.sign_up_btn') ||
+                        document.querySelector('.usermenu') ||
+                        document.querySelector('.navbar-nav') ||
+                        document.querySelector('nav .nav') ||
+                        document.querySelector('header ul') ||
+                        document.querySelector('header nav');
+        if (!container) return false;
 
         var li = document.createElement('li');
         li.id = 'local-subscriptions-nav-link';
         li.style.cssText = 'list-style:none;display:inline-flex;align-items:center;';
-
-        var a = document.createElement('a');
-        a.href = '{$mysubsurl}';
-        a.style.cssText = 'color:#fff;text-decoration:none;padding:6px 12px;display:flex;align-items:center;gap:4px;';
-        a.innerHTML = '{$days_badge}<span>{$label}</span>';
-
-        li.appendChild(a);
+        li.appendChild(makeLink('6px 12px', '#fff'));
         container.insertBefore(li, container.firstChild);
+        return true;
+    }
+
+    // Guaranteed fallback: a floating pill so the plans page is always reachable
+    // even if the theme header has no recognised container.
+    function insertFloating() {
+        if (document.getElementById('local-subscriptions-fab')) return;
+        var box = document.createElement('div');
+        box.id = 'local-subscriptions-fab';
+        box.style.cssText = 'position:fixed;inset-inline-end:16px;bottom:16px;z-index:99999;'
+            + 'background:#2d6a9f;border-radius:24px;box-shadow:0 3px 12px rgba(0,0,0,.25);'
+            + 'padding:8px 16px;';
+        box.appendChild(makeLink('0', '#fff'));
+        document.body.appendChild(box);
+    }
+
+    function run() {
+        if (!insertSubscriptionsLink()) {
+            insertFloating();
+        }
     }
 
     if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', insertSubscriptionsLink);
+        document.addEventListener('DOMContentLoaded', run);
     } else {
-        insertSubscriptionsLink();
+        run();
     }
 })();
 </script>

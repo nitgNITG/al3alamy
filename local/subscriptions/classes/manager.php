@@ -635,12 +635,29 @@ class manager {
             return [];
         }
 
-        $items = self::get_plan_items($planid);
-        if (!$items) {
+        $plan = self::get_plan($planid);
+        if (!$plan) {
             return [];
         }
 
         $pool = [];
+
+        // "All courses" plan: every paid videopay lesson site-wide is unlockable.
+        if ($plan->course_access_type === self::COURSE_ACCESS_ALL) {
+            $sql = "SELECT p.cmid, p.groupid
+                      FROM {local_videopay_prices} p
+                     WHERE p.is_free = 0 AND p.groupid > 0";
+            foreach ($DB->get_records_sql($sql) as $r) {
+                $pool[(int)$r->cmid] = (int)$r->groupid;
+            }
+            return $pool;
+        }
+
+        // Specific courses / lessons: build the pool from the plan's items.
+        $items = self::get_plan_items($planid);
+        if (!$items) {
+            return [];
+        }
 
         // Course-level items where all lessons are included: every paid resource2 in the course.
         $allcourses = [];

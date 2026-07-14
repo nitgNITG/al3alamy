@@ -50,8 +50,8 @@ $unlocks = $DB->get_records('local_subscriptions_unlocks', ['subscriptionid' => 
 // Admin names.
 $admin_name = function($uid) use ($DB) {
     if (!$uid) { return '-'; }
-    $u = $DB->get_record('user', ['id' => $uid], 'firstname, lastname', IGNORE_MISSING);
-    return $u ? fullname($u) : ('#' . $uid);
+    $u = $DB->get_record('user', ['id' => $uid], 'id, firstname, lastname', IGNORE_MISSING);
+    return $u ? trim($u->firstname . ' ' . $u->lastname) : ('#' . $uid);
 };
 
 $PAGE->set_title(get_string('report_detail_title', 'local_subscriptions'));

@@ -400,7 +400,7 @@ echo $OUTPUT->paging_bar($total, $page, $perpage, $baseurl);
 (function () {
   var modal = document.getElementById('us-modal');
   var maxAmount = 0;
-  function open(subid, user, amount) {
+  function openModal(subid, user, amount) {
     document.getElementById('us-subid').value = subid;
     document.getElementById('us-username').textContent = user;
     document.getElementById('us-max').textContent = Number(amount).toFixed(2);
@@ -411,16 +411,16 @@ echo $OUTPUT->paging_bar($total, $page, $perpage, $baseurl);
     document.querySelector('#us-form input[value="notreturned"]').checked = true;
     modal.style.display = 'block';
   }
-  function close() { modal.style.display = 'none'; }
+  function closeModal() { modal.style.display = 'none'; }
 
   document.querySelectorAll('.btn-unsub').forEach(function (b) {
     b.addEventListener('click', function () {
-      open(b.dataset.subid, b.dataset.user, b.dataset.amount);
+      openModal(b.dataset.subid, b.dataset.user, b.dataset.amount);
     });
   });
-  document.getElementById('us-close').addEventListener('click', close);
-  document.getElementById('us-cancel').addEventListener('click', close);
-  modal.addEventListener('click', function (e) { if (e.target === modal) close(); });
+  document.getElementById('us-close').addEventListener('click', closeModal);
+  document.getElementById('us-cancel').addEventListener('click', closeModal);
+  modal.addEventListener('click', function (e) { if (e.target === modal) closeModal(); });
 
   document.querySelectorAll('#us-form input[name="refund_status"]').forEach(function (r) {
     r.addEventListener('change', function () {

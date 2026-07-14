@@ -71,7 +71,16 @@ class observer {
             ];
 
             $othersessions = $DB->count_records_sql($sql, $params);
+            
+            // --- DEBUG LOGGING ---
+            $log = date('Y-m-d H:i:s') . " - user_loggedin - userid: $userid, sid: $currentsid, othersessions: $othersessions, max: $max, sql: $sql, params: " . json_encode($params) . "\n";
+            file_put_contents('d:\\My work\\NIT\\Projects\\al3alamy\\debug_log.txt', $log, FILE_APPEND);
+            // ---------------------
         } catch (\dml_exception $e) {
+            // --- DEBUG LOGGING ---
+            $log = date('Y-m-d H:i:s') . " - dml_exception: " . $e->getMessage() . "\n";
+            file_put_contents('d:\\My work\\NIT\\Projects\\al3alamy\\debug_log.txt', $log, FILE_APPEND);
+            // ---------------------
             debugging('local_deviceregistration: skipping enforcement - ' . $e->getMessage(), DEBUG_DEVELOPER);
             return; // Fail open — never break login.
         }

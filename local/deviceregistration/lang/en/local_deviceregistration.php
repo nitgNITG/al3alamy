@@ -60,23 +60,21 @@ $string['unknowndevice']      = 'Unknown device';
 
 // Admin: force logout tool.
 $string['forcelogout_title']               = 'Force logout users';
-$string['forcelogout_intro']               = 'Find a user to see their current sessions and log them out of another device if a stale session is blocking their next login.';
-$string['forcelogout_search_placeholder']  = 'Username, email, or name';
-$string['forcelogout_search_btn']          = 'Search';
-$string['forcelogout_nomatch']             = 'No matching users.';
-$string['forcelogout_nosessions']          = 'This user has no active sessions.';
-$string['forcelogout_col_started']         = 'Started';
+$string['forcelogout_intro']               = 'These users are currently logged in. Click "Log out" to end all of a user\'s sessions immediately — handy when a stale session is blocking their next login.';
+$string['forcelogout_filter_placeholder']  = 'Filter by name, email, or username…';
+$string['forcelogout_filter_btn']          = 'Filter';
+$string['forcelogout_clear']               = 'Show all';
+$string['forcelogout_none_loggedin']       = 'No users are currently logged in.';
+$string['forcelogout_nomatch']             = 'No users match the filter.';
+$string['forcelogout_count']               = 'Currently logged-in users: {$a}';
+$string['forcelogout_col_user']            = 'User';
+$string['forcelogout_col_sessions']        = 'Active sessions';
 $string['forcelogout_col_lastactive']      = 'Last active';
-$string['forcelogout_col_ip']              = 'IP address';
 $string['forcelogout_action']              = 'Log out';
-$string['forcelogout_action_all']          = 'Log out of all sessions';
-$string['forcelogout_confirm_one']         = 'Log out this session? The user will be signed out of this device.';
 $string['forcelogout_confirm_all']         = 'Log this user out of all their devices?';
 $string['forcelogout_confirm_title']       = 'Confirm action';
 $string['forcelogout_confirm_yes']         = 'Yes, log out';
-$string['forcelogout_session_done']        = 'Session logged out successfully.';
-$string['forcelogout_all_done']            = 'Ended {$a} session(s) for this user.';
-$string['forcelogout_nothing']             = 'No active session was found to end (it may have already expired).';
+$string['forcelogout_done']                = 'Logged out {$a->name} — ended {$a->count} session(s).';
 
 // Privacy.
 $string['privacy:metadata'] = 'The Device Registration plugin only stores site configuration settings and does not store any personal data.';

@@ -59,24 +59,22 @@ $string['thisdevice']         = 'هذا الجهاز';
 $string['unknowndevice']      = 'جهاز غير معروف';
 
 // Admin: force logout tool.
-$string['forcelogout_title']               = 'تسجيل خروج المستخدمين قسريًا';
-$string['forcelogout_intro']               = 'ابحث عن مستخدم لعرض جلساته الحالية وتسجيل خروجه من جهاز آخر إذا كانت جلسة قديمة تمنعه من تسجيل الدخول.';
-$string['forcelogout_search_placeholder']  = 'اسم المستخدم أو البريد الإلكتروني أو الاسم';
-$string['forcelogout_search_btn']          = 'بحث';
-$string['forcelogout_nomatch']             = 'لا يوجد مستخدمون مطابقون.';
-$string['forcelogout_nosessions']          = 'لا توجد جلسات نشطة لهذا المستخدم.';
-$string['forcelogout_col_started']         = 'بدأت';
+$string['forcelogout_title']               = 'تسجيل خروج المستخدمين';
+$string['forcelogout_intro']               = 'هؤلاء هم المستخدمون المسجّلون دخول حالياً. اضغط "تسجيل خروج" لإنهاء كل جلسات المستخدم فوراً — مفيد لو جلسة قديمة عالقة بتمنعه من تسجيل الدخول.';
+$string['forcelogout_filter_placeholder']  = 'تصفية بالاسم أو البريد أو اسم المستخدم…';
+$string['forcelogout_filter_btn']          = 'تصفية';
+$string['forcelogout_clear']               = 'إظهار الكل';
+$string['forcelogout_none_loggedin']       = 'لا يوجد مستخدمون مسجّلون دخول حالياً.';
+$string['forcelogout_nomatch']             = 'لا يوجد مستخدمون مطابقون للتصفية.';
+$string['forcelogout_count']               = 'عدد المستخدمين المسجّلين حالياً: {$a}';
+$string['forcelogout_col_user']            = 'المستخدم';
+$string['forcelogout_col_sessions']        = 'الجلسات النشطة';
 $string['forcelogout_col_lastactive']      = 'آخر نشاط';
-$string['forcelogout_col_ip']              = 'عنوان IP';
 $string['forcelogout_action']              = 'تسجيل خروج';
-$string['forcelogout_action_all']          = 'تسجيل الخروج من جميع الجلسات';
-$string['forcelogout_confirm_one']         = 'هل تريد تسجيل خروج هذه الجلسة؟ سيتم إخراج المستخدم من هذا الجهاز.';
 $string['forcelogout_confirm_all']         = 'هل تريد تسجيل خروج هذا المستخدم من جميع أجهزته؟';
 $string['forcelogout_confirm_title']       = 'تأكيد الإجراء';
 $string['forcelogout_confirm_yes']         = 'نعم، سجّل الخروج';
-$string['forcelogout_session_done']        = 'تم تسجيل خروج الجلسة بنجاح.';
-$string['forcelogout_all_done']            = 'تم إنهاء {$a} جلسة لهذا المستخدم.';
-$string['forcelogout_nothing']             = 'لم يتم العثور على جلسة نشطة لإنهائها (ربما انتهت بالفعل).';
+$string['forcelogout_done']                = 'تم تسجيل خروج {$a->name} — إنهاء {$a->count} جلسة.';
 
 // Privacy.
 $string['privacy:metadata'] = 'إضافة تسجيل الأجهزة تخزّن إعدادات الموقع فقط ولا تخزّن أي بيانات شخصية.';

@@ -124,7 +124,17 @@ $amount = (float)$amount_str;
 // Cast both sides to int — $USER->id may be a string from the session, and a
 // strict comparison would wrongly reject the legitimate buyer.
 $order_uid = (int)(explode('-', $order_id)[1] ?? 0);
-// If user is not logged in, try to log them in using the user ID from the order
+error_log("kashier/callback.php: order_uid=$order_uid USER->id=" . ($USER->id ?? 'null') . " isloggedin=" . (isloggedin() ? 'yes' : 'no'));
+
+// Try to recover the user from the pending transaction record in the database
+// This is more reliable than session or order_id parsing
+$txn = $DB->get_record('kashier_transactions', ['order_id' => $order_id], 'user_id', IGNORE_MISSING);
+if ($txn && $txn->user_id > 0) {
+    $order_uid = (int)$txn->user_id;
+    error_log("kashier/callback.php: recovered user_id from DB: $order_uid");
+}
+
+// If user is not logged in, try to log them in using the user ID from the order/DB
 if (!isloggedin() && $order_uid > 0) {
     $order_user = $DB->get_record('user', ['id' => $order_uid, 'deleted' => 0], '*', IGNORE_MISSING);
     if ($order_user) {
@@ -132,6 +142,7 @@ if (!isloggedin() && $order_uid > 0) {
         complete_user_login($order_user);
         \core\session\manager::set_user($order_user);
         $USER = $order_user;
+        error_log("kashier/callback.php: auto-logged in user $order_uid");
     }
 }
 // Now check if the logged-in user matches the order

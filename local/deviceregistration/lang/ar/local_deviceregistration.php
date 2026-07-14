@@ -70,10 +70,13 @@ $string['forcelogout_col_lastactive']      = 'آخر نشاط';
 $string['forcelogout_col_ip']              = 'عنوان IP';
 $string['forcelogout_action']              = 'تسجيل خروج';
 $string['forcelogout_action_all']          = 'تسجيل الخروج من جميع الجلسات';
-$string['forcelogout_confirm_one']         = 'هل تريد تسجيل خروج هذه الجلسة؟';
+$string['forcelogout_confirm_one']         = 'هل تريد تسجيل خروج هذه الجلسة؟ سيتم إخراج المستخدم من هذا الجهاز.';
 $string['forcelogout_confirm_all']         = 'هل تريد تسجيل خروج هذا المستخدم من جميع أجهزته؟';
+$string['forcelogout_confirm_title']       = 'تأكيد الإجراء';
+$string['forcelogout_confirm_yes']         = 'نعم، سجّل الخروج';
 $string['forcelogout_session_done']        = 'تم تسجيل خروج الجلسة بنجاح.';
-$string['forcelogout_all_done']            = 'تم تسجيل خروج المستخدم من جميع الجلسات بنجاح.';
+$string['forcelogout_all_done']            = 'تم إنهاء {$a} جلسة لهذا المستخدم.';
+$string['forcelogout_nothing']             = 'لم يتم العثور على جلسة نشطة لإنهائها (ربما انتهت بالفعل).';
 
 // Privacy.
 $string['privacy:metadata'] = 'إضافة تسجيل الأجهزة تخزّن إعدادات الموقع فقط ولا تخزّن أي بيانات شخصية.';

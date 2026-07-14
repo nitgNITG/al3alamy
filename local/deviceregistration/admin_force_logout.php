@@ -43,20 +43,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $action !== '' && $userid) {
     $target = $DB->get_record('user', ['id' => $userid, 'deleted' => 0], '*', IGNORE_MISSING);
     if ($target) {
         if ($action === 'logout_sid' && $sid !== '') {
+            $existed = $DB->record_exists('sessions', ['sid' => $sid]);
             \core\session\manager::kill_session($sid);
+            $gone = !$DB->record_exists('sessions', ['sid' => $sid]);
+            $ok  = ($existed && $gone);
             redirect(
                 new moodle_url($pageurl, ['userid' => $userid]),
-                get_string('forcelogout_session_done', 'local_deviceregistration'),
+                $ok ? get_string('forcelogout_session_done', 'local_deviceregistration')
+                    : get_string('forcelogout_nothing', 'local_deviceregistration'),
                 null,
-                \core\output\notification::NOTIFY_SUCCESS
+                $ok ? \core\output\notification::NOTIFY_SUCCESS
+                    : \core\output\notification::NOTIFY_WARNING
             );
         } else if ($action === 'logout_all') {
+            $before = $DB->count_records('sessions', ['userid' => $userid]);
             \core\session\manager::kill_user_sessions($userid);
+            $after  = $DB->count_records('sessions', ['userid' => $userid]);
+            $killed = max(0, $before - $after);
             redirect(
                 new moodle_url($pageurl, ['userid' => $userid]),
-                get_string('forcelogout_all_done', 'local_deviceregistration'),
+                get_string('forcelogout_all_done', 'local_deviceregistration', $killed),
                 null,
-                \core\output\notification::NOTIFY_SUCCESS
+                $killed > 0 ? \core\output\notification::NOTIFY_SUCCESS
+                            : \core\output\notification::NOTIFY_WARNING
             );
         }
     }
@@ -83,6 +92,23 @@ echo $OUTPUT->header();
 .fl-nomatch { color:#888; padding: 10px 0; }
 .fl-userlist a { display:block; padding:8px 12px; border:1px solid #dee2e6; border-radius:6px; margin-bottom:6px; text-decoration:none; color:#1a1a1a; }
 .fl-userlist a:hover { background:#f8f9fa; }
+
+/* Confirmation modal */
+.fl-modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.5); z-index:100000; }
+.fl-modal-overlay.open { display:flex; align-items:center; justify-content:center; }
+.fl-modal-box { background:#fff; width:100%; max-width:420px; margin:16px; border-radius:12px; box-shadow:0 12px 40px rgba(0,0,0,.25); overflow:hidden; animation:fl-pop .18s ease-out; font-family:'Segoe UI',Tahoma,Arial,sans-serif; }
+@keyframes fl-pop { from { transform:scale(.94); opacity:0; } to { transform:scale(1); opacity:1; } }
+.fl-modal-head { display:flex; align-items:center; gap:12px; padding:20px 22px 0; }
+.fl-modal-icon { width:44px; height:44px; border-radius:50%; background:#fdecea; color:#dc3545; display:flex; align-items:center; justify-content:center; font-size:24px; flex:none; }
+.fl-modal-head h4 { margin:0; font-size:1.15em; color:#222; }
+.fl-modal-body { padding:12px 22px 4px; color:#555; font-size:.95em; line-height:1.6; }
+.fl-modal-user { margin-top:10px; background:#f7f9fc; border:1px solid #e6edf5; border-radius:8px; padding:8px 12px; font-size:.9em; color:#333; font-weight:600; }
+.fl-modal-actions { display:flex; gap:10px; padding:18px 22px 22px; }
+.fl-modal-actions button { flex:1; padding:10px; border:none; border-radius:8px; font-size:1em; font-weight:600; cursor:pointer; }
+.fl-modal-actions .confirm { background:#dc3545; color:#fff; }
+.fl-modal-actions .confirm:hover { background:#c82333; }
+.fl-modal-actions .cancel { background:#eef0f2; color:#333; }
+.fl-modal-actions .cancel:hover { background:#e2e5e8; }
 </style>
 
 <div class="fl-page">
@@ -163,8 +189,8 @@ echo $OUTPUT->header();
               <input type="hidden" name="userid" value="<?php echo (int)$selecteduser->id; ?>">
               <input type="hidden" name="action" value="logout_sid">
               <input type="hidden" name="sid" value="<?php echo s($s->sid); ?>">
-              <button type="submit" class="btn-force"
-                      onclick="return confirm('<?php echo s(get_string('forcelogout_confirm_one', 'local_deviceregistration')); ?>')">
+              <button type="button" class="btn-force" data-fl-confirm
+                      data-msg="<?php echo s(get_string('forcelogout_confirm_one', 'local_deviceregistration')); ?>">
                 <?php echo get_string('forcelogout_action', 'local_deviceregistration'); ?>
               </button>
             </form>
@@ -178,13 +204,61 @@ echo $OUTPUT->header();
       <input type="hidden" name="sesskey" value="<?php echo sesskey(); ?>">
       <input type="hidden" name="userid" value="<?php echo (int)$selecteduser->id; ?>">
       <input type="hidden" name="action" value="logout_all">
-      <button type="submit" class="btn-force-all"
-              onclick="return confirm('<?php echo s(get_string('forcelogout_confirm_all', 'local_deviceregistration')); ?>')">
+      <button type="button" class="btn-force-all" data-fl-confirm
+              data-msg="<?php echo s(get_string('forcelogout_confirm_all', 'local_deviceregistration')); ?>">
         <?php echo get_string('forcelogout_action_all', 'local_deviceregistration'); ?>
       </button>
     </form>
   <?php endif; ?>
   <?php endif; ?>
 </div>
+
+<!-- Confirmation modal -->
+<div class="fl-modal-overlay" id="fl-modal">
+  <div class="fl-modal-box" role="dialog" aria-modal="true" aria-labelledby="fl-modal-title">
+    <div class="fl-modal-head">
+      <div class="fl-modal-icon">&#9888;</div>
+      <h4 id="fl-modal-title"><?php echo get_string('forcelogout_confirm_title', 'local_deviceregistration'); ?></h4>
+    </div>
+    <div class="fl-modal-body">
+      <p id="fl-modal-msg" style="margin:0"></p>
+      <?php if (!empty($selecteduser)): ?>
+        <div class="fl-modal-user"><?php echo s(fullname($selecteduser)); ?> — <?php echo s($selecteduser->email); ?></div>
+      <?php endif; ?>
+    </div>
+    <div class="fl-modal-actions">
+      <button type="button" class="confirm" id="fl-modal-confirm"><?php echo get_string('forcelogout_confirm_yes', 'local_deviceregistration'); ?></button>
+      <button type="button" class="cancel" id="fl-modal-cancel"><?php echo get_string('cancel'); ?></button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  var overlay = document.getElementById('fl-modal');
+  if (!overlay) return;
+  var msgEl     = document.getElementById('fl-modal-msg');
+  var confirmBtn = document.getElementById('fl-modal-confirm');
+  var cancelBtn  = document.getElementById('fl-modal-cancel');
+  var pendingForm = null;
+
+  function openModal(form, msg) {
+    pendingForm = form;
+    msgEl.textContent = msg || '';
+    overlay.classList.add('open');
+  }
+  function closeModal() { overlay.classList.remove('open'); pendingForm = null; }
+
+  document.querySelectorAll('[data-fl-confirm]').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      openModal(btn.closest('form'), btn.getAttribute('data-msg'));
+    });
+  });
+  confirmBtn.addEventListener('click', function () { if (pendingForm) { pendingForm.submit(); } });
+  cancelBtn.addEventListener('click', closeModal);
+  overlay.addEventListener('click', function (e) { if (e.target === overlay) closeModal(); });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeModal(); });
+})();
+</script>
 <?php
 echo $OUTPUT->footer();

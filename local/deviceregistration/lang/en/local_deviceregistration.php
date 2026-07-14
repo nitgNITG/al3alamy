@@ -70,10 +70,13 @@ $string['forcelogout_col_lastactive']      = 'Last active';
 $string['forcelogout_col_ip']              = 'IP address';
 $string['forcelogout_action']              = 'Log out';
 $string['forcelogout_action_all']          = 'Log out of all sessions';
-$string['forcelogout_confirm_one']         = 'Log out this session?';
+$string['forcelogout_confirm_one']         = 'Log out this session? The user will be signed out of this device.';
 $string['forcelogout_confirm_all']         = 'Log this user out of all their devices?';
+$string['forcelogout_confirm_title']       = 'Confirm action';
+$string['forcelogout_confirm_yes']         = 'Yes, log out';
 $string['forcelogout_session_done']        = 'Session logged out successfully.';
-$string['forcelogout_all_done']            = 'User logged out of all sessions successfully.';
+$string['forcelogout_all_done']            = 'Ended {$a} session(s) for this user.';
+$string['forcelogout_nothing']             = 'No active session was found to end (it may have already expired).';
 
 // Privacy.
 $string['privacy:metadata'] = 'The Device Registration plugin only stores site configuration settings and does not store any personal data.';

@@ -18,9 +18,6 @@
 defined('MOODLE_INTERNAL') || die();
 
 if ($hassiteconfig) {
-    // Create the settings page
-    $settings = new admin_settingpage('local_deviceregistration', get_string('pluginname', 'local_deviceregistration'));
-
     // Enable / disable toggle
     $settings->add(new admin_setting_configcheckbox(
         'local_deviceregistration/enabled',

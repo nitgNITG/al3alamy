@@ -19,37 +19,6 @@ admin_externalpage_setup('local_subscriptions_report');
 
 use local_subscriptions\manager;
 
-// Handle manual unsubscribe (US-AD-2-2).
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && optional_param('action', '', PARAM_ALPHA) === 'unsubscribe') {
-    require_sesskey();
-    require_capability('local/subscriptions:manage', $context);
-
-    $sub_id        = required_param('sub_id', PARAM_INT);
-    $refund_status = required_param('refund_status', PARAM_ALPHA); // returned | notreturned
-    $reason        = trim(required_param('reason', PARAM_TEXT));
-    $refund_amount = ($refund_status === 'returned')
-        ? (float)optional_param('refund_amount', 0, PARAM_FLOAT) : 0.0;
-
-    $sub = $DB->get_record('local_subscriptions_users', ['id' => $sub_id], '*', MUST_EXIST);
-
-    $err = '';
-    if ($reason === '') {
-        $err = get_string('unsub_reason_required', 'local_subscriptions');
-    } else if ($sub->status !== manager::STATUS_ACTIVE) {
-        $err = get_string('unsub_not_active', 'local_subscriptions');
-    } else if ($refund_amount < 0 || $refund_amount > (float)$sub->amount_paid) {
-        $err = get_string('unsub_refund_invalid', 'local_subscriptions');
-    }
-
-    $backurl = new moodle_url('/local/subscriptions/admin/report.php');
-    if ($err) {
-        redirect($backurl, $err, null, \core\output\notification::NOTIFY_ERROR);
-    }
-    manager::unsubscribe_user($sub_id, (int)$USER->id, $reason, $refund_amount);
-    redirect($backurl, get_string('unsub_success', 'local_subscriptions'), null,
-        \core\output\notification::NOTIFY_SUCCESS);
-}
-
 // Filters.
 $filter_plan   = optional_param('planid', 0, PARAM_INT);
 $filter_status = optional_param('status', '', PARAM_ALPHA);
@@ -168,18 +137,8 @@ echo $OUTPUT->header();
 .badge-active   { background:#28a745; color:#fff; padding:2px 8px; border-radius:10px; font-size:.8em; }
 .badge-expired  { background:#6c757d; color:#fff; padding:2px 8px; border-radius:10px; font-size:.8em; }
 .badge-cancelled{ background:#dc3545; color:#fff; padding:2px 8px; border-radius:10px; font-size:.8em; }
-.btn-unsub { background:#dc3545; color:#fff; border:none; border-radius:4px; padding:4px 12px; font-size:.82em; cursor:pointer; }
-.us-modal { display:none; position:fixed; inset:0; z-index:100000; background:rgba(0,0,0,.5); direction:rtl; }
-.us-modal .box { background:#fff; max-width:460px; margin:10vh auto; padding:24px; border-radius:12px; position:relative; font-family:'Segoe UI',Tahoma,Arial,sans-serif; }
-.us-modal h4 { margin:0 0 14px; color:#dc3545; }
-.us-modal label { font-weight:600; display:block; margin:12px 0 4px; }
-.us-modal input[type=text], .us-modal input[type=number], .us-modal textarea { width:100%; padding:8px; border:1px solid #ced4da; border-radius:4px; box-sizing:border-box; }
-.us-modal .radios { display:flex; gap:18px; margin-top:6px; }
-.us-modal .radios label { font-weight:normal; display:inline-flex; align-items:center; gap:5px; margin:0; }
-.us-close { position:absolute; top:10px; inset-inline-start:16px; font-size:24px; cursor:pointer; color:#999; }
-.us-actions { margin-top:18px; display:flex; gap:10px; }
-.us-actions .confirm { background:#dc3545; color:#fff; border:none; border-radius:6px; padding:9px 20px; font-weight:700; cursor:pointer; }
-.us-actions .cancel { background:#6c757d; color:#fff; border:none; border-radius:6px; padding:9px 20px; cursor:pointer; }
+.btn-unsub { background:#dc3545; color:#fff; border-radius:4px; padding:4px 12px; font-size:.82em; text-decoration:none; display:inline-block; }
+.btn-unsub:hover { background:#c82333; color:#fff; }
 </style>
 
 <div class="subs-stats-bar">
@@ -329,12 +288,10 @@ echo $OUTPUT->header();
                 <?php echo get_string('details', 'local_subscriptions'); ?>
             </a>
             <?php if ($sub->status === manager::STATUS_ACTIVE && has_capability('local/subscriptions:manage', $context)): ?>
-                <button type="button" class="btn-unsub"
-                        data-subid="<?php echo (int)$sub->id; ?>"
-                        data-user="<?php echo s($sub->firstname . ' ' . $sub->lastname); ?>"
-                        data-amount="<?php echo (float)$sub->amount_paid; ?>">
+                <a class="btn-unsub"
+                   href="<?php echo (new moodle_url('/local/subscriptions/admin/unsubscribe.php', ['subid' => $sub->id]))->out(); ?>">
                     <?php echo get_string('unsubscribe_user', 'local_subscriptions'); ?>
-                </button>
+                </a>
             <?php elseif ($sub->status === 'cancelled'): ?>
                 <small style="color:#888">
                     <?php echo $sub->refund_amount ? number_format((float)$sub->refund_amount, 2) . ' ج ' . get_string('refund_returned', 'local_subscriptions') : get_string('refund_not_returned', 'local_subscriptions'); ?>
@@ -358,77 +315,5 @@ $baseurl = new moodle_url('/local/subscriptions/admin/report.php', [
 echo $OUTPUT->paging_bar($total, $page, $perpage, $baseurl);
 ?>
 <?php endif; ?>
-
-<!-- Unsubscribe modal -->
-<div class="us-modal" id="us-modal">
-  <div class="box">
-    <span class="us-close" id="us-close">&times;</span>
-    <h4><?php echo get_string('unsubscribe_user', 'local_subscriptions'); ?></h4>
-    <p style="margin:0; color:#555"><?php echo get_string('unsub_for', 'local_subscriptions'); ?>
-        <strong id="us-username"></strong></p>
-    <form method="post" id="us-form">
-      <input type="hidden" name="sesskey" value="<?php echo sesskey(); ?>">
-      <input type="hidden" name="action" value="unsubscribe">
-      <input type="hidden" name="sub_id" id="us-subid" value="">
-
-      <label><?php echo get_string('refund_status', 'local_subscriptions'); ?></label>
-      <div class="radios">
-        <label><input type="radio" name="refund_status" value="notreturned" checked>
-            <?php echo get_string('refund_not_returned', 'local_subscriptions'); ?></label>
-        <label><input type="radio" name="refund_status" value="returned">
-            <?php echo get_string('refund_returned', 'local_subscriptions'); ?></label>
-      </div>
-
-      <div id="us-amount-wrap" style="display:none">
-        <label><?php echo get_string('refund_amount', 'local_subscriptions'); ?>
-            (<?php echo get_string('unsub_max', 'local_subscriptions'); ?> <span id="us-max"></span> ج)</label>
-        <input type="number" name="refund_amount" id="us-amount" step="0.01" min="0" value="0">
-      </div>
-
-      <label><?php echo get_string('unsubscribe_reason', 'local_subscriptions'); ?> *</label>
-      <textarea name="reason" rows="3" required></textarea>
-
-      <div class="us-actions">
-        <button type="submit" class="confirm"><?php echo get_string('unsub_confirm', 'local_subscriptions'); ?></button>
-        <button type="button" class="cancel" id="us-cancel"><?php echo get_string('cancel'); ?></button>
-      </div>
-    </form>
-  </div>
-</div>
-
-<script>
-(function () {
-  var modal = document.getElementById('us-modal');
-  var maxAmount = 0;
-  function openModal(subid, user, amount) {
-    document.getElementById('us-subid').value = subid;
-    document.getElementById('us-username').textContent = user;
-    document.getElementById('us-max').textContent = Number(amount).toFixed(2);
-    maxAmount = Number(amount);
-    var amt = document.getElementById('us-amount');
-    amt.max = maxAmount; amt.value = 0;
-    document.getElementById('us-amount-wrap').style.display = 'none';
-    document.querySelector('#us-form input[value="notreturned"]').checked = true;
-    modal.style.display = 'block';
-  }
-  function closeModal() { modal.style.display = 'none'; }
-
-  document.querySelectorAll('.btn-unsub').forEach(function (b) {
-    b.addEventListener('click', function () {
-      openModal(b.dataset.subid, b.dataset.user, b.dataset.amount);
-    });
-  });
-  document.getElementById('us-close').addEventListener('click', closeModal);
-  document.getElementById('us-cancel').addEventListener('click', closeModal);
-  modal.addEventListener('click', function (e) { if (e.target === modal) closeModal(); });
-
-  document.querySelectorAll('#us-form input[name="refund_status"]').forEach(function (r) {
-    r.addEventListener('change', function () {
-      document.getElementById('us-amount-wrap').style.display =
-        (this.value === 'returned') ? 'block' : 'none';
-    });
-  });
-})();
-</script>
 
 <?php echo $OUTPUT->footer(); ?>

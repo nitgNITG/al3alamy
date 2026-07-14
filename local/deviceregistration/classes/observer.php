@@ -56,7 +56,7 @@ class observer {
             $sql = "SELECT COUNT(*)
                       FROM {sessions}
                      WHERE userid = :userid
-                       AND sid != :sid
+                       AND sid <> :sid
                        AND timemodified > :cutoff";
 
             // Consider sessions active if they were touched within the last 24 hours,

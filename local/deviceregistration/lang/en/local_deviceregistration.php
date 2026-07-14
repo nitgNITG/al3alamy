@@ -58,5 +58,22 @@ $string['device_removed']     = 'Device removed.';
 $string['thisdevice']         = 'This device';
 $string['unknowndevice']      = 'Unknown device';
 
+// Admin: force logout tool.
+$string['forcelogout_title']               = 'Force logout users';
+$string['forcelogout_intro']               = 'Find a user to see their current sessions and log them out of another device if a stale session is blocking their next login.';
+$string['forcelogout_search_placeholder']  = 'Username, email, or name';
+$string['forcelogout_search_btn']          = 'Search';
+$string['forcelogout_nomatch']             = 'No matching users.';
+$string['forcelogout_nosessions']          = 'This user has no active sessions.';
+$string['forcelogout_col_started']         = 'Started';
+$string['forcelogout_col_lastactive']      = 'Last active';
+$string['forcelogout_col_ip']              = 'IP address';
+$string['forcelogout_action']              = 'Log out';
+$string['forcelogout_action_all']          = 'Log out of all sessions';
+$string['forcelogout_confirm_one']         = 'Log out this session?';
+$string['forcelogout_confirm_all']         = 'Log this user out of all their devices?';
+$string['forcelogout_session_done']        = 'Session logged out successfully.';
+$string['forcelogout_all_done']            = 'User logged out of all sessions successfully.';
+
 // Privacy.
 $string['privacy:metadata'] = 'The Device Registration plugin only stores site configuration settings and does not store any personal data.';

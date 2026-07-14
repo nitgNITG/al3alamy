@@ -40,4 +40,12 @@ if ($hassiteconfig) {
 
     // Add it to the local plugins category
     $ADMIN->add('localplugins', $settings);
+
+    // Admin tool: look up a user and force-logout their other session(s) when
+    // the one-session-per-user check blocks their next login.
+    $ADMIN->add('localplugins', new admin_externalpage(
+        'local_deviceregistration_forcelogout',
+        get_string('forcelogout_title', 'local_deviceregistration'),
+        new moodle_url('/local/deviceregistration/admin_force_logout.php')
+    ));
 }

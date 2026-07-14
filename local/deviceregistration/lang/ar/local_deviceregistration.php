@@ -58,5 +58,22 @@ $string['device_removed']     = 'تمت إزالة الجهاز.';
 $string['thisdevice']         = 'هذا الجهاز';
 $string['unknowndevice']      = 'جهاز غير معروف';
 
+// Admin: force logout tool.
+$string['forcelogout_title']               = 'تسجيل خروج المستخدمين قسريًا';
+$string['forcelogout_intro']               = 'ابحث عن مستخدم لعرض جلساته الحالية وتسجيل خروجه من جهاز آخر إذا كانت جلسة قديمة تمنعه من تسجيل الدخول.';
+$string['forcelogout_search_placeholder']  = 'اسم المستخدم أو البريد الإلكتروني أو الاسم';
+$string['forcelogout_search_btn']          = 'بحث';
+$string['forcelogout_nomatch']             = 'لا يوجد مستخدمون مطابقون.';
+$string['forcelogout_nosessions']          = 'لا توجد جلسات نشطة لهذا المستخدم.';
+$string['forcelogout_col_started']         = 'بدأت';
+$string['forcelogout_col_lastactive']      = 'آخر نشاط';
+$string['forcelogout_col_ip']              = 'عنوان IP';
+$string['forcelogout_action']              = 'تسجيل خروج';
+$string['forcelogout_action_all']          = 'تسجيل الخروج من جميع الجلسات';
+$string['forcelogout_confirm_one']         = 'هل تريد تسجيل خروج هذه الجلسة؟';
+$string['forcelogout_confirm_all']         = 'هل تريد تسجيل خروج هذا المستخدم من جميع أجهزته؟';
+$string['forcelogout_session_done']        = 'تم تسجيل خروج الجلسة بنجاح.';
+$string['forcelogout_all_done']            = 'تم تسجيل خروج المستخدم من جميع الجلسات بنجاح.';
+
 // Privacy.
 $string['privacy:metadata'] = 'إضافة تسجيل الأجهزة تخزّن إعدادات الموقع فقط ولا تخزّن أي بيانات شخصية.';

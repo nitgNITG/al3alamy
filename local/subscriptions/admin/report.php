@@ -139,9 +139,9 @@ echo $OUTPUT->header();
 .badge-cancelled{ background:#dc3545; color:#fff; padding:2px 8px; border-radius:10px; font-size:.8em; }
 .subs-actions { display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
 .subs-actions a { display:inline-flex; align-items:center; line-height:1.4; text-decoration:none; }
-.btn-details { padding:5px 12px; background:#eef3f9; border:1px solid #cfe0f0; border-radius:4px; color:#2d6a9f; font-size:.82em; }
+.btn-details { padding:5px 12px; background:#eef3f9; border:1px solid #cfe0f0; border-radius:4px; color:#2d6a9f; font-size:.82em; display:inline-flex; align-items:center; text-decoration:none; }
 .btn-details:hover { background:#e0ebf7; color:#2d6a9f; }
-.btn-unsub { background:#dc3545; color:#fff; border-radius:4px; padding:5px 14px; font-size:.82em; }
+.btn-unsub { background:#dc3545; color:#fff; border-radius:4px; padding:5px 14px; font-size:.82em; display:inline-flex; align-items:center; text-decoration:none; }
 .btn-unsub:hover { background:#c82333; color:#fff; }
 </style>
 

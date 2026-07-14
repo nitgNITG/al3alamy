@@ -118,6 +118,17 @@ $amount = (float)$amount_str;
 // Cast both sides to int — $USER->id may be a string from the session, and a
 // strict comparison would wrongly reject the legitimate buyer.
 $order_uid = (int)(explode('-', $order_id)[1] ?? 0);
+// If user is not logged in, try to log them in using the user ID from the order
+if (!isloggedin() && $order_uid > 0) {
+    $order_user = $DB->get_record('user', ['id' => $order_uid, 'deleted' => 0], '*', IGNORE_MISSING);
+    if ($order_user) {
+        // Set the user session for the order owner
+        complete_user_login($order_user);
+        \core\session\manager::set_user($order_user);
+        $USER = $order_user;
+    }
+}
+// Now check if the logged-in user matches the order
 if ((int)$USER->id && $order_uid && (int)$USER->id !== $order_uid) {
     error_log("kashier/callback.php: user mismatch USER->id=" . $USER->id
         . " order_uid=$order_uid order=$order_id");

@@ -31,6 +31,9 @@ $review  = null; // Holds [user, plan, amount, note] when showing the confirmati
 // All active plans for the dropdown.
 $plans = manager::get_plans(false);
 
+// All users for the dropdown.
+$users = $DB->get_records('user', ['deleted' => 0], 'lastname ASC, firstname ASC', 'id, firstname, lastname, email, username');
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     require_sesskey();
 
@@ -46,15 +49,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $errors[] = get_string('assign_invalid_plan', 'local_subscriptions');
     }
 
-    // Resolve the user by username or email (exact match).
+    // Resolve the user by username (from dropdown).
     $user = null;
     if ($useridentifier !== '') {
         $user = $DB->get_record('user',
             ['username' => $useridentifier, 'deleted' => 0], '*', IGNORE_MULTIPLE);
-        if (!$user) {
-            $user = $DB->get_record('user',
-                ['email' => $useridentifier, 'deleted' => 0], '*', IGNORE_MULTIPLE);
-        }
     }
     if (!$user) {
         $errors[] = get_string('assign_no_such_user', 'local_subscriptions');
@@ -171,8 +170,15 @@ echo $OUTPUT->header();
 
         <div class="form-group">
             <label for="useridentifier"><?php echo get_string('assign_user', 'local_subscriptions'); ?> *</label>
-            <input type="text" id="useridentifier" name="useridentifier" class="form-control"
-                   value="<?php echo s(optional_param('useridentifier', '', PARAM_TEXT)); ?>" required>
+            <select id="useridentifier" name="useridentifier" class="form-control" required>
+                <option value=""><?php echo get_string('choosedots'); ?></option>
+                <?php foreach ($users as $u): ?>
+                    <option value="<?php echo s($u->username); ?>"
+                            <?php echo (optional_param('useridentifier', '', PARAM_TEXT) === $u->username) ? 'selected' : ''; ?>>
+                        <?php echo s(fullname($u)); ?> (<?php echo s($u->email); ?>)
+                    </option>
+                <?php endforeach; ?>
+            </select>
             <small><?php echo get_string('assign_user_help', 'local_subscriptions'); ?></small>
         </div>
 

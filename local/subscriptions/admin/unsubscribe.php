@@ -83,6 +83,26 @@ echo $OUTPUT->header();
 .btn { padding:9px 22px; border-radius:4px; font-size:1em; cursor:pointer; border:none; }
 .btn-danger { background:#dc3545; color:#fff; }
 .btn-secondary { background:#6c757d; color:#fff; text-decoration:none; display:inline-block; }
+
+/* Confirmation modal */
+.us-modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.5); z-index:100000; direction:rtl; }
+.us-modal-overlay.open { display:flex; align-items:center; justify-content:center; }
+.us-modal-box { background:#fff; width:100%; max-width:420px; margin:16px; border-radius:12px; box-shadow:0 12px 40px rgba(0,0,0,.25); overflow:hidden; animation:us-pop .18s ease-out; font-family:'Segoe UI',Tahoma,Arial,sans-serif; }
+@keyframes us-pop { from { transform:scale(.94); opacity:0; } to { transform:scale(1); opacity:1; } }
+.us-modal-head { display:flex; align-items:center; gap:12px; padding:20px 22px 0; }
+.us-modal-icon { width:44px; height:44px; border-radius:50%; background:#fdecea; color:#dc3545; display:flex; align-items:center; justify-content:center; font-size:24px; flex:none; }
+.us-modal-head h4 { margin:0; font-size:1.15em; color:#222; }
+.us-modal-body { padding:12px 22px 4px; color:#555; font-size:.95em; line-height:1.6; }
+.us-modal-body .sum { background:#f7f9fc; border:1px solid #e6edf5; border-radius:8px; padding:10px 14px; margin-top:12px; font-size:.9em; }
+.us-modal-body .sum .r { display:flex; justify-content:space-between; padding:3px 0; }
+.us-modal-body .sum .r .k { color:#777; }
+.us-modal-body .sum .r .v { font-weight:700; color:#333; }
+.us-modal-actions { display:flex; gap:10px; padding:18px 22px 22px; }
+.us-modal-actions button { flex:1; padding:10px; border:none; border-radius:8px; font-size:1em; font-weight:600; cursor:pointer; }
+.us-modal-actions .confirm { background:#dc3545; color:#fff; }
+.us-modal-actions .confirm:hover { background:#c82333; }
+.us-modal-actions .cancel { background:#eef0f2; color:#333; }
+.us-modal-actions .cancel:hover { background:#e2e5e8; }
 </style>
 
 <div class="us-page">
@@ -101,7 +121,7 @@ echo $OUTPUT->header();
         <span class="v"><?php echo number_format((float)$sub->amount_paid, 2); ?> ج</span></div>
   </div>
 
-  <form method="post">
+  <form method="post" id="us-unsub-form">
     <input type="hidden" name="sesskey" value="<?php echo sesskey(); ?>">
 
     <div class="form-group">
@@ -128,11 +148,66 @@ echo $OUTPUT->header();
         <textarea name="reason" class="form-control" rows="3" required></textarea>
     </div>
 
-    <button type="submit" class="btn btn-danger"
-            onclick="return confirm('<?php echo s(get_string('unsub_confirm', 'local_subscriptions')); ?>?')">
+    <button type="button" id="us-open-confirm" class="btn btn-danger">
         <?php echo get_string('unsub_confirm', 'local_subscriptions'); ?>
     </button>
     <a href="<?php echo $reporturl->out(); ?>" class="btn btn-secondary"><?php echo get_string('cancel'); ?></a>
   </form>
 </div>
+
+<!-- Confirmation modal -->
+<div class="us-modal-overlay" id="us-confirm-modal">
+  <div class="us-modal-box" role="dialog" aria-modal="true" aria-labelledby="us-modal-title">
+    <div class="us-modal-head">
+      <div class="us-modal-icon">&#9888;</div>
+      <h4 id="us-modal-title"><?php echo get_string('unsub_confirm', 'local_subscriptions'); ?></h4>
+    </div>
+    <div class="us-modal-body">
+      <p style="margin:0"><?php echo s(get_string('unsub_confirm', 'local_subscriptions')); ?>&#1567;</p>
+      <div class="sum">
+        <div class="r"><span class="k"><?php echo get_string('assign_user', 'local_subscriptions'); ?></span>
+            <span class="v"><?php echo s($sub->firstname . ' ' . $sub->lastname); ?></span></div>
+        <div class="r"><span class="k"><?php echo get_string('plan_name', 'local_subscriptions'); ?></span>
+            <span class="v"><?php echo s($sub->plan_name); ?></span></div>
+        <div class="r"><span class="k"><?php echo get_string('refund_status', 'local_subscriptions'); ?></span>
+            <span class="v" id="us-modal-refund"></span></div>
+      </div>
+    </div>
+    <div class="us-modal-actions">
+      <button type="submit" form="us-unsub-form" class="confirm"><?php echo get_string('unsub_confirm', 'local_subscriptions'); ?></button>
+      <button type="button" class="cancel" id="us-modal-cancel"><?php echo get_string('cancel'); ?></button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  var form    = document.getElementById('us-unsub-form');
+  var overlay = document.getElementById('us-confirm-modal');
+  var openBtn = document.getElementById('us-open-confirm');
+  var cancel  = document.getElementById('us-modal-cancel');
+  var refEl   = document.getElementById('us-modal-refund');
+  var L_RETURNED     = <?php echo json_encode(get_string('refund_returned', 'local_subscriptions')); ?>;
+  var L_NOT_RETURNED = <?php echo json_encode(get_string('refund_not_returned', 'local_subscriptions')); ?>;
+
+  function open() {
+    // Run native validation first (reason is required).
+    if (!form.reportValidity()) { return; }
+    var st = form.querySelector('input[name="refund_status"]:checked');
+    if (st && st.value === 'returned') {
+      var amt = form.querySelector('input[name="refund_amount"]');
+      refEl.textContent = L_RETURNED + ' (' + (amt ? Number(amt.value || 0).toFixed(2) : '0.00') + ' ج)';
+    } else {
+      refEl.textContent = L_NOT_RETURNED;
+    }
+    overlay.classList.add('open');
+  }
+  function close() { overlay.classList.remove('open'); }
+
+  openBtn.addEventListener('click', open);
+  cancel.addEventListener('click', close);
+  overlay.addEventListener('click', function (e) { if (e.target === overlay) close(); });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
+})();
+</script>
 <?php echo $OUTPUT->footer();

@@ -137,7 +137,11 @@ echo $OUTPUT->header();
 .badge-active   { background:#28a745; color:#fff; padding:2px 8px; border-radius:10px; font-size:.8em; }
 .badge-expired  { background:#6c757d; color:#fff; padding:2px 8px; border-radius:10px; font-size:.8em; }
 .badge-cancelled{ background:#dc3545; color:#fff; padding:2px 8px; border-radius:10px; font-size:.8em; }
-.btn-unsub { background:#dc3545; color:#fff; border-radius:4px; padding:4px 12px; font-size:.82em; text-decoration:none; display:inline-block; }
+.subs-actions { display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
+.subs-actions a { display:inline-flex; align-items:center; line-height:1.4; text-decoration:none; }
+.btn-details { padding:5px 12px; background:#eef3f9; border:1px solid #cfe0f0; border-radius:4px; color:#2d6a9f; font-size:.82em; }
+.btn-details:hover { background:#e0ebf7; color:#2d6a9f; }
+.btn-unsub { background:#dc3545; color:#fff; border-radius:4px; padding:5px 14px; font-size:.82em; }
 .btn-unsub:hover { background:#c82333; color:#fff; }
 </style>
 
@@ -283,15 +287,10 @@ echo $OUTPUT->header();
         <td><?php echo $sub->expiry_time ? userdate($sub->expiry_time, '%d/%m/%Y') : '-'; ?></td>
         <td><small><?php echo s($sub->order_id ?: '-'); ?></small></td>
         <td style="white-space:nowrap">
-            <a href="<?php echo (new moodle_url('/local/subscriptions/admin/report_detail.php', ['subid' => $sub->id]))->out(); ?>"
-               style="display:inline-block;padding:4px 10px;background:#eef3f9;border:1px solid #cfe0f0;border-radius:4px;text-decoration:none;color:#2d6a9f;font-size:.82em">
-                <?php echo get_string('details', 'local_subscriptions'); ?>
-            </a>
+          <div class="subs-actions">
+            <a class="btn-details" href="<?php echo (new moodle_url('/local/subscriptions/admin/report_detail.php', ['subid' => $sub->id]))->out(); ?>"><?php echo get_string('details', 'local_subscriptions'); ?></a>
             <?php if ($sub->status === manager::STATUS_ACTIVE && has_capability('local/subscriptions:manage', $context)): ?>
-                <a class="btn-unsub"
-                   href="<?php echo (new moodle_url('/local/subscriptions/admin/unsubscribe.php', ['subid' => $sub->id]))->out(); ?>">
-                    <?php echo get_string('unsubscribe_user', 'local_subscriptions'); ?>
-                </a>
+                <a class="btn-unsub" href="<?php echo (new moodle_url('/local/subscriptions/admin/unsubscribe.php', ['subid' => $sub->id]))->out(); ?>"><?php echo get_string('unsubscribe_user', 'local_subscriptions'); ?></a>
             <?php elseif ($sub->status === 'cancelled'): ?>
                 <small style="color:#888">
                     <?php echo $sub->refund_amount ? number_format((float)$sub->refund_amount, 2) . ' ج ' . get_string('refund_returned', 'local_subscriptions') : get_string('refund_not_returned', 'local_subscriptions'); ?>
@@ -299,6 +298,7 @@ echo $OUTPUT->header();
             <?php else: ?>
                 &mdash;
             <?php endif; ?>
+          </div>
         </td>
     </tr>
     <?php endforeach; ?>

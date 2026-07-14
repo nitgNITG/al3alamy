@@ -17,11 +17,16 @@
 defined('MOODLE_INTERNAL') || die();
 
 /**
- * Inject a "اشتراكاتي" link into the navbar for logged-in non-admin users.
- * Also shows a gold badge with remaining days if the user has an active subscription.
+ * Inject a "الاشتراكات" link into the navbar for logged-in non-admin users, and
+ * (on the site front page) render the subscription-plans grid after the last
+ * content section.
+ *
+ * The nav link is placed next to the other menu titles (the primary navigation),
+ * not next to the user avatar. A gold badge shows the remaining days when the
+ * user has an active subscription.
  */
 function local_subscriptions_before_standard_top_of_body_html() {
-    global $USER, $CFG;
+    global $USER, $CFG, $PAGE;
 
     // Only for logged-in non-guests, non-admins.
     if (!isloggedin() || isguestuser() || is_siteadmin()) {
@@ -34,10 +39,11 @@ function local_subscriptions_before_standard_top_of_body_html() {
 
     // Compute days remaining if there is an active subscription.
     $days_badge = '';
+    $active_sub = null;
     try {
-        $sub = \local_subscriptions\manager::get_active_subscription($USER->id);
-        if ($sub) {
-            $days_left = max(0, (int)ceil(($sub->expiry_time - time()) / 86400));
+        $active_sub = \local_subscriptions\manager::get_active_subscription($USER->id);
+        if ($active_sub) {
+            $days_left = max(0, (int)ceil(($active_sub->expiry_time - time()) / 86400));
             $days_badge = '<span style="background:#c8a84b;color:#fff;font-size:11px;'
                 . 'padding:2px 7px;border-radius:10px;margin-inline-start:5px;font-weight:bold;'
                 . 'vertical-align:middle;">' . $days_left . ' يوم</span>';
@@ -55,6 +61,23 @@ function local_subscriptions_before_standard_top_of_body_html() {
     var LABEL = '{$label}';
     var BADGE = '{$days_badge}';
 
+    // A nav-item styled to match the theme's primary navigation titles.
+    function makeNavItem() {
+        var li = document.createElement('li');
+        li.id = 'local-subscriptions-nav-link';
+        li.className = 'nav-item';
+        li.setAttribute('role', 'none');
+        var a = document.createElement('a');
+        a.className = 'nav-link';
+        a.setAttribute('role', 'menuitem');
+        a.href = URL;
+        a.style.cssText = 'display:inline-flex;align-items:center;gap:5px;';
+        a.innerHTML = '<span>' + LABEL + '</span>' + BADGE;
+        li.appendChild(a);
+        return li;
+    }
+
+    // Fallback link (used only if the primary nav list is not found).
     function makeLink(padding, color) {
         var a = document.createElement('a');
         a.href = URL;
@@ -67,10 +90,22 @@ function local_subscriptions_before_standard_top_of_body_html() {
     function insertSubscriptionsLink() {
         if (document.getElementById('local-subscriptions-nav-link')) return true;
 
+        // Preferred: the primary navigation title list, next to the other menu items.
+        var menu = document.querySelector('.primary-navigation ul.more-nav') ||
+                   document.querySelector('nav.moremenu ul.more-nav') ||
+                   document.querySelector('ul.ace-responsive-menu');
+        if (menu) {
+            var item = makeNavItem();
+            // Sit before the "More" overflow dropdown when present, else at the end.
+            var more = menu.querySelector('.dropdownmoremenu');
+            if (more) { menu.insertBefore(item, more); } else { menu.appendChild(item); }
+            return true;
+        }
+
+        // Fallback: the user area, so the link is never lost.
         var container = document.querySelector('ul.sign_up_btn') ||
                         document.querySelector('.usermenu') ||
                         document.querySelector('.navbar-nav') ||
-                        document.querySelector('nav .nav') ||
                         document.querySelector('header ul') ||
                         document.querySelector('header nav');
         if (!container) return false;
@@ -107,6 +142,130 @@ function local_subscriptions_before_standard_top_of_body_html() {
     } else {
         run();
     }
+})();
+</script>
+JS;
+
+    // On the site front page, also render the plans grid after the last section.
+    if ($PAGE->pagetype === 'site-index') {
+        $js .= local_subscriptions_home_plans_script($active_sub);
+    }
+
+    return $js;
+}
+
+/**
+ * Build the front-page subscription-plans section (same cards as index.php) and a
+ * small script that injects it after the front page's content blocks — i.e. right
+ * after the last section ("طلابنا الأعزاء") and before the footer.
+ *
+ * @param \stdClass|null $active_sub The user's active subscription, if any.
+ * @return string HTML/JS to append, or '' when there are no active plans.
+ */
+function local_subscriptions_home_plans_script($active_sub) {
+    global $DB;
+
+    try {
+        $plans = \local_subscriptions\manager::get_plans(true); // Active only.
+    } catch (\Throwable $e) {
+        return '';
+    }
+    if (empty($plans)) {
+        return '';
+    }
+
+    ob_start();
+    ?>
+    <div class="ls-home-plans">
+      <style>
+        .ls-home-plans { direction: rtl; font-family: 'Segoe UI', Tahoma, Arial, sans-serif; padding: 50px 15px 60px; background: #f7f9fc; }
+        .ls-home-inner { max-width: 1100px; margin: 0 auto; }
+        .ls-home-title { color: #2d6a9f; text-align: center; font-size: 1.9em; font-weight: 800; margin: 0 0 6px; }
+        .ls-home-sub { color: #666; text-align: center; margin: 0 0 32px; font-size: 1em; }
+        .ls-home-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 24px; }
+        .ls-home-card { background: #fff; border: 1px solid #dee2e6; border-radius: 12px; padding: 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); display: flex; flex-direction: column; transition: box-shadow 0.2s; }
+        .ls-home-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.12); }
+        .ls-home-cardlink { text-decoration: none; color: inherit; display: block; }
+        .ls-home-name { font-size: 1.25em; font-weight: 700; color: #1a1a1a; margin-bottom: 8px; }
+        .ls-home-price { font-size: 2em; font-weight: 800; color: #c8a84b; margin-bottom: 12px; }
+        .ls-home-price span { font-size: .45em; font-weight: 400; color: #888; vertical-align: middle; margin-right: 4px; }
+        .ls-home-desc { color: #555; font-size: .93em; line-height: 1.6; margin-bottom: 14px; }
+        .ls-home-meta { font-size: .85em; color: #666; margin-bottom: 14px; }
+        .ls-home-meta span { display: inline-block; background: #f0f4fa; border-radius: 6px; padding: 3px 10px; margin-left: 6px; margin-bottom: 4px; }
+        .ls-home-btn { display: block; text-align: center; background: #2d6a9f; color: #fff; padding: 11px; border-radius: 8px; font-size: 1em; font-weight: 600; text-decoration: none; transition: background 0.2s; margin-top: auto; }
+        .ls-home-btn:hover { background: #1d5080; color: #fff; }
+        .ls-home-btn.subscribed { background: #28a745; cursor: default; }
+      </style>
+      <div class="ls-home-inner">
+        <h2 class="ls-home-title"><?php echo get_string('plans_list', 'local_subscriptions'); ?></h2>
+        <p class="ls-home-sub">اختر الخطة المناسبة لك واستمتع بالوصول إلى المحتوى التعليمي</p>
+        <div class="ls-home-grid">
+          <?php foreach ($plans as $plan): ?>
+            <?php $item_count = $DB->count_records('local_subscriptions_items', ['planid' => $plan->id]); ?>
+            <div class="ls-home-card">
+              <a class="ls-home-cardlink" href="<?php echo (new moodle_url('/local/subscriptions/plan.php', ['id' => $plan->id]))->out(); ?>">
+                <div class="ls-home-name"><?php echo s($plan->name); ?></div>
+                <div class="ls-home-price"><?php echo number_format((float)$plan->price, 0); ?><span>جنيه مصري</span></div>
+                <?php if ($plan->description): ?>
+                  <div class="ls-home-desc"><?php echo nl2br(s($plan->description)); ?></div>
+                <?php endif; ?>
+                <div class="ls-home-meta">
+                  <?php if ($plan->course_access_type === \local_subscriptions\manager::COURSE_ACCESS_ALL): ?>
+                    <span>جميع المقررات</span>
+                  <?php else: ?>
+                    <span><?php echo $item_count; ?> مقرر</span>
+                  <?php endif; ?>
+                  <?php if ($plan->expiry_type === \local_subscriptions\manager::EXPIRY_DAYS): ?>
+                    <span><?php echo (int)$plan->expiry_days; ?> يوم</span>
+                  <?php else: ?>
+                    <span>حتى <?php echo $plan->expiry_date ? userdate($plan->expiry_date, '%d/%m/%Y') : '-'; ?></span>
+                  <?php endif; ?>
+                </div>
+              </a>
+              <?php if ($active_sub): ?>
+                <div class="ls-home-btn subscribed">✓ <?php echo get_string('already_subscribed', 'local_subscriptions'); ?></div>
+              <?php else: ?>
+                <a class="ls-home-btn" href="<?php echo (new moodle_url('/local/subscriptions/buy.php', ['planid' => $plan->id]))->out(); ?>"><?php echo get_string('subscribe_now', 'local_subscriptions'); ?></a>
+              <?php endif; ?>
+            </div>
+          <?php endforeach; ?>
+        </div>
+      </div>
+    </div>
+    <?php
+    $html = ob_get_clean();
+    $payload = json_encode($html, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+
+    $js = <<<JS
+<script>
+(function () {
+  var HTML = {$payload};
+  function place() {
+    if (document.getElementById('ls-home-plans-wrap')) return;
+    var wrap = document.createElement('div');
+    wrap.id = 'ls-home-plans-wrap';
+    wrap.innerHTML = HTML;
+    // Insert right after the front page's content block region (the last section
+    // is "طلابنا الأعزاء"), above the footer.
+    var region = document.getElementById('block-region-fullwidth-top');
+    if (region && region.parentNode) {
+      region.parentNode.insertBefore(wrap, region.nextSibling);
+      return;
+    }
+    var footer = document.querySelector('section.footer_bottom_area') ||
+                 document.querySelector('#page-footer') ||
+                 document.querySelector('footer');
+    if (footer && footer.parentNode) {
+      footer.parentNode.insertBefore(wrap, footer);
+    } else {
+      document.body.appendChild(wrap);
+    }
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', place);
+  } else {
+    place();
+  }
 })();
 </script>
 JS;

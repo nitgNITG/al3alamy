@@ -1,5 +1,5 @@
 <?php
-file_put_contents('/tmp/dr_debug.txt', date('H:i:s')." LOADED action=".($_GET['action']??'')." userid=".($_GET['userid']??'')."\n", FILE_APPEND);
+file_put_contents('/var/www/html/al3alamy.com/moodledata/dr_debug.txt', date('H:i:s')." LOADED action=".($_GET['action']??'')." userid=".($_GET['userid']??'')."\n", FILE_APPEND);
 require_once(__DIR__ . '/../../config.php');
 require_once(__DIR__ . '/lib.php');
 require_once($CFG->libdir . '/adminlib.php');
@@ -31,14 +31,14 @@ function _dr_kill_all_sessions(int $uid): int {
 
 // ── ACTIONS — handled before admin_externalpage_setup so no URL redirect ──────
 if ($action === 'logout_user' && $userid) {
-    file_put_contents('/tmp/dr_debug.txt', date('H:i:s')." IN logout_user handler userid=$userid\n", FILE_APPEND);
+    file_put_contents('/var/www/html/al3alamy.com/moodledata/dr_debug.txt', date('H:i:s')." IN logout_user handler userid=$userid\n", FILE_APPEND);
     require_sesskey();
-    file_put_contents('/tmp/dr_debug.txt', date('H:i:s')." sesskey OK\n", FILE_APPEND);
+    file_put_contents('/var/www/html/al3alamy.com/moodledata/dr_debug.txt', date('H:i:s')." sesskey OK\n", FILE_APPEND);
     $target = $DB->get_record('user', ['id' => $userid, 'deleted' => 0], '*', IGNORE_MISSING);
-    file_put_contents('/tmp/dr_debug.txt', date('H:i:s')." target=".($target?$target->username:'NULL')."\n", FILE_APPEND);
+    file_put_contents('/var/www/html/al3alamy.com/moodledata/dr_debug.txt', date('H:i:s')." target=".($target?$target->username:'NULL')."\n", FILE_APPEND);
     if ($target) {
         $killed = _dr_kill_all_sessions($userid);
-        file_put_contents('/tmp/dr_debug.txt', date('H:i:s')." killed=$killed\n", FILE_APPEND);
+        file_put_contents('/var/www/html/al3alamy.com/moodledata/dr_debug.txt', date('H:i:s')." killed=$killed\n", FILE_APPEND);
         redirect(
             new moodle_url($pageurl, ['view' => 'sessions', 'filter' => $filter]),
             get_string('forcelogout_done', 'local_deviceregistration',

@@ -46,10 +46,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $action === 'logout_user' && $useri
     $target = $DB->get_record('user', ['id' => $userid, 'deleted' => 0], '*', IGNORE_MISSING);
     if ($target) {
         $killed = $DB->count_records('sessions', ['userid' => $userid]);
-        // Direct DB delete — bypasses the session handler which can throw
-        // after a session is already closed. The DB row is what Moodle
-        // checks to validate a session, so deleting rows is sufficient.
-        $DB->delete_records('sessions', ['userid' => $userid]);
+        // Use the proper Moodle session manager so it works with every
+        // back-end (DB, file, Redis, memcache).  The admin's own session
+        // is never passed as $userid here, so no keepsid is needed.
+        \core\session\manager::kill_user_sessions($userid);
 
         redirect(
             new moodle_url($pageurl, ['view' => 'sessions', 'filter' => $filter]),

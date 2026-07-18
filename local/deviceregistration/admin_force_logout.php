@@ -216,15 +216,13 @@ echo $OUTPUT->header();
           <td><span class="dr-badge"><?php echo $u->sessioncount; ?></span></td>
           <td><?php echo userdate($u->lastactive,$datefmt); ?></td>
           <td>
-            <?php $lurl = (new moodle_url($pageurl,[
-                'action'=>'logout_user','userid'=>$u->id,
-                'sesskey'=>$sk,'filter'=>$filter,'view'=>'sessions'
-              ]))->out(); ?>
-            <a href="<?php echo $lurl; ?>"
-               class="btn-force"
-               onclick="event.stopImmediatePropagation();window.location.href=this.href;return false;">
+            <button type="button" class="btn-force"
+                    data-action="logout_user"
+                    data-userid="<?php echo (int)$u->id; ?>"
+                    data-sesskey="<?php echo s($sk); ?>"
+                    data-filter="<?php echo s($filter); ?>">
               <?php echo get_string('forcelogout_action','local_deviceregistration'); ?>
-            </a>
+            </button>
           </td>
         </tr>
       <?php endforeach; ?>
@@ -278,15 +276,14 @@ echo $OUTPUT->header();
             <td><?php echo userdate($d->timecreated,$datefmt); ?></td>
             <td><?php echo userdate($d->timelastseen,$datefmt); ?></td>
             <td>
-              <?php $rurl = (new moodle_url($pageurl,[
-                  'action'=>'remove_device','deviceid'=>$d->id,'sesskey'=>$sk,
-                  'filter'=>$filter,'countfilter'=>$countfilter,'view'=>'devices'
-                ]))->out(); ?>
-              <a href="<?php echo $rurl; ?>"
-                 class="btn-revoke"
-                 onclick="event.stopImmediatePropagation();window.location.href=this.href;return false;">
+              <button type="button" class="btn-revoke"
+                      data-action="remove_device"
+                      data-deviceid="<?php echo (int)$d->id; ?>"
+                      data-sesskey="<?php echo s($sk); ?>"
+                      data-filter="<?php echo s($filter); ?>"
+                      data-countfilter="<?php echo s($countfilter); ?>">
                 <?php echo get_string('devmgr_revoke','local_deviceregistration'); ?>
-              </a>
+              </button>
             </td>
           </tr>
         <?php endforeach; ?>
@@ -340,4 +337,55 @@ echo $OUTPUT->header();
   <?php endif; ?>
 <?php endif; ?>
 </div>
+
+<script>
+(function(){
+  var base = <?php echo json_encode($pageurl->out(false)); ?>;
+
+  function drGo(params) {
+    // Build URL manually and navigate via a fresh form — bypasses every
+    // Moodle AJAX/link/form interceptor because the form is created
+    // programmatically and submitted immediately.
+    var f = document.createElement('form');
+    f.method = 'GET';
+    f.action = base;
+    Object.keys(params).forEach(function(k){
+      var i = document.createElement('input');
+      i.type = 'hidden'; i.name = k; i.value = params[k];
+      f.appendChild(i);
+    });
+    document.body.appendChild(f);
+    f.submit();
+  }
+
+  document.addEventListener('click', function(e){
+    var btn = e.target.closest('button[data-action]');
+    if (!btn) return;
+    e.preventDefault();
+    e.stopImmediatePropagation();
+
+    var act = btn.getAttribute('data-action');
+
+    if (act === 'logout_user') {
+      drGo({
+        action:  'logout_user',
+        userid:  btn.getAttribute('data-userid'),
+        sesskey: btn.getAttribute('data-sesskey'),
+        filter:  btn.getAttribute('data-filter') || '',
+        view:    'sessions'
+      });
+    } else if (act === 'remove_device') {
+      drGo({
+        action:      'remove_device',
+        deviceid:    btn.getAttribute('data-deviceid'),
+        sesskey:     btn.getAttribute('data-sesskey'),
+        filter:      btn.getAttribute('data-filter') || '',
+        countfilter: btn.getAttribute('data-countfilter') || '',
+        view:        'devices'
+      });
+    }
+  }, true); // capture phase — runs before ANY Moodle handler
+})();
+</script>
+
 <?php echo $OUTPUT->footer();

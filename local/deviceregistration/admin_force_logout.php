@@ -216,10 +216,13 @@ echo $OUTPUT->header();
           <td><span class="dr-badge"><?php echo $u->sessioncount; ?></span></td>
           <td><?php echo userdate($u->lastactive,$datefmt); ?></td>
           <td>
-            <a href="<?php echo (new moodle_url($pageurl,[
+            <?php $lurl = (new moodle_url($pageurl,[
                 'action'=>'logout_user','userid'=>$u->id,
                 'sesskey'=>$sk,'filter'=>$filter,'view'=>'sessions'
-              ]))->out(); ?>" class="btn-force">
+              ]))->out(); ?>
+            <a href="<?php echo $lurl; ?>"
+               class="btn-force"
+               onclick="event.stopImmediatePropagation();window.location.href=this.href;return false;">
               <?php echo get_string('forcelogout_action','local_deviceregistration'); ?>
             </a>
           </td>
@@ -275,10 +278,13 @@ echo $OUTPUT->header();
             <td><?php echo userdate($d->timecreated,$datefmt); ?></td>
             <td><?php echo userdate($d->timelastseen,$datefmt); ?></td>
             <td>
-              <a href="<?php echo (new moodle_url($pageurl,[
+              <?php $rurl = (new moodle_url($pageurl,[
                   'action'=>'remove_device','deviceid'=>$d->id,'sesskey'=>$sk,
                   'filter'=>$filter,'countfilter'=>$countfilter,'view'=>'devices'
-                ]))->out(); ?>" class="btn-revoke">
+                ]))->out(); ?>
+              <a href="<?php echo $rurl; ?>"
+                 class="btn-revoke"
+                 onclick="event.stopImmediatePropagation();window.location.href=this.href;return false;">
                 <?php echo get_string('devmgr_revoke','local_deviceregistration'); ?>
               </a>
             </td>

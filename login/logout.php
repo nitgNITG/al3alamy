@@ -59,14 +59,17 @@ foreach($authsequence as $authname) {
     $authplugin->logoutpage_hook();
 }
 
-// Kill ALL sessions for this user before the standard logout.
-// require_logout() only destroys the current session; this ensures
-// any other open tabs or devices are also immediately logged out.
-$logout_userid = $USER->id; // capture before require_logout() clears $USER
+// Capture userid BEFORE require_logout() resets $USER to guest.
+$logout_userid = (int) $USER->id;
+
+// 1. Let Moodle cleanly destroy the current session first.
+require_logout();
+
+// 2. Now sweep any remaining sessions on other devices/tabs.
+//    (require_logout already killed the current one; this catches the rest.)
 if ($logout_userid > 0) {
     \core\session\manager::kill_user_sessions($logout_userid);
+    $DB->delete_records('sessions', ['userid' => $logout_userid]); // guaranteed sweep
 }
-
-require_logout();
 
 redirect($redirect);

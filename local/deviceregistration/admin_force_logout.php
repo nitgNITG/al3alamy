@@ -205,8 +205,8 @@ echo $OUTPUT->header();
 /* ── Action buttons ───────────────────────────────────────── */
 .btn-force  { background:#dc3545; color:#fff; border:none; border-radius:5px; padding:6px 16px; font-size:.86em; font-weight:600; cursor:pointer; }
 .btn-force:hover { background:#c82333; }
-.btn-manage { background:#2d6a9f; color:#fff; border:none; border-radius:5px; padding:6px 14px; font-size:.86em; font-weight:600; text-decoration:none; }
-.btn-manage:hover { background:#245580; color:#fff; }
+.btn-manage { background:#2d6a9f; color:#fff !important; border:none; border-radius:5px; padding:6px 14px; font-size:.86em; font-weight:600; text-decoration:none !important; display:inline-block; }
+.btn-manage:hover { background:#245580; color:#fff !important; }
 .btn-revoke { background:#fff; color:#dc3545; border:1px solid #dc3545; border-radius:5px; padding:5px 14px; font-size:.85em; font-weight:600; cursor:pointer; }
 .btn-revoke:hover { background:#dc3545; color:#fff; }
 

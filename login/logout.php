@@ -63,12 +63,27 @@ foreach($authsequence as $authname) {
 $logout_userid = (int) $USER->id;
 $current_sid   = session_id();
 
-// 1. Kill every OTHER session for this user via the proper session manager.
-//    Passing $current_sid tells it to skip the active session so that
-//    require_logout() can still find and destroy it cleanly afterwards.
-//    This works regardless of the session back-end (DB, file, Redis, etc.).
-if ($logout_userid > 0 && $current_sid) {
-    \core\session\manager::kill_user_sessions($logout_userid, $current_sid);
+// 1. Kill every OTHER session for this user.
+//    Two-pass: Moodle session manager (handles Redis/file/DB backends)
+//    + direct DB delete as fallback in case the handler silently skips rows.
+if ($logout_userid > 0) {
+    // Pass A — proper session manager (skips current SID so require_logout works).
+    try {
+        if ($current_sid) {
+            \core\session\manager::kill_user_sessions($logout_userid, $current_sid);
+        }
+    } catch (Throwable $e) {
+        error_log('logout.php: kill_user_sessions failed: ' . $e->getMessage());
+    }
+    // Pass B — direct DB delete of any remaining rows for other sessions.
+    try {
+        if ($current_sid) {
+            $DB->delete_records_select('sessions', 'userid = :uid AND sid != :sid',
+                ['uid' => $logout_userid, 'sid' => $current_sid]);
+        }
+    } catch (Throwable $e) {
+        error_log('logout.php: DB delete other sessions failed: ' . $e->getMessage());
+    }
 }
 
 // 2. Properly destroy the current session (fires events, resets $USER, etc.).

@@ -39,17 +39,36 @@ $countfilter = optional_param('countfilter', '',         PARAM_RAW);    // e.g. 
 
 $pageurl = new moodle_url('/local/deviceregistration/admin_force_logout.php');
 
+// ── Helper: kill ALL sessions for a user (belt-and-suspenders) ───────────────
+function _dr_kill_all_sessions(int $uid): int {
+    global $DB;
+    $count = $DB->count_records('sessions', ['userid' => $uid]);
+    if ($count < 1) {
+        return 0;
+    }
+    // 1. Use Moodle's proper session manager (handles file/Redis/memcache too).
+    try {
+        \core\session\manager::kill_user_sessions($uid);
+    } catch (Throwable $e) {
+        error_log('_dr_kill_all_sessions: kill_user_sessions failed for uid=' . $uid . ': ' . $e->getMessage());
+    }
+    // 2. Direct DB delete as fallback — makes sure DB rows are gone even if
+    //    the handler's destroy() silently failed.
+    try {
+        $DB->delete_records('sessions', ['userid' => $uid]);
+    } catch (Throwable $e) {
+        error_log('_dr_kill_all_sessions: DB delete failed for uid=' . $uid . ': ' . $e->getMessage());
+    }
+    return $count;
+}
+
 // ── POST: force logout ────────────────────────────────────────────────────────
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && $action === 'logout_user' && $userid) {
     require_sesskey();
 
     $target = $DB->get_record('user', ['id' => $userid, 'deleted' => 0], '*', IGNORE_MISSING);
     if ($target) {
-        $killed = $DB->count_records('sessions', ['userid' => $userid]);
-        // Use the proper Moodle session manager so it works with every
-        // back-end (DB, file, Redis, memcache).  The admin's own session
-        // is never passed as $userid here, so no keepsid is needed.
-        \core\session\manager::kill_user_sessions($userid);
+        $killed = _dr_kill_all_sessions($userid);
 
         redirect(
             new moodle_url($pageurl, ['view' => 'sessions', 'filter' => $filter]),
@@ -176,6 +195,10 @@ if ($view === 'devices') {
 
 $datefmt = get_string('strftimedatetimeshort', 'langconfig');
 
+// Pre-build confirm strings for buttons (server-side, so no JS dependency).
+$confirm_logout = addslashes(get_string('forcelogout_confirm_all', 'local_deviceregistration'));
+$confirm_revoke = addslashes(get_string('devmgr_confirm_revoke',   'local_deviceregistration'));
+
 echo $OUTPUT->header();
 ?>
 <style>
@@ -205,35 +228,17 @@ echo $OUTPUT->header();
 .dr-empty  { text-align:center; color:#888; padding:40px 20px; font-size:1.05em; }
 
 /* ── Action buttons ───────────────────────────────────────── */
-.btn-force  { background:#dc3545; color:#fff; border:none; border-radius:5px; padding:6px 16px; font-size:.86em; font-weight:600; cursor:pointer; }
+.btn-force  { background:#dc3545; color:#fff !important; border:none; border-radius:5px; padding:6px 16px; font-size:.86em; font-weight:600; cursor:pointer; }
 .btn-force:hover { background:#c82333; }
 .btn-manage { background:#2d6a9f; color:#fff !important; border:none; border-radius:5px; padding:6px 14px; font-size:.86em; font-weight:600; text-decoration:none !important; display:inline-block; }
 .btn-manage:hover { background:#245580; color:#fff !important; }
-.btn-revoke { background:#fff; color:#dc3545; border:1px solid #dc3545; border-radius:5px; padding:5px 14px; font-size:.85em; font-weight:600; cursor:pointer; }
-.btn-revoke:hover { background:#dc3545; color:#fff; }
+.btn-revoke { background:#fff; color:#dc3545 !important; border:1px solid #dc3545; border-radius:5px; padding:5px 14px; font-size:.85em; font-weight:600; cursor:pointer; }
+.btn-revoke:hover { background:#dc3545; color:#fff !important; }
 
 /* ── Device detail panel ──────────────────────────────────── */
 .dr-detail  { background:#f7f9fc; border:1px solid #d0dce8; border-radius:8px; padding:18px 20px; margin-bottom:24px; }
 .dr-detail h4 { margin:0 0 12px; color:#2d6a9f; font-size:1em; }
 .dr-ua      { font-size:.82em; color:#555; max-width:300px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-
-/* ── Modal ────────────────────────────────────────────────── */
-.dr-modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.5); z-index:100000; }
-.dr-modal-overlay.open { display:flex; align-items:center; justify-content:center; }
-.dr-modal-box   { background:#fff; width:100%; max-width:420px; margin:16px; border-radius:12px; box-shadow:0 12px 40px rgba(0,0,0,.25); overflow:hidden; animation:dr-pop .18s ease-out; }
-@keyframes dr-pop { from{transform:scale(.94);opacity:0} to{transform:scale(1);opacity:1} }
-.dr-modal-head  { display:flex; align-items:center; gap:12px; padding:20px 22px 0; }
-.dr-modal-icon  { width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px;flex:none; }
-.dr-modal-icon.red { background:#fdecea; color:#dc3545; }
-.dr-modal-head h4 { margin:0; font-size:1.1em; color:#222; }
-.dr-modal-body  { padding:12px 22px 4px; color:#555; font-size:.95em; line-height:1.6; }
-.dr-modal-info  { margin-top:10px; background:#f7f9fc; border:1px solid #e6edf5; border-radius:8px; padding:8px 12px; font-size:.92em; color:#333; font-weight:600; }
-.dr-modal-actions { display:flex; gap:10px; padding:18px 22px 22px; }
-.dr-modal-actions button { flex:1; padding:10px; border:none; border-radius:8px; font-size:1em; font-weight:600; cursor:pointer; }
-.dr-modal-actions .confirm { background:#dc3545; color:#fff; }
-.dr-modal-actions .confirm:hover { background:#c82333; }
-.dr-modal-actions .cancel  { background:#eef0f2; color:#333; }
-.dr-modal-actions .cancel:hover { background:#e2e5e8; }
 </style>
 
 <div class="dr-page">
@@ -289,7 +294,10 @@ $tab_devices  = new moodle_url($pageurl, ['view' => 'devices']);
         </tr>
       </thead>
       <tbody>
-      <?php foreach ($loggedinusers as $u): ?>
+      <?php foreach ($loggedinusers as $u):
+        $confirmMsg = get_string('forcelogout_confirm_all', 'local_deviceregistration')
+                    . "\n" . fullname($u) . ' — ' . $u->email;
+      ?>
         <tr>
           <td>
             <div class="dr-uname"><?php echo s(fullname($u)); ?></div>
@@ -298,13 +306,15 @@ $tab_devices  = new moodle_url($pageurl, ['view' => 'devices']);
           <td><span class="dr-badge"><?php echo $u->sessioncount; ?></span></td>
           <td><?php echo userdate($u->lastactive, $datefmt); ?></td>
           <td>
-            <form method="post" style="margin:0">
+            <form method="post" style="margin:0"
+                  action="<?php echo $pageurl->out(false); ?>">
               <input type="hidden" name="sesskey" value="<?php echo sesskey(); ?>">
               <input type="hidden" name="action"  value="logout_user">
               <input type="hidden" name="userid"  value="<?php echo (int)$u->id; ?>">
               <input type="hidden" name="filter"  value="<?php echo s($filter); ?>">
-              <button type="button" class="btn-force" data-dr-confirm="logout"
-                      data-info="<?php echo s(fullname($u) . ' — ' . $u->email); ?>">
+              <input type="hidden" name="view"    value="sessions">
+              <button type="submit" class="btn-force"
+                      onclick="return confirm(<?php echo json_encode($confirmMsg); ?>)">
                 <?php echo get_string('forcelogout_action', 'local_deviceregistration'); ?>
               </button>
             </form>
@@ -370,22 +380,29 @@ $tab_devices  = new moodle_url($pageurl, ['view' => 'devices']);
           </tr>
         </thead>
         <tbody>
-        <?php foreach ($selecteddevices as $d): ?>
+        <?php foreach ($selecteddevices as $d):
+            $deviceLabel  = $d->useragent ?: get_string('unknowndevice', 'local_deviceregistration');
+            $revokeConfirm = get_string('devmgr_confirm_revoke', 'local_deviceregistration')
+                           . "\n" . $deviceLabel . ' — ' . ($d->lastip ?: '?');
+        ?>
           <tr>
             <td><div class="dr-ua" title="<?php echo s($d->useragent); ?>">
-              <?php echo s($d->useragent ?: get_string('unknowndevice', 'local_deviceregistration')); ?>
+              <?php echo s($deviceLabel); ?>
             </div></td>
             <td><?php echo s($d->lastip ?: '—'); ?></td>
             <td><?php echo userdate($d->timecreated,   $datefmt); ?></td>
             <td><?php echo userdate($d->timelastseen,  $datefmt); ?></td>
             <td>
-              <form method="post" style="margin:0">
-                <input type="hidden" name="sesskey"    value="<?php echo sesskey(); ?>">
-                <input type="hidden" name="action"     value="remove_device">
-                <input type="hidden" name="deviceid"   value="<?php echo (int)$d->id; ?>">
-                <input type="hidden" name="filter"     value="<?php echo s($filter); ?>">
-                <button type="button" class="btn-revoke" data-dr-confirm="revoke"
-                        data-info="<?php echo s(($d->useragent ?: get_string('unknowndevice', 'local_deviceregistration')) . ' — ' . ($d->lastip ?: '?')); ?>">
+              <form method="post" style="margin:0"
+                    action="<?php echo $pageurl->out(false); ?>">
+                <input type="hidden" name="sesskey"     value="<?php echo sesskey(); ?>">
+                <input type="hidden" name="action"      value="remove_device">
+                <input type="hidden" name="deviceid"    value="<?php echo (int)$d->id; ?>">
+                <input type="hidden" name="filter"      value="<?php echo s($filter); ?>">
+                <input type="hidden" name="countfilter" value="<?php echo s($countfilter); ?>">
+                <input type="hidden" name="view"        value="devices">
+                <button type="submit" class="btn-revoke"
+                        onclick="return confirm(<?php echo json_encode($revokeConfirm); ?>)">
                   <?php echo get_string('devmgr_revoke', 'local_deviceregistration'); ?>
                 </button>
               </form>
@@ -458,64 +475,5 @@ $tab_devices  = new moodle_url($pageurl, ['view' => 'devices']);
 <?php endif; ?>
 </div><!-- .dr-page -->
 
-<!-- ── Confirmation modal ─────────────────────────────────────────────────────── -->
-<div class="dr-modal-overlay" id="dr-modal">
-  <div class="dr-modal-box" role="dialog" aria-modal="true" aria-labelledby="dr-modal-title">
-    <div class="dr-modal-head">
-      <div class="dr-modal-icon red">&#9888;</div>
-      <h4 id="dr-modal-title"><?php echo get_string('forcelogout_confirm_title', 'local_deviceregistration'); ?></h4>
-    </div>
-    <div class="dr-modal-body">
-      <p id="dr-modal-msg" style="margin:0"></p>
-      <div class="dr-modal-info" id="dr-modal-info"></div>
-    </div>
-    <div class="dr-modal-actions">
-      <button type="button" class="confirm" id="dr-modal-confirm">
-        <?php echo get_string('forcelogout_confirm_yes', 'local_deviceregistration'); ?>
-      </button>
-      <button type="button" class="cancel"  id="dr-modal-cancel">
-        <?php echo get_string('cancel'); ?>
-      </button>
-    </div>
-  </div>
-</div>
-
-<script>
-(function () {
-  var overlay    = document.getElementById('dr-modal');
-  var msgEl      = document.getElementById('dr-modal-msg');
-  var infoEl     = document.getElementById('dr-modal-info');
-  var confirmBtn = document.getElementById('dr-modal-confirm');
-  var cancelBtn  = document.getElementById('dr-modal-cancel');
-  var pendingForm = null;
-
-  var msgs = {
-    logout: <?php echo json_encode(get_string('forcelogout_confirm_all', 'local_deviceregistration')); ?>,
-    revoke: <?php echo json_encode(get_string('devmgr_confirm_revoke', 'local_deviceregistration')); ?>
-  };
-
-  function openModal(form, type, info) {
-    pendingForm  = form;
-    msgEl.textContent  = msgs[type] || '';
-    infoEl.textContent = info || '';
-    overlay.classList.add('open');
-  }
-  function closeModal() { overlay.classList.remove('open'); pendingForm = null; }
-
-  document.querySelectorAll('[data-dr-confirm]').forEach(function (btn) {
-    btn.addEventListener('click', function () {
-      openModal(btn.closest('form'), btn.getAttribute('data-dr-confirm'), btn.getAttribute('data-info'));
-    });
-  });
-  confirmBtn.addEventListener('click', function () {
-    if (pendingForm) {
-      if (pendingForm.requestSubmit) { pendingForm.requestSubmit(); } else { pendingForm.submit(); }
-    }
-  });
-  cancelBtn.addEventListener('click', closeModal);
-  overlay.addEventListener('click', function (e) { if (e.target === overlay) closeModal(); });
-  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeModal(); });
-})();
-</script>
 <?php
 echo $OUTPUT->footer();

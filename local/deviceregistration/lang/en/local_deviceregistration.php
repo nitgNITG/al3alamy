@@ -39,7 +39,7 @@ $string['status_disabled']     = 'Disabled';
 $string['unlimited']           = 'Unlimited';
 
 // Enforcement.
-$string['devicelimitreached'] = 'You are already logged in on another device. Please log out from your other device first before signing in here.';
+$string['devicelimitreached'] = 'You have reached the maximum number of registered devices allowed for your account. Contact your administrator to remove one of your registered devices so you can log in from this one.';
 
 // My devices page.
 $string['mydevices']          = 'My devices';
@@ -57,6 +57,23 @@ $string['confirm_remove']     = 'Remove this device? It will need to be register
 $string['device_removed']     = 'Device removed.';
 $string['thisdevice']         = 'This device';
 $string['unknowndevice']      = 'Unknown device';
+
+// Admin page — tabs.
+$string['tab_sessions'] = 'Active sessions';
+$string['tab_devices']  = 'Registered devices';
+
+// Admin: device management tab.
+$string['devmgr_intro']          = 'View and revoke registered devices for any user. Revoking a device frees a slot — the user will be able to register a new device on their next login. Logging out does NOT free a slot.';
+$string['devmgr_devices_for']    = 'Devices registered for: {$a}';
+$string['devmgr_col_devices']    = 'Devices';
+$string['devmgr_col_limit']      = 'Limit';
+$string['devmgr_count']          = 'Users with registered devices: {$a}';
+$string['devmgr_none']           = 'No registered devices found.';
+$string['devmgr_manage']         = 'Manage devices';
+$string['devmgr_revoke']         = 'Revoke';
+$string['devmgr_confirm_revoke'] = 'Permanently revoke this device? The user will need to re-register it on next login.';
+$string['devmgr_back']           = 'Back to all users';
+$string['device_revoked']        = 'Device revoked for {$a->name}.';
 
 // Admin: force logout tool.
 $string['forcelogout_title']               = 'Force logout users';

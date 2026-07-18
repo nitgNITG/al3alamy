@@ -240,28 +240,24 @@ if ($frm and isset($frm->username)) {                             // Login WITH 
         /// Let's get them all set up.
         complete_user_login($user);
 
-        // --- Block concurrent logins: only 1 session per user ---
-        // If user already has an active session on another device, block this new login (applies to admins too).
-        $timeout = !empty($CFG->sessiontimeout) ? $CFG->sessiontimeout : 86400;
-        $cutoff  = time() - $timeout;
-        $sid     = session_id();
-        $sql = "SELECT COUNT(*)
-                  FROM {sessions}
-                 WHERE userid = :userid
-                   AND sid <> :sid
-                   AND timemodified > :cutoff";
-        $othersessions = $DB->count_records_sql($sql, [
-            'userid' => $user->id,
-            'sid'    => $sid,
-            'cutoff' => $cutoff,
-        ]);
-        if ($othersessions >= 1) {
-            require_logout();
-            redirect(
-                new moodle_url('/login/index.php', ['errorcode' => 3])
-            );
+        // --- Device registration check ---
+        // Enforces the configurable per-user device limit.
+        // Site admins are always exempt.
+        // Logging out does NOT free a slot — only admin can remove a device record.
+        if (!is_siteadmin($user->id)) {
+            require_once($CFG->dirroot . '/local/deviceregistration/lib.php');
+            if (local_deviceregistration_is_enabled()) {
+                $token   = local_deviceregistration_get_cookie_token();
+                $allowed = local_deviceregistration_check_and_register((int) $user->id, $token);
+                if (!$allowed) {
+                    require_logout();
+                    redirect(
+                        new moodle_url('/login/index.php', ['errorcode' => 3])
+                    );
+                }
+            }
         }
-        // --- End Block concurrent logins ---
+        // --- End Device registration check ---
 
         \core\session\manager::apply_concurrent_login_limit($user->id, session_id());
 

@@ -88,6 +88,79 @@ function local_deviceregistration_useragent(): string {
 }
 
 /**
+ * Generate a cryptographically random 64-char device token.
+ *
+ * @return string
+ */
+function local_deviceregistration_generate_token(): string {
+    return bin2hex(random_bytes(32));
+}
+
+/**
+ * Core enforcement: called immediately after complete_user_login().
+ *
+ * Logic:
+ *  1. Read device token from cookie.  If none, generate a fresh one.
+ *  2. If this token is already registered for the user → update last-seen,
+ *     refresh cookie, return true  (known device, always allowed).
+ *  3. If token is unknown → count how many devices this user already has.
+ *       – Under limit : register the new device, set cookie, return true.
+ *       – At/over limit: return false  (caller must block the login).
+ *
+ * Site admins are unconditionally allowed (caller should check before calling).
+ *
+ * @param  int    $userid
+ * @param  string $token  Value from local_deviceregistration_get_cookie_token()
+ *                        (may be empty when the browser has no cookie yet).
+ * @return bool   true = allow login,  false = block login (device limit reached)
+ */
+function local_deviceregistration_check_and_register(int $userid, string $token): bool {
+    global $DB;
+
+    // Generate a fresh token when the browser has no cookie.
+    if ($token === '') {
+        $token = local_deviceregistration_generate_token();
+    }
+
+    // ── Known device? ─────────────────────────────────────────────────────
+    $existing = $DB->get_record('local_devreg_device', [
+        'userid'      => $userid,
+        'devicetoken' => $token,
+    ]);
+
+    if ($existing) {
+        // Refresh last-seen metadata, re-set cookie (extends expiry), allow.
+        $DB->update_record('local_devreg_device', (object) [
+            'id'           => $existing->id,
+            'lastip'       => getremoteaddr(),
+            'timelastseen' => time(),
+        ]);
+        local_deviceregistration_set_cookie_token($token);
+        return true;
+    }
+
+    // ── New device — check limit ──────────────────────────────────────────
+    $max   = local_deviceregistration_max_devices();
+    $count = (int) $DB->count_records('local_devreg_device', ['userid' => $userid]);
+
+    if ($max > 0 && $count >= $max) {
+        return false; // Limit reached — block.
+    }
+
+    // ── Register new device ───────────────────────────────────────────────
+    $DB->insert_record('local_devreg_device', (object) [
+        'userid'       => $userid,
+        'devicetoken'  => $token,
+        'useragent'    => local_deviceregistration_useragent(),
+        'lastip'       => getremoteaddr(),
+        'timecreated'  => time(),
+        'timelastseen' => time(),
+    ]);
+    local_deviceregistration_set_cookie_token($token);
+    return true;
+}
+
+/**
  * Terminate the just-created session and bounce the user back to the login
  * page with a "device limit reached" message (hard block).
  *

@@ -39,7 +39,7 @@ $string['status_disabled']      = 'متوقّفة';
 $string['unlimited']            = 'غير محدود';
 
 // Enforcement.
-$string['devicelimitreached'] = 'أنت مسجّل الدخول حالياً على جهاز آخر. يُرجى تسجيل الخروج من الجهاز الآخر أولاً قبل تسجيل الدخول من هنا.';
+$string['devicelimitreached'] = 'لقد وصلت إلى الحد الأقصى لعدد الأجهزة المسجَّلة المسموح بها لحسابك. تواصل مع المسؤول لإزالة أحد أجهزتك المسجَّلة حتى تتمكن من تسجيل الدخول من هذا الجهاز.';
 
 // My devices page.
 $string['mydevices']          = 'أجهزتي';
@@ -57,6 +57,23 @@ $string['confirm_remove']     = 'هل تريد إزالة هذا الجهاز؟ 
 $string['device_removed']     = 'تمت إزالة الجهاز.';
 $string['thisdevice']         = 'هذا الجهاز';
 $string['unknowndevice']      = 'جهاز غير معروف';
+
+// Admin page — tabs.
+$string['tab_sessions'] = 'الجلسات النشطة';
+$string['tab_devices']  = 'الأجهزة المسجَّلة';
+
+// Admin: device management tab.
+$string['devmgr_intro']          = 'اعرض الأجهزة المسجَّلة لأي مستخدم وأزِل ما تشاء منها. إزالة الجهاز تُحرِّر مكانًا — سيتمكن المستخدم من تسجيل جهاز جديد في تسجيل الدخول التالي. تسجيل الخروج لا يُحرِّر مكانًا.';
+$string['devmgr_devices_for']    = 'الأجهزة المسجَّلة لـ: {$a}';
+$string['devmgr_col_devices']    = 'الأجهزة';
+$string['devmgr_col_limit']      = 'الحد الأقصى';
+$string['devmgr_count']          = 'مستخدمون لديهم أجهزة مسجَّلة: {$a}';
+$string['devmgr_none']           = 'لا توجد أجهزة مسجَّلة.';
+$string['devmgr_manage']         = 'إدارة الأجهزة';
+$string['devmgr_revoke']         = 'إلغاء';
+$string['devmgr_confirm_revoke'] = 'هل تريد إلغاء هذا الجهاز نهائيًا؟ سيحتاج المستخدم إلى تسجيله مجددًا عند تسجيل الدخول التالي.';
+$string['devmgr_back']           = 'العودة إلى قائمة المستخدمين';
+$string['device_revoked']        = 'تم إلغاء الجهاز للمستخدم {$a->name}.';
 
 // Admin: force logout tool.
 $string['forcelogout_title']               = 'تسجيل خروج المستخدمين';

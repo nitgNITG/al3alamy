@@ -260,32 +260,38 @@ class block_cocoon_courses_slider extends block_base
           }
         }
         </style>';
-    /* ── Mobile: reinit OWL carousel with dots enabled ─────────────────────── */
+    /* ── Mobile: reinit OWL carousel with dots enabled ─────────────────────── *
+     *  NOTE: this <script> runs before jQuery loads (jQuery is in the footer).
+     *  Use vanilla window.addEventListener — jQuery is referenced only inside
+     *  the callback, by which time it is definitely loaded.
+     * ─────────────────────────────────────────────────────────────────────── */
     echo '<script>
-    (function(){
-      function drMobileCarousel(){
-        if(window.innerWidth >= 768) return;
-        var $el = $(".block_cocoon_courses_slider .shop_product_slider");
-        if(!$el.length) return;
-        if($el.hasClass("owl-loaded")){ $el.trigger("destroy.owl.carousel"); $el.removeClass("owl-carousel owl-theme"); }
-        $el.owlCarousel({
-          loop: false,
-          margin: 15,
-          dots: true,
-          nav: false,
-          rtl: true,
-          autoplay: false,
-          smartSpeed: 800,
-          responsive: {
-            0:   { items: 1 },
-            480: { items: 1 },
-            600: { items: 2 }
-          }
-        });
-      }
-      /* Run after the main init which fires on document ready */
-      $(window).on("load", drMobileCarousel);
-    })();
+    window.addEventListener("load", function(){
+      if (window.innerWidth >= 768) return;
+      var $ = window.jQuery;
+      if (!$) return;
+      var $el = $(".block_cocoon_courses_slider .shop_product_slider");
+      if (!$el.length) return;
+      /* destroy existing OWL instance if present */
+      var inst = $el.data("owl.carousel");
+      if (inst) { inst.destroy(); }
+      $el.removeClass("owl-carousel owl-theme owl-loaded owl-drag owl-rtl");
+      /* re-init with dots for mobile */
+      $el.owlCarousel({
+        loop: false,
+        margin: 15,
+        dots: true,
+        nav: false,
+        rtl: true,
+        autoplay: false,
+        smartSpeed: 800,
+        responsive: {
+          0:   { items: 1 },
+          480: { items: 1 },
+          600: { items: 2 }
+        }
+      });
+    }, false);
     </script>';
     if (!empty($this->config->style) && $this->config->style == 1) {  //background
       $this->content->text .= '

@@ -62,16 +62,18 @@ foreach($authsequence as $authname) {
 // Capture userid BEFORE require_logout() resets $USER to guest.
 $logout_userid = (int) $USER->id;
 
-// 1. Let Moodle cleanly destroy the current session.
+// 1. Standard Moodle logout — destroys current session only.
 require_logout();
 
-// 2. Delete all remaining session rows for this user from the DB.
-//    We bypass kill_user_sessions() intentionally — that method calls the
-//    session handler's destroy() which fails after the session is already
-//    closed, causing a silent error that prevents the redirect below.
-//    A direct DB delete is sufficient: Moodle validates sessions by DB row.
+// 2. Delete any remaining sessions for this user on other devices.
+//    Wrapped in try/catch so any DB error never blocks the redirect.
 if ($logout_userid > 0) {
-    $DB->delete_records('sessions', ['userid' => $logout_userid]);
+    try {
+        $DB->delete_records('sessions', ['userid' => $logout_userid]);
+    } catch (Exception $e) {
+        // Non-fatal — user is already logged out of current session.
+        error_log('logout.php: failed to delete other sessions for userid=' . $logout_userid . ': ' . $e->getMessage());
+    }
 }
 
 redirect($redirect);

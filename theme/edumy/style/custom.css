@@ -341,6 +341,17 @@ h1, h2, h3, h4, h5, h6 {
   .footer_one { padding: 20px 12px !important; }
 }
 
+/* ══════════════════════════════════════
+   HERO BUTTON — width = text + small padding
+   Override cocoon.css which uses padding: 10px 50px (too wide)
+══════════════════════════════════════ */
+.home-three .home-text a.btn,
+.home-three .home-text a.btn.home_btn {
+  padding: 10px 22px !important;
+  width: auto !important;
+  display: inline-block !important;
+}
+
 /* ── Remove white space below footer ─────────────────────────────────────── */
 
 /* 1. Footer section: clip bottom overflow so mb80 on social widget

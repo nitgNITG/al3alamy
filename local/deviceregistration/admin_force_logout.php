@@ -64,11 +64,17 @@ function _dr_kill_all_sessions(int $uid): int {
 
 // ── POST: force logout ────────────────────────────────────────────────────────
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && $action === 'logout_user' && $userid) {
+    file_put_contents('/tmp/dr_debug.txt',
+        date('Y-m-d H:i:s') . " POST logout_user userid=$userid action=$action\n", FILE_APPEND);
     require_sesskey();
 
     $target = $DB->get_record('user', ['id' => $userid, 'deleted' => 0], '*', IGNORE_MISSING);
+    file_put_contents('/tmp/dr_debug.txt',
+        date('Y-m-d H:i:s') . " target=" . ($target ? $target->username : 'NULL') . "\n", FILE_APPEND);
     if ($target) {
         $killed = _dr_kill_all_sessions($userid);
+        file_put_contents('/tmp/dr_debug.txt',
+            date('Y-m-d H:i:s') . " killed=$killed\n", FILE_APPEND);
 
         redirect(
             new moodle_url($pageurl, ['view' => 'sessions', 'filter' => $filter]),

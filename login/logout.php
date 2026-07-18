@@ -59,46 +59,6 @@ foreach($authsequence as $authname) {
     $authplugin->logoutpage_hook();
 }
 
-// Capture userid and current session ID BEFORE touching the session.
-$logout_userid = (int) $USER->id;
-$current_sid   = session_id();
-
-error_log('logout.php: killing all sessions for userid=' . $logout_userid . ' current_sid=' . $current_sid);
-
-// 1. Kill every OTHER session for this user (all backends).
-if ($logout_userid > 0) {
-
-    // Pass A — Moodle session manager (handles Redis/file/DB).
-    //           Pass current SID so require_logout() below can still clean up.
-    try {
-        \core\session\manager::kill_user_sessions($logout_userid, $current_sid ?: null);
-    } catch (Throwable $e) {
-        error_log('logout.php: kill_user_sessions error: ' . $e->getMessage());
-    }
-
-    // Pass B — raw SQL delete for any rows the handler missed.
-    //           If we have a current SID, preserve it so require_logout works.
-    //           If session_id() was empty, delete everything for this user.
-    try {
-        if ($current_sid !== '') {
-            $DB->execute('DELETE FROM {sessions} WHERE userid = ? AND sid != ?',
-                [$logout_userid, $current_sid]);
-        } else {
-            $DB->delete_records('sessions', ['userid' => $logout_userid]);
-        }
-    } catch (Throwable $e) {
-        error_log('logout.php: DB delete error: ' . $e->getMessage());
-    }
-
-    $remaining = $DB->count_records('sessions', ['userid' => $logout_userid]);
-    error_log('logout.php: sessions remaining before require_logout: ' . $remaining);
-}
-
-// 2. Properly destroy the current session (fires events, resets $USER, etc.).
 require_logout();
-
-// 3. Verify final count.
-error_log('logout.php: done. Final session count for userid=' . $logout_userid
-    . ': ' . $DB->count_records('sessions', ['userid' => $logout_userid]));
 
 redirect($redirect);

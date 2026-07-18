@@ -12,7 +12,7 @@ require_capability('moodle/site:config', $context);
 global $DB;
 
 $pageurl     = new moodle_url('/local/deviceregistration/admin_force_logout.php');
-$action      = optional_param('action',      '',  PARAM_ALPHA);
+$action      = optional_param('action',      '',  PARAM_ALPHANUMEXT);
 $userid      = optional_param('userid',      0,   PARAM_INT);
 $deviceid    = optional_param('deviceid',    0,   PARAM_INT);
 $filter      = trim(optional_param('filter', '',  PARAM_RAW));

@@ -29,12 +29,13 @@ admin_externalpage_setup('local_deviceregistration_forcelogout');
 global $DB;
 
 // ── URL params ────────────────────────────────────────────────────────────────
-$view       = optional_param('view',       'sessions', PARAM_ALPHA);  // sessions | devices
-$userid     = optional_param('userid',     0,          PARAM_INT);
-$action     = optional_param('action',     '',         PARAM_ALPHA);  // logout_user | remove_device
-$filter     = trim(optional_param('filter', '',        PARAM_RAW));
-$deviceuser = optional_param('deviceuser', 0,          PARAM_INT);    // expand devices for this user
-$deviceid   = optional_param('deviceid',   0,          PARAM_INT);    // device record to remove
+$view        = optional_param('view',        'sessions', PARAM_ALPHA);  // sessions | devices
+$userid      = optional_param('userid',      0,          PARAM_INT);
+$action      = optional_param('action',      '',         PARAM_ALPHA);  // logout_user | remove_device
+$filter      = trim(optional_param('filter', '',         PARAM_RAW));
+$deviceuser  = optional_param('deviceuser',  0,          PARAM_INT);    // expand devices for this user
+$deviceid    = optional_param('deviceid',    0,          PARAM_INT);    // device record to remove
+$countfilter = optional_param('countfilter', '',         PARAM_RAW);    // e.g. "2", "at_limit", "over_limit"
 
 $pageurl = new moodle_url('/local/deviceregistration/admin_force_logout.php');
 
@@ -69,7 +70,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $action === 'remove_device' && $dev
         $DB->delete_records('local_devreg_device', ['id' => $deviceid]);
 
         redirect(
-            new moodle_url($pageurl, ['view' => 'devices', 'deviceuser' => $device->userid, 'filter' => $filter]),
+            new moodle_url($pageurl, ['view' => 'devices', 'deviceuser' => $device->userid, 'filter' => $filter, 'countfilter' => $countfilter]),
             get_string('device_revoked', 'local_deviceregistration',
                 (object) ['name' => $owner ? fullname($owner) : '?']),
             null,
@@ -136,15 +137,29 @@ if ($view === 'devices') {
                 continue;
             }
             $u = $users[$uid];
+            $u->devicecount = (int) $r->devicecount;
+            $u->lastseen    = (int) $r->lastseen;
+
+            // ── Text filter (name / email / username) ──
             if ($filter !== '') {
                 $hay = core_text::strtolower(fullname($u) . ' ' . $u->email . ' ' . $u->username);
                 if (strpos($hay, core_text::strtolower($filter)) === false) {
                     continue;
                 }
             }
-            $u->devicecount = (int) $r->devicecount;
-            $u->lastseen    = (int) $r->lastseen;
-            $deviceusers[]  = $u;
+
+            // ── Device-count filter ────────────────────
+            if ($countfilter !== '') {
+                if ($countfilter === 'at_limit') {
+                    if (!($max > 0 && $u->devicecount >= $max)) continue;
+                } elseif ($countfilter === 'under_limit') {
+                    if (!($max <= 0 || $u->devicecount < $max)) continue;
+                } elseif (is_numeric($countfilter)) {
+                    if ($u->devicecount !== (int) $countfilter) continue;
+                }
+            }
+
+            $deviceusers[] = $u;
         }
     }
 
@@ -175,6 +190,7 @@ echo $OUTPUT->header();
 .dr-filter input[type=text] { flex:1; padding:8px 12px; border:1px solid #ced4da; border-radius:4px; }
 .dr-filter button { padding:8px 18px; background:#2d6a9f; color:#fff; border:none; border-radius:4px; cursor:pointer; }
 .dr-filter a { padding:8px 14px; color:#2d6a9f; text-decoration:none; align-self:center; }
+.dr-select { padding:8px 10px; border:1px solid #ced4da; border-radius:4px; background:#fff; font-size:.92em; }
 .dr-count   { color:#555; font-size:.9em; margin-bottom:12px; }
 .dr-table   { width:100%; border-collapse:collapse; font-size:.92em; }
 .dr-table th, .dr-table td { padding:9px 12px; border:1px solid #dee2e6; text-align:start; vertical-align:middle; }
@@ -309,8 +325,24 @@ $tab_devices  = new moodle_url($pageurl, ['view' => 'devices']);
     <input type="text" name="filter" autocomplete="off"
            placeholder="<?php echo s(get_string('forcelogout_filter_placeholder', 'local_deviceregistration')); ?>"
            value="<?php echo s($filter); ?>">
+    <select name="countfilter" class="dr-select">
+      <option value=""    <?php echo $countfilter === ''           ? 'selected' : ''; ?>>
+        <?php echo get_string('devmgr_filter_all',       'local_deviceregistration'); ?>
+      </option>
+      <option value="at_limit"    <?php echo $countfilter === 'at_limit'    ? 'selected' : ''; ?>>
+        <?php echo get_string('devmgr_filter_at_limit',  'local_deviceregistration'); ?>
+      </option>
+      <option value="under_limit" <?php echo $countfilter === 'under_limit' ? 'selected' : ''; ?>>
+        <?php echo get_string('devmgr_filter_under',     'local_deviceregistration'); ?>
+      </option>
+      <?php for ($n = 1; $n <= max(3, $max + 1); $n++): ?>
+      <option value="<?php echo $n; ?>" <?php echo $countfilter === (string)$n ? 'selected' : ''; ?>>
+        <?php echo get_string('devmgr_filter_exact', 'local_deviceregistration', $n); ?>
+      </option>
+      <?php endfor; ?>
+    </select>
     <button type="submit"><?php echo get_string('forcelogout_filter_btn', 'local_deviceregistration'); ?></button>
-    <?php if ($filter !== ''): ?>
+    <?php if ($filter !== '' || $countfilter !== ''): ?>
       <a href="<?php echo (new moodle_url($pageurl, ['view'=>'devices']))->out(); ?>">
         <?php echo get_string('forcelogout_clear', 'local_deviceregistration'); ?></a>
     <?php endif; ?>
@@ -363,7 +395,7 @@ $tab_devices  = new moodle_url($pageurl, ['view' => 'devices']);
     <?php endif; ?>
 
     <p style="margin-top:12px;margin-bottom:0">
-      <a href="<?php echo (new moodle_url($pageurl, ['view'=>'devices','filter'=>$filter]))->out(); ?>">
+      <a href="<?php echo (new moodle_url($pageurl, ['view'=>'devices','filter'=>$filter,'countfilter'=>$countfilter]))->out(); ?>">
         ← <?php echo get_string('devmgr_back', 'local_deviceregistration'); ?>
       </a>
     </p>
@@ -407,9 +439,10 @@ $tab_devices  = new moodle_url($pageurl, ['view' => 'devices']);
           <td><?php echo userdate($u->lastseen, $datefmt); ?></td>
           <td>
             <a href="<?php echo (new moodle_url($pageurl, [
-                  'view'       => 'devices',
-                  'deviceuser' => $u->id,
-                  'filter'     => $filter,
+                  'view'        => 'devices',
+                  'deviceuser'  => $u->id,
+                  'filter'      => $filter,
+                  'countfilter' => $countfilter,
                 ]))->out(); ?>" class="btn-manage">
               <?php echo get_string('devmgr_manage', 'local_deviceregistration'); ?>
             </a>

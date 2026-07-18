@@ -73,6 +73,10 @@ $string['devmgr_manage']         = 'Manage devices';
 $string['devmgr_revoke']         = 'Revoke';
 $string['devmgr_confirm_revoke'] = 'Permanently revoke this device? The user will need to re-register it on next login.';
 $string['devmgr_back']           = 'Back to all users';
+$string['devmgr_filter_all']      = 'All device counts';
+$string['devmgr_filter_at_limit'] = 'At limit (cannot add more)';
+$string['devmgr_filter_under']    = 'Under limit';
+$string['devmgr_filter_exact']    = 'Exactly {$a} device(s)';
 $string['device_revoked']        = 'Device revoked for {$a->name}.';
 
 // Admin: force logout tool.

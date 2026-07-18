@@ -73,6 +73,10 @@ $string['devmgr_manage']         = 'إدارة الأجهزة';
 $string['devmgr_revoke']         = 'إلغاء';
 $string['devmgr_confirm_revoke'] = 'هل تريد إلغاء هذا الجهاز نهائيًا؟ سيحتاج المستخدم إلى تسجيله مجددًا عند تسجيل الدخول التالي.';
 $string['devmgr_back']           = 'العودة إلى قائمة المستخدمين';
+$string['devmgr_filter_all']      = 'جميع عدد الأجهزة';
+$string['devmgr_filter_at_limit'] = 'عند الحد الأقصى (لا يمكن إضافة المزيد)';
+$string['devmgr_filter_under']    = 'أقل من الحد الأقصى';
+$string['devmgr_filter_exact']    = 'بالضبط {$a} جهاز/أجهزة';
 $string['device_revoked']        = 'تم إلغاء الجهاز للمستخدم {$a->name}.';
 
 // Admin: force logout tool.

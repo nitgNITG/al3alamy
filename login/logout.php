@@ -59,6 +59,14 @@ foreach($authsequence as $authname) {
     $authplugin->logoutpage_hook();
 }
 
+// Kill ALL sessions for this user before the standard logout.
+// require_logout() only destroys the current session; this ensures
+// any other open tabs or devices are also immediately logged out.
+$logout_userid = $USER->id; // capture before require_logout() clears $USER
+if ($logout_userid > 0) {
+    \core\session\manager::kill_user_sessions($logout_userid);
+}
+
 require_logout();
 
 redirect($redirect);

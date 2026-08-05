@@ -99,7 +99,7 @@ class block_cocoon_tstmnls_2 extends block_base {
         $text = '';
 
         if ($data->slidesnumber > 0) {
-            $text = '	<section id="our-testimonials" class="our-testimonial ccnTestimonials2-section" data-ccn-c="color_bg" data-ccn-co="bg" data-ccn-cv="'.$this->content->color_bg.'">
+            $text = '	<section id="our-testimonials" class="our-testimonial ccnTestimonials2-section pt20 pb20" data-ccn-c="color_bg" data-ccn-co="bg" data-ccn-cv="'.$this->content->color_bg.'">
 		<div class="container">
 			<div class="row">
 				<div class="col-lg-6 offset-lg-3">

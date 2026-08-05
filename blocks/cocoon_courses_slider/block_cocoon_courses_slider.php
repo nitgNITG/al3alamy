@@ -261,9 +261,9 @@ class block_cocoon_courses_slider extends block_base
     if (!$el.length) return;
     // destroy current OWL instance
     $el.trigger("destroy.owl.carousel");
-    // re-init with loop + dots for mobile swipe
+    // re-init with loop:false (stops at real boundaries) + dots for mobile swipe
     $el.addClass("owl-carousel").owlCarousel({
-      loop:      true,
+      loop:      false,
       margin:    15,
       dots:      true,
       nav:       false,

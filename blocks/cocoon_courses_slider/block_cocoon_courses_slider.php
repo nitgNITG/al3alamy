@@ -235,14 +235,11 @@ class block_cocoon_courses_slider extends block_base
         }
         .ccn-cslider-strip-' . $iid . '::-webkit-scrollbar { display: none; }
 
-        /* 3 items on desktop */
+        /* 2 items on desktop (col-6), 1 on mobile */
         .ccn-cslider-item-' . $iid . ' {
             scroll-snap-align: start;
-            flex: 0 0 calc(33.33% - 14px);
+            flex: 0 0 calc(50% - 10px);
             min-width: 0;
-        }
-        @media (max-width: 900px) {
-            .ccn-cslider-item-' . $iid . ' { flex: 0 0 calc(50% - 10px); }
         }
         @media (max-width: 576px) {
             .ccn-cslider-wrap-' . $iid . ' { padding: 0 32px; }

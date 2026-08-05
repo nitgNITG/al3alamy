@@ -302,6 +302,17 @@ function ccnCSliderScroll_' . $iid . '(dir) {
     var step  = item ? item.offsetWidth + gap : strip.clientWidth * 0.9;
     strip.scrollBy({ left: dir * step, behavior: "smooth" });
 }
+/* Center items on wide screens when they do not fill the strip width.
+   If the strip overflows (more courses than columns) we leave flex-start
+   so all items remain reachable by scrolling. Runs on load + resize. */
+function ccnCSliderAlign_' . $iid . '() {
+    var strip = document.getElementById("' . $strip_id . '");
+    if (!strip) return;
+    strip.style.justifyContent = (strip.scrollWidth <= strip.clientWidth + 2)
+        ? "center" : "";
+}
+window.addEventListener("load",   ccnCSliderAlign_' . $iid . ');
+window.addEventListener("resize", ccnCSliderAlign_' . $iid . ');
 </script>';
 
     if (!empty($this->config->style) && $this->config->style == 1) {  //background

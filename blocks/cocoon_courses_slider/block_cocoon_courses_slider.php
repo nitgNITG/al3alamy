@@ -308,14 +308,27 @@ function ccnCSliderScroll_' . $iid . '(dir) {
     var step  = item ? item.offsetWidth + gap : strip.clientWidth * 0.9;
     strip.scrollBy({ left: dir * step, behavior: "smooth" });
 }
-/* Center items on wide screens when they do not fill the strip width.
-   If the strip overflows (more courses than columns) we leave flex-start
-   so all items remain reachable by scrolling. Runs on load + resize. */
+/* When items do not fill the strip (fewer courses than columns):
+   expand each item equally so cards fill the full strip width.
+   When items overflow (many courses) leave default flex-start for scrolling. */
 function ccnCSliderAlign_' . $iid . '() {
     var strip = document.getElementById("' . $strip_id . '");
     if (!strip) return;
-    strip.style.justifyContent = (strip.scrollWidth <= strip.clientWidth + 2)
-        ? "center" : "";
+    var items = strip.querySelectorAll(".ccn-cslider-item-' . $iid . '");
+    if (!items.length) return;
+
+    // Reset to CSS-defined sizes first so scrollWidth reflects natural layout
+    strip.style.justifyContent = "";
+    items.forEach(function(el) { el.style.flex = ""; });
+
+    // If content overflows → normal scroll behaviour, nothing to do
+    if (strip.scrollWidth > strip.clientWidth + 2) return;
+
+    // Items fit → stretch them equally to fill the full strip width
+    var n   = items.length;
+    var gap = 20 * (n - 1);          // total gap between n items
+    var w   = Math.floor((strip.clientWidth - gap) / n);
+    items.forEach(function(el) { el.style.flex = "0 0 " + w + "px"; });
 }
 window.addEventListener("load",   ccnCSliderAlign_' . $iid . ');
 window.addEventListener("resize", ccnCSliderAlign_' . $iid . ');

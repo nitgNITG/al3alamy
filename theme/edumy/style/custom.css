@@ -215,6 +215,19 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 /* ══════════════════════════════════════
+   SECTION PADDING — reset theme default (60px) to match utility classes
+   The Edumy theme sets section { padding: 60px 0 } globally.
+   Blocks that use .pt20/.pb20 classes override it fine, but blocks
+   whose <section> has no utility classes get the full 60px.
+   We target them explicitly here.
+══════════════════════════════════════ */
+/* Testimonials block — <section class="our-testimonial ccnTestimonials2-section"> */
+.our-testimonial.ccnTestimonials2-section {
+  padding-top: 20px !important;
+  padding-bottom: 20px !important;
+}
+
+/* ══════════════════════════════════════
    HOME PAGE RESPONSIVE
    Tablet ≤ 991px  |  Mobile ≤ 576px
 ══════════════════════════════════════ */

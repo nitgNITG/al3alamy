@@ -263,12 +263,20 @@ class block_cocoon_courses_slider extends block_base
         .ccn-cslider-item-' . $iid . ' .thumb .img-whp,
         .ccn-cslider-item-' . $iid . ' .thumb img {
             position: absolute !important;
-            inset: 0 !important;
+            top: 0 !important;
+            left: 0 !important;
+            right: 0 !important;
+            bottom: 0 !important;
             width: 100% !important;
             height: 100% !important;
+            max-width: none !important;
+            max-height: none !important;
             object-fit: cover !important;
-            display: block;
-            border-radius: 0;
+            object-position: center center !important;
+            display: block !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            border-radius: 0 !important;
         }
 
         /* nav arrows — identical style to gallery / video blocks */
@@ -308,27 +316,13 @@ function ccnCSliderScroll_' . $iid . '(dir) {
     var step  = item ? item.offsetWidth + gap : strip.clientWidth * 0.9;
     strip.scrollBy({ left: dir * step, behavior: "smooth" });
 }
-/* When items do not fill the strip (fewer courses than columns):
-   expand each item equally so cards fill the full strip width.
-   When items overflow (many courses) leave default flex-start for scrolling. */
+/* Center cards when they don't fill the strip (fewer courses than columns).
+   Falls back to flex-start (scroll) when items overflow. */
 function ccnCSliderAlign_' . $iid . '() {
     var strip = document.getElementById("' . $strip_id . '");
     if (!strip) return;
-    var items = strip.querySelectorAll(".ccn-cslider-item-' . $iid . '");
-    if (!items.length) return;
-
-    // Reset to CSS-defined sizes first so scrollWidth reflects natural layout
-    strip.style.justifyContent = "";
-    items.forEach(function(el) { el.style.flex = ""; });
-
-    // If content overflows → normal scroll behaviour, nothing to do
-    if (strip.scrollWidth > strip.clientWidth + 2) return;
-
-    // Items fit → stretch them equally to fill the full strip width
-    var n   = items.length;
-    var gap = 20 * (n - 1);          // total gap between n items
-    var w   = Math.floor((strip.clientWidth - gap) / n);
-    items.forEach(function(el) { el.style.flex = "0 0 " + w + "px"; });
+    strip.style.justifyContent = (strip.scrollWidth <= strip.clientWidth + 2)
+        ? "center" : "";
 }
 window.addEventListener("load",   ccnCSliderAlign_' . $iid . ');
 window.addEventListener("resize", ccnCSliderAlign_' . $iid . ');

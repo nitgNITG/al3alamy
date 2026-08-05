@@ -167,18 +167,6 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 /* ══════════════════════════════════════
-   COURSES SLIDER — image aspect ratio 1678×937
-══════════════════════════════════════ */
-.block_cocoon_courses_slider .top_courses .thumb img.img-whp,
-.block_cocoon_courses_slider .top_courses .thumb img {
-  width: 100% !important;
-  aspect-ratio: 1678 / 937 !important;
-  object-fit: cover !important;
-  display: block !important;
-  height: auto !important;
-}
-
-/* ══════════════════════════════════════
    OWL CAROUSEL — RTL arrow mirror (site is always Arabic/RTL)
    Swap .owl-prev to RIGHT and .owl-next to LEFT sitewide.
 ══════════════════════════════════════ */
@@ -193,105 +181,6 @@ h1, h2, h3, h4, h5, h6 {
 @media (max-width: 991px) {
   .owl-carousel.owl-theme .owl-nav .owl-prev { right: 4px !important; left: auto !important; }
   .owl-carousel.owl-theme .owl-nav .owl-next { left:  4px !important; right: auto !important; }
-}
-
-/* ══════════════════════════════════════
-   COURSES SLIDER ARROWS — match ccn-vs-nav style
-   (circular white button, same as video + gallery blocks)
-══════════════════════════════════════ */
-.block_cocoon_courses_slider .shop_product_slider.owl-carousel.owl-theme.owl-loaded .owl-prev,
-.block_cocoon_courses_slider .shop_product_slider.owl-carousel.owl-theme.owl-loaded .owl-next {
-  position: absolute !important;
-  top: 50% !important;
-  transform: translateY(-50%) !important;
-  width: 34px !important;
-  height: 34px !important;
-  border-radius: 50% !important;
-  background: rgba(255,255,255,.9) !important;
-  color: #222 !important;
-  box-shadow: 0 2px 8px rgba(0,0,0,.25) !important;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  padding: 0 !important;
-  line-height: 1 !important;
-  margin: 0 !important;
-  border: none !important;
-  font-size: 20px !important;
-  transition: background .2s, transform .2s !important;
-}
-/* RTL: prev on RIGHT, next on LEFT */
-.block_cocoon_courses_slider .shop_product_slider.owl-carousel.owl-theme.owl-loaded .owl-prev {
-  right: -40px !important;
-  left:  auto  !important;
-}
-.block_cocoon_courses_slider .shop_product_slider.owl-carousel.owl-theme.owl-loaded .owl-next {
-  left:  -40px !important;
-  right: auto  !important;
-}
-.block_cocoon_courses_slider .shop_product_slider.owl-carousel.owl-theme.owl-loaded .owl-prev:hover,
-.block_cocoon_courses_slider .shop_product_slider.owl-carousel.owl-theme.owl-loaded .owl-next:hover {
-  background: #fff !important;
-  color: #222 !important;
-  transform: translateY(-50%) scale(1.1) !important;
-  box-shadow: 0 4px 12px rgba(0,0,0,.3) !important;
-}
-/* Arrow text character sizing */
-.block_cocoon_courses_slider .shop_product_slider.owl-carousel.owl-theme.owl-loaded .owl-nav [class*=owl-] {
-  font-size: 20px !important;
-  font-family: serif !important;
-  line-height: 1 !important;
-}
-/* On tablet/mobile bring arrows inside */
-@media (max-width: 991px) {
-  .block_cocoon_courses_slider .features-course .col-lg-12 {
-    padding-left: 44px !important;
-    padding-right: 44px !important;
-  }
-  .block_cocoon_courses_slider .shop_product_slider.owl-carousel.owl-theme.owl-loaded .owl-prev {
-    right: 4px !important;
-    left:  auto !important;
-  }
-  .block_cocoon_courses_slider .shop_product_slider.owl-carousel.owl-theme.owl-loaded .owl-next {
-    left:  4px !important;
-    right: auto !important;
-  }
-}
-
-/* ══════════════════════════════════════
-   COURSES SLIDER — MOBILE dots navigation
-   OWL is configured with dots:false globally; on mobile we add
-   visible gold dots so the user knows there are more slides.
-══════════════════════════════════════ */
-@media (max-width: 599px) {
-  .block_cocoon_courses_slider .shop_product_slider.owl-carousel .owl-dots {
-    display: flex !important;
-    justify-content: center !important;
-    margin-top: 14px !important;
-  }
-  .block_cocoon_courses_slider .shop_product_slider.owl-carousel .owl-dot {
-    display: inline-block !important;
-  }
-  .block_cocoon_courses_slider .shop_product_slider.owl-carousel .owl-dot span {
-    display: block !important;
-    width: 10px !important;
-    height: 10px !important;
-    border-radius: 50% !important;
-    background: #ccc !important;
-    margin: 0 5px !important;
-  }
-  .block_cocoon_courses_slider .shop_product_slider.owl-carousel .owl-dot.active span {
-    background: #C9A227 !important;
-  }
-  /* Hide arrows on very small screens — dots replace them */
-  .block_cocoon_courses_slider .shop_product_slider.owl-carousel .owl-nav {
-    display: none !important;
-  }
-  /* Remove the col padding reserved for arrows */
-  .block_cocoon_courses_slider .features-course .col-lg-12 {
-    padding-left: 15px !important;
-    padding-right: 15px !important;
-  }
 }
 
 /* ══════════════════════════════════════

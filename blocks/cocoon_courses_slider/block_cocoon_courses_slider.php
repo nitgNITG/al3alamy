@@ -35,15 +35,6 @@ class block_cocoon_courses_slider extends block_base
       $this->config->enrol_btn = '0';
       $this->config->enrol_btn_text = 'Buy Now';
       $this->config->courses = $ccnCourses;
-      // $this->config->group = '1';
-      // $this->config->color_bg = 'rgb(0, 8, 70)';
-      // $this->config->color_title = 'rgb(255,255,255)';
-      // $this->config->color_subtitle = 'rgb(255,255,255)';
-      // $this->config->color_course_title = 'rgb(255,255,255)';
-      // $this->config->color_course_subtitle = 'rgb(255, 234, 193)';
-      // $this->config->color_course_price = 'rgb(255, 0, 95)';
-      // $this->config->color_button = 'rgb(255, 0, 95)';
-      // $this->config->color_course_enrol_btn = '#79b530';
     }
   }
 
@@ -59,14 +50,6 @@ class block_cocoon_courses_slider extends block_base
       $this->content = '';
       return $this->content;
     }
-
-
-
-    // if (isset($PAGE->theme->settings->course_enrolment_payment) && ($PAGE->theme->settings->course_enrolment_payment == 1)) {
-    //   $paymentForced = false;
-    // } else {
-    //   $paymentForced = true;
-    // }
 
     $this->content = new stdClass();
     $this->content->items = array();
@@ -195,8 +178,16 @@ class block_cocoon_courses_slider extends block_base
       }
     }
 
+    // ── Unique IDs for this block instance ───────────────────────────────────
+    $iid      = $this->instance->id;
+    $strip_id = 'ccn-cslider-strip-' . $iid;
+
+    // ── RTL-aware arrow characters (same convention as gallery/video blocks) ─
+    $arrow_prev = right_to_left() ? '&#8250;' : '&#8249;'; // › or ‹
+    $arrow_next = right_to_left() ? '&#8249;' : '&#8250;'; // ‹ or ›
+
     echo '<style>
-        
+        /* ── Courses block shared card styles ── */
         .main-title h3 {
           color: #C9A227;
           text-align: center;
@@ -227,54 +218,92 @@ class block_cocoon_courses_slider extends block_base
         .top_courses:hover .thumb .overlay:before {
           border-radius: 10px !important;
         }
-        @media only screen and (max-width: 1366px) {
-            .shop_product_slider.owl-carousel.owl-theme.owl-loaded .owl-next, 
-            .shop_product_slider.owl-carousel.owl-theme.owl-loaded .owl-prev {
-              top: 90px !important;
-            }
+
+        /* ── Flex-scroll slider (instance ' . $iid . ') ── */
+        .ccn-cslider-wrap-' . $iid . ' {
+            position: relative;
+            padding: 0 40px;
         }
-        /* Desktop only — OWL stage width fix.
-           On mobile OWL must calculate its own width for the carousel to scroll. */
-        @media (min-width: 768px) {
-          .block_cocoon_courses_slider .owl-carousel .owl-stage {
-            width: auto !important;
-          }
+        .ccn-cslider-strip-' . $iid . ' {
+            display: flex;
+            gap: 20px;
+            overflow-x: auto;
+            scroll-snap-type: x mandatory;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: none;
+            padding-bottom: 6px;
         }
+        .ccn-cslider-strip-' . $iid . '::-webkit-scrollbar { display: none; }
+
+        /* 3 items on desktop */
+        .ccn-cslider-item-' . $iid . ' {
+            scroll-snap-align: start;
+            flex: 0 0 calc(33.33% - 14px);
+            min-width: 0;
+        }
+        @media (max-width: 900px) {
+            .ccn-cslider-item-' . $iid . ' { flex: 0 0 calc(50% - 10px); }
+        }
+        @media (max-width: 576px) {
+            .ccn-cslider-wrap-' . $iid . ' { padding: 0 32px; }
+            .ccn-cslider-item-' . $iid . ' { flex: 0 0 85%; }
+        }
+
+        /* Course image — 4:3 aspect ratio, same as gallery + video blocks */
+        .ccn-cslider-item-' . $iid . ' .thumb {
+            aspect-ratio: 4 / 3 !important;
+            overflow: hidden;
+            border-radius: 10px;
+            position: relative;
+        }
+        .ccn-cslider-item-' . $iid . ' .thumb .img-whp,
+        .ccn-cslider-item-' . $iid . ' .thumb img {
+            width: 100% !important;
+            height: 100% !important;
+            object-fit: cover !important;
+            display: block;
+            border-radius: 0;
+        }
+
+        /* nav arrows — identical style to gallery / video blocks */
+        .ccn-cslider-wrap-' . $iid . ' .ccn-vs-nav {
+            position: absolute;
+            top: 30%;
+            transform: translateY(-50%);
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
+            border: none;
+            background: rgba(255,255,255,.9);
+            box-shadow: 0 2px 8px rgba(0,0,0,.25);
+            font-size: 20px;
+            line-height: 1;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2;
+            transition: background .2s, transform .2s;
+            padding: 0;
+        }
+        .ccn-cslider-wrap-' . $iid . ' .ccn-vs-nav:hover {
+            background: #fff;
+            transform: translateY(-50%) scale(1.1);
+        }
+        .ccn-cslider-wrap-' . $iid . ' .ccn-vs-prev { left:  2px; }
+        .ccn-cslider-wrap-' . $iid . ' .ccn-vs-next { right: 2px; }
         </style>';
-    /* ── Mobile carousel reinit — loop + dots ───────────────────────────────
-     * The global OWL init sets loop:false, dots:false. On phones (<600px)
-     * we need loop:true so the user can swipe between items, and dots:true
-     * so the indicator shows there is a second slide.
-     *
-     * jQuery is loaded in <head> (theme/jquery.php) so window.jQuery is
-     * available here. We capture it NOW before any AMD noConflict call can
-     * clear it, then use it inside the window.load callback (after OWL init).
-     * ──────────────────────────────────────────────────────────────────── */
+
     echo '<script>
-(function(){
-  var _jq = window.jQuery || window.$; // capture before AMD may clear it
-  window.addEventListener("load", function(){
-    if (window.innerWidth >= 600) return; // only phones
-    var $ = _jq;
-    if (!$ || !$.fn || !$.fn.owlCarousel) return;
-    var $el = $(".block_cocoon_courses_slider .shop_product_slider");
-    if (!$el.length) return;
-    // destroy current OWL instance
-    $el.trigger("destroy.owl.carousel");
-    // re-init with loop:false (stops at real boundaries) + dots for mobile swipe
-    $el.addClass("owl-carousel").owlCarousel({
-      loop:      false,
-      margin:    15,
-      dots:      true,
-      nav:       false,
-      rtl:       true,
-      autoplay:  false,
-      smartSpeed: 600,
-      items:     1
-    });
-  }, false);
-})();
+function ccnCSliderScroll_' . $iid . '(dir) {
+    var strip = document.getElementById("' . $strip_id . '");
+    var item  = strip.querySelector(".ccn-cslider-item-' . $iid . '");
+    var gap   = 20;
+    var step  = item ? item.offsetWidth + gap : strip.clientWidth * 0.9;
+    strip.scrollBy({ left: dir * step, behavior: "smooth" });
+}
 </script>';
+
     if (!empty($this->config->style) && $this->config->style == 1) {  //background
       $this->content->text .= '
             <section class="popular-courses bgc-thm2">
@@ -282,9 +311,7 @@ class block_cocoon_courses_slider extends block_base
           			<div class="row">
           				<div class="col-lg-6 offset-lg-3">
           					<div class="main-title text-center">';
-      // if(!empty($this->content->title)){
       $this->content->text .= '<h3 class="mt0 color-white" data-ccn="title" style="font-size: 40px;">' . format_text($this->content->title, FORMAT_HTML, array('filter' => true)) . '</h3>';
-      // }
       if (!empty($this->content->subtitle)) {
         $this->content->text .= '<h5 class="color-white" data-ccn="subtitle">' . format_text($this->content->subtitle, FORMAT_HTML, array('filter' => true)) . '</h5>';
       }
@@ -295,9 +322,6 @@ class block_cocoon_courses_slider extends block_base
           			<div class="row">
           				<div class="col-lg-12">
           					<div class="popular_course_slider">';
-      // if(empty($this->config->courses)){
-      //   $courses = self::get_featured_courses();
-      // }
       if (!empty($this->config->courses)) {
         $chelper = new coursecat_helper();
         foreach ($courses as $course) {
@@ -330,7 +354,6 @@ class block_cocoon_courses_slider extends block_base
             $this->content->text .= '
             								<div class="details">
             									<div class="tc_content">';
-            //$this->content->text .= $ccnCourse->ccnRender->updatedDate;
             $this->content->text .=  $ccnCourse->ccnRender->title;
             if ($ccnBlockShowDesc) {
               $this->content->text .= '<p>' . $ccnCourseDescription . '</p>';
@@ -371,20 +394,27 @@ class block_cocoon_courses_slider extends block_base
                          </div>
     	                 </section>';
     } else {
+      // ── Flex-scroll slider (no OWL dependency) ──────────────────────────────
       $this->content->text .= '
 <section class="features-course pb20 pt20">
   <div class="container">
     <div class="row">
       <div class="col-lg-6 offset-lg-3">
         <div class="main-title text-center">
-          ' . (!empty($this->content->title) ? '<h3 class="mb0 mt0" data-ccn="title" style="font-size: 40px;">' . format_text($this->content->title, FORMAT_HTML, array('filter' => true)) . '</h3>' : '') . '
-          ' . (!empty($this->content->subtitle) ? '<h5 data-ccn="subtitle" style="font-size: 18px !important;color:#C9A227;">' . format_text($this->content->subtitle, FORMAT_HTML, array('filter' => true)) . '</h5>' : '') . '
+          ' . (!empty($this->content->title)    ? '<h3 class="mb0 mt0" data-ccn="title" style="font-size:40px;">'                       . format_text($this->content->title,    FORMAT_HTML, array('filter' => true)) . '</h3>' : '') . '
+          ' . (!empty($this->content->subtitle) ? '<h5 data-ccn="subtitle" style="font-size:18px !important;color:#C9A227;">' . format_text($this->content->subtitle, FORMAT_HTML, array('filter' => true)) . '</h5>' : '') . '
         </div>
       </div>
     </div>
     <div class="row">
       <div class="col-lg-12">
-        <div class="shop_product_slider">
+        <div class="ccn-cslider-wrap-' . $iid . '">
+
+          <button class="ccn-vs-nav ccn-vs-prev"
+                  onclick="ccnCSliderScroll_' . $iid . '(-1)"
+                  aria-label="Previous">' . $arrow_prev . '</button>
+
+          <div class="ccn-cslider-strip-' . $iid . '" id="' . $strip_id . '">
 ';
 
       if (!empty($this->config->courses)) {
@@ -398,7 +428,7 @@ class block_cocoon_courses_slider extends block_base
             $ccnCourseDescription = $ccnCourseHandler->ccnGetCourseDescription($course->id, $maxlength);
 
             $this->content->text .= '
-            <div class="item">
+            <div class="ccn-cslider-item-' . $iid . '">
               <div class="top_courses ' . $topCoursesClass . '">';
 
             if ($ccnBlockShowImg) {
@@ -430,8 +460,8 @@ class block_cocoon_courses_slider extends block_base
 
             if ($ccnBlockShowBottomBar == 1) {
               $this->content->text .= '
-              <div class="tc_footer" style="background-color: #C9A227;text-align: center; display: flex; justify-content: center; border-radius: 10px;">
-                ' . ($ccnBlockShowEnrolBtn ? '<a href="' . $ccnCourse->url . '" class="tc_enrol_btn float-right" data-ccn="enrol_btn_text" style="color: #fff; font-size: 25px; font-weight: 700;">' . $this->content->enrol_btn_text . '</a>' : '') . '
+              <div class="tc_footer" style="background-color:#C9A227;text-align:center;display:flex;justify-content:center;border-radius:10px;">
+                ' . ($ccnBlockShowEnrolBtn ? '<a href="' . $ccnCourse->url . '" class="tc_enrol_btn float-right" data-ccn="enrol_btn_text" style="color:#fff;font-size:25px;font-weight:700;">' . $this->content->enrol_btn_text . '</a>' : '') . '
                 ' . ($ccnBlockShowPrice ? '<div class="tc_price float-right">' . $ccnCourse->price . '</div>' : '') . '
               </div>';
             }
@@ -444,12 +474,17 @@ class block_cocoon_courses_slider extends block_base
       }
 
       $this->content->text .= '
-        </div>
+          </div><!-- /.ccn-cslider-strip -->
+
+          <button class="ccn-vs-nav ccn-vs-next"
+                  onclick="ccnCSliderScroll_' . $iid . '(1)"
+                  aria-label="Next">' . $arrow_next . '</button>
+
+        </div><!-- /.ccn-cslider-wrap -->
       </div>
     </div>
   </div>
-</section>';
-$this->content->text .= '
+</section>
 ';
     }
 

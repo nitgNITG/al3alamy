@@ -316,7 +316,7 @@ function ccnCSliderScroll_' . $iid . '(dir) {
     var step  = item ? item.offsetWidth + gap : strip.clientWidth * 0.9;
     strip.scrollBy({ left: dir * step, behavior: "smooth" });
 }
-/* Center cards when they don't fill the strip (fewer courses than columns).
+/* Center cards when they do not fill the strip (fewer courses than columns).
    Falls back to flex-start (scroll) when items overflow. */
 function ccnCSliderAlign_' . $iid . '() {
     var strip = document.getElementById("' . $strip_id . '");

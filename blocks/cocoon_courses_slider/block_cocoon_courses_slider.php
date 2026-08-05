@@ -240,59 +240,7 @@ class block_cocoon_courses_slider extends block_base
             width: auto !important;
           }
         }
-        /* Mobile: show OWL dots so users know more slides exist */
-        @media (max-width: 767px) {
-          .block_cocoon_courses_slider .owl-carousel .owl-dots {
-            display: flex !important;
-            justify-content: center;
-            margin-top: 12px;
-          }
-          .block_cocoon_courses_slider .owl-carousel .owl-dot span {
-            display: block;
-            width: 10px;
-            height: 10px;
-            border-radius: 50%;
-            background: #ccc;
-            margin: 0 4px;
-          }
-          .block_cocoon_courses_slider .owl-carousel .owl-dot.active span {
-            background: #C9A227;
-          }
-        }
         </style>';
-    /* ── Mobile: reinit OWL carousel with dots enabled ─────────────────────── *
-     *  NOTE: this <script> runs before jQuery loads (jQuery is in the footer).
-     *  Use vanilla window.addEventListener — jQuery is referenced only inside
-     *  the callback, by which time it is definitely loaded.
-     * ─────────────────────────────────────────────────────────────────────── */
-    echo '<script>
-    window.addEventListener("load", function(){
-      if (window.innerWidth >= 768) return;
-      var $ = window.jQuery;
-      if (!$) return;
-      var $el = $(".block_cocoon_courses_slider .shop_product_slider");
-      if (!$el.length) return;
-      /* destroy existing OWL instance if present */
-      var inst = $el.data("owl.carousel");
-      if (inst) { inst.destroy(); }
-      $el.removeClass("owl-carousel owl-theme owl-loaded owl-drag owl-rtl");
-      /* re-init with dots for mobile */
-      $el.owlCarousel({
-        loop: false,
-        margin: 15,
-        dots: true,
-        nav: false,
-        rtl: true,
-        autoplay: false,
-        smartSpeed: 800,
-        responsive: {
-          0:   { items: 1 },
-          480: { items: 1 },
-          600: { items: 2 }
-        }
-      });
-    }, false);
-    </script>';
     if (!empty($this->config->style) && $this->config->style == 1) {  //background
       $this->content->text .= '
             <section class="popular-courses bgc-thm2">

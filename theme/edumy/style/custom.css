@@ -259,6 +259,56 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 /* ══════════════════════════════════════
+   COURSES SLIDER — MOBILE: show ALL items in a 2-col grid.
+   OWL's transform-based sliding hides item #2 on narrow screens.
+   Override the stage to flex layout so every course is visible.
+══════════════════════════════════════ */
+@media (max-width: 767px) {
+  /* Remove the col padding we added for arrows (arrows are hidden below) */
+  .block_cocoon_courses_slider .features-course .col-lg-12 {
+    padding-left: 15px !important;
+    padding-right: 15px !important;
+  }
+  /* Expose the full stage — OWL clips it with overflow:hidden */
+  .block_cocoon_courses_slider .shop_product_slider.owl-carousel .owl-stage-outer {
+    overflow: visible !important;
+  }
+  /* Cancel OWL's translate and let items flow side-by-side */
+  .block_cocoon_courses_slider .shop_product_slider.owl-carousel .owl-stage {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    width: 100% !important;
+    transform: none !important;
+    transition: none !important;
+  }
+  /* Each item takes exactly half the row */
+  .block_cocoon_courses_slider .shop_product_slider.owl-carousel .owl-item {
+    width: 50% !important;
+    flex: 0 0 50% !important;
+    padding: 0 6px !important;
+  }
+  /* Hide OWL clone items (loop duplicates) */
+  .block_cocoon_courses_slider .shop_product_slider.owl-carousel .owl-item.cloned {
+    display: none !important;
+  }
+  /* Hide nav arrows — all items are now visible, no navigation needed */
+  .block_cocoon_courses_slider .shop_product_slider.owl-carousel .owl-nav {
+    display: none !important;
+  }
+  /* Tighten card text for narrow columns */
+  .block_cocoon_courses_slider .top_courses .details .tc_content {
+    font-size: 13px !important;
+    padding: 10px 8px !important;
+  }
+  .block_cocoon_courses_slider .top_courses .details .tc_content h5 {
+    font-size: 13px !important;
+  }
+  .block_cocoon_courses_slider .top_courses .tc_footer a {
+    font-size: 14px !important;
+  }
+}
+
+/* ══════════════════════════════════════
    BLOCK TITLES — gold color + uniform spacing
    Covers: .ccn-block-title (featured video),
            .main-title h3/h2 (gallery, courses, about)

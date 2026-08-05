@@ -249,8 +249,12 @@ class block_cocoon_courses_slider extends block_base
             .ccn-cslider-item-' . $iid . ' { flex: 0 0 85%; }
         }
 
-        /* Course image — 4:3 aspect ratio, same as gallery + video blocks */
+        /* Course image — 4:3 aspect ratio, same as gallery + video blocks.
+           The Edumy theme sets .top_courses .thumb { display: flex } which
+           prevents the image from filling the container. We override to block
+           and use position:absolute on the image so it always fills the thumb. */
         .ccn-cslider-item-' . $iid . ' .thumb {
+            display: block !important;
             aspect-ratio: 4 / 3 !important;
             overflow: hidden;
             border-radius: 10px;
@@ -258,6 +262,8 @@ class block_cocoon_courses_slider extends block_base
         }
         .ccn-cslider-item-' . $iid . ' .thumb .img-whp,
         .ccn-cslider-item-' . $iid . ' .thumb img {
+            position: absolute !important;
+            inset: 0 !important;
             width: 100% !important;
             height: 100% !important;
             object-fit: cover !important;

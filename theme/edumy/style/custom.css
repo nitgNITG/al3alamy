@@ -194,22 +194,21 @@ h1, h2, h3, h4, h5, h6 {
 .main-title h2 {
   color: var(--al-gold) !important;
   font-size: 36px !important;
-  /* Reset browser default heading margins so spacing is controlled
-     only by the .main-title wrapper margin-bottom below */
   margin-top: 0 !important;
-  margin-bottom: 6px !important;
+  margin-bottom: 0 !important;
 }
 /* Subtitles inside .main-title (p or h5) — gold, consistent size, no extra margin */
 .main-title p,
 .main-title h5 {
   color: var(--al-gold) !important;
   font-size: 18px !important;
-  margin-top: 0 !important;
+  margin-top: 4px !important;
   margin-bottom: 0 !important;
 }
-/* Consistent gap between the title block and the content below */
+/* Consistent gap between the title block and the content below —
+   same value as .ccn-block-title so all blocks look identical */
 .main-title {
-  margin-bottom: 24px !important;
+  margin-bottom: 16px !important;
 }
 .ccn-block-title {
   margin-bottom: 16px !important;

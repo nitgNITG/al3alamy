@@ -185,15 +185,15 @@ function ccnGSliderScroll_' . $iid . '(dir) {
         // Title + subtitle block — only render if title is non-empty.
         if ($title !== '') {
             $this->content->text .= '
-    <div class="row mb20">
+    <div class="row">
       <div class="col-lg-6 offset-lg-3">
         <div class="main-title text-center">
-          <h3 class="mt0" style="color:#C9A227;font-size:40px;">'
+          <h3 class="mt0">'
                 . format_text($title, FORMAT_HTML, ['filter' => true]) . '</h3>';
 
             if ($subtitle !== '') {
                 $this->content->text .= '
-          <p style="color:#C9A227;font-size:20px;font-weight:500;">'
+          <p>'
                     . format_text($subtitle, FORMAT_HTML, ['filter' => true]) . '</p>';
             }
 

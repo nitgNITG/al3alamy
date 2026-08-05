@@ -249,34 +249,43 @@ class block_cocoon_courses_slider extends block_base
             .ccn-cslider-item-' . $iid . ' { flex: 0 0 85%; }
         }
 
-        /* Course image — 4:3 aspect ratio, same as gallery + video blocks.
-           The Edumy theme sets .top_courses .thumb { display: flex } which
-           prevents the image from filling the container. We override to block
-           and use position:absolute on the image so it always fills the thumb. */
+        /* Course image — fill the thumb container, centered & cropped */
         .ccn-cslider-item-' . $iid . ' .thumb {
             display: block !important;
+            width: 100% !important;
             aspect-ratio: 4 / 3 !important;
-            overflow: hidden;
-            border-radius: 10px;
-            position: relative;
+            overflow: hidden !important;
+            border-radius: 10px !important;
+            position: relative !important;
+            flex-direction: unset !important;
         }
         .ccn-cslider-item-' . $iid . ' .thumb .img-whp,
         .ccn-cslider-item-' . $iid . ' .thumb img {
-            position: absolute !important;
-            top: 0 !important;
-            left: 0 !important;
-            right: 0 !important;
-            bottom: 0 !important;
+            display: block !important;
             width: 100% !important;
             height: 100% !important;
-            max-width: none !important;
-            max-height: none !important;
             object-fit: cover !important;
             object-position: center center !important;
-            display: block !important;
+            position: static !important;
             margin: 0 !important;
             padding: 0 !important;
+            max-width: none !important;
+            max-height: none !important;
             border-radius: 0 !important;
+            float: none !important;
+        }
+        /* Button — fit content width, centered */
+        .ccn-cslider-item-' . $iid . ' .tc_footer {
+            display: block !important;
+            text-align: center !important;
+            padding: 8px 12px !important;
+            border-radius: 0 0 10px 10px !important;
+        }
+        .ccn-cslider-item-' . $iid . ' .tc_footer a,
+        .ccn-cslider-item-' . $iid . ' .tc_footer .tc_enrol_btn {
+            display: inline-block !important;
+            float: none !important;
+            width: auto !important;
         }
 
         /* nav arrows — identical style to gallery / video blocks */
@@ -484,7 +493,7 @@ window.addEventListener("resize", ccnCSliderAlign_' . $iid . ');
 
             if ($ccnBlockShowBottomBar == 1) {
               $this->content->text .= '
-              <div class="tc_footer" style="background-color:#C9A227;text-align:center;display:flex;justify-content:center;border-radius:10px;">
+              <div class="tc_footer" style="background-color:#C9A227;">
                 ' . ($ccnBlockShowEnrolBtn ? '<a href="' . $ccnCourse->url . '" class="tc_enrol_btn float-right" data-ccn="enrol_btn_text" style="color:#fff;font-size:25px;font-weight:700;">' . $this->content->enrol_btn_text . '</a>' : '') . '
                 ' . ($ccnBlockShowPrice ? '<div class="tc_price float-right">' . $ccnCourse->price . '</div>' : '') . '
               </div>';

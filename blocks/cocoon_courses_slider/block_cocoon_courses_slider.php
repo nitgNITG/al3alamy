@@ -241,6 +241,40 @@ class block_cocoon_courses_slider extends block_base
           }
         }
         </style>';
+    /* ── Mobile carousel reinit — loop + dots ───────────────────────────────
+     * The global OWL init sets loop:false, dots:false. On phones (<600px)
+     * we need loop:true so the user can swipe between items, and dots:true
+     * so the indicator shows there is a second slide.
+     *
+     * jQuery is loaded in <head> (theme/jquery.php) so window.jQuery is
+     * available here. We capture it NOW before any AMD noConflict call can
+     * clear it, then use it inside the window.load callback (after OWL init).
+     * ──────────────────────────────────────────────────────────────────── */
+    echo '<script>
+(function(){
+  var _jq = window.jQuery || window.$; // capture before AMD may clear it
+  window.addEventListener("load", function(){
+    if (window.innerWidth >= 600) return; // only phones
+    var $ = _jq;
+    if (!$ || !$.fn || !$.fn.owlCarousel) return;
+    var $el = $(".block_cocoon_courses_slider .shop_product_slider");
+    if (!$el.length) return;
+    // destroy current OWL instance
+    $el.trigger("destroy.owl.carousel");
+    // re-init with loop + dots for mobile swipe
+    $el.addClass("owl-carousel").owlCarousel({
+      loop:      true,
+      margin:    15,
+      dots:      true,
+      nav:       false,
+      rtl:       true,
+      autoplay:  false,
+      smartSpeed: 600,
+      items:     1
+    });
+  }, false);
+})();
+</script>';
     if (!empty($this->config->style) && $this->config->style == 1) {  //background
       $this->content->text .= '
             <section class="popular-courses bgc-thm2">

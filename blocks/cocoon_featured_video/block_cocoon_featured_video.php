@@ -315,8 +315,16 @@ class block_cocoon_featured_video extends block_base
             if (prev) prev.style.visibility = hidePrev ? "hidden" : "visible";
             if (next) next.style.visibility = hideNext ? "hidden" : "visible";
         }
-        window.addEventListener("load",   ccnVsArrows_' . $iid . ');
-        window.addEventListener("resize", ccnVsArrows_' . $iid . ');
+        // Center items when they do not fill the strip (fewer videos than columns)
+        function ccnVsAlign_' . $iid . '() {
+            var strip = document.getElementById("' . $strip_id . '");
+            if (!strip) return;
+            strip.style.justifyContent = (strip.scrollWidth <= strip.clientWidth + 2)
+                ? "center" : "";
+            ccnVsArrows_' . $iid . '();
+        }
+        window.addEventListener("load",   ccnVsAlign_' . $iid . ');
+        window.addEventListener("resize", ccnVsAlign_' . $iid . ');
         document.addEventListener("DOMContentLoaded", function() {
             var strip = document.getElementById("' . $strip_id . '");
             if (strip) strip.addEventListener("scroll", ccnVsArrows_' . $iid . ');

@@ -207,3 +207,31 @@ function local_deviceregistration_extend_navigation_user_settings($navigation, $
     );
     $navigation->add_node($node);
 }
+
+/**
+ * Add Device Management link to site navigation for admins and managers.
+ *
+ * @param global_navigation $navigation
+ */
+function local_deviceregistration_extend_navigation(global_navigation $navigation) {
+    global $USER;
+
+    if (empty($USER->id)) {
+        return;
+    }
+
+    $context = context_system::instance();
+    if (!has_capability('local/deviceregistration:manage', $context)) {
+        return;
+    }
+
+    $node = navigation_node::create(
+        get_string('forcelogout_title', 'local_deviceregistration'),
+        new moodle_url('/local/deviceregistration/admin_force_logout.php', ['view' => 'devices']),
+        navigation_node::TYPE_CUSTOM,
+        null,
+        'local_deviceregistration_manage',
+        new pix_icon('i/users', '')
+    );
+    $navigation->add_node($node);
+}

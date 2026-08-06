@@ -42,11 +42,10 @@ if ($hassiteconfig) {
 }
 
 // Device management page — visible to managers AND admins.
-if ($hassiteconfig || has_capability('local/deviceregistration:manage', context_system::instance())) {
-    $ADMIN->add('localplugins', new admin_externalpage(
-        'local_deviceregistration_forcelogout',
-        get_string('forcelogout_title', 'local_deviceregistration'),
-        new moodle_url('/local/deviceregistration/admin_force_logout.php'),
-        'local/deviceregistration:manage'
-    ));
-}
+// Placed under 'users' so managers can find it in Site Administration → Users.
+$ADMIN->add('users', new admin_externalpage(
+    'local_deviceregistration_forcelogout',
+    get_string('forcelogout_title', 'local_deviceregistration'),
+    new moodle_url('/local/deviceregistration/admin_force_logout.php'),
+    'local/deviceregistration:manage'
+));

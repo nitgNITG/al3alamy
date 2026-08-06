@@ -7,7 +7,7 @@ require_once($CFG->libdir . '/adminlib.php');
 // ── Permissions (before any page setup) ──────────────────────────────────────
 require_login();
 $context = context_system::instance();
-require_capability('moodle/site:config', $context);
+require_capability('local/deviceregistration:manage', $context);
 
 global $DB;
 

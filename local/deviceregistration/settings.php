@@ -18,7 +18,7 @@
 defined('MOODLE_INTERNAL') || die();
 
 if ($hassiteconfig) {
-    // Create the settings page
+    // Create the settings page (admins only)
     $settings = new admin_settingpage('local_deviceregistration', get_string('pluginname', 'local_deviceregistration'));
 
     // Enable / disable toggle
@@ -38,14 +38,15 @@ if ($hassiteconfig) {
         PARAM_INT
     ));
 
-    // Add it to the local plugins category
     $ADMIN->add('localplugins', $settings);
+}
 
-    // Admin tool: look up a user and force-logout their other session(s) when
-    // the one-session-per-user check blocks their next login.
+// Device management page — visible to managers AND admins.
+if ($hassiteconfig || has_capability('local/deviceregistration:manage', context_system::instance())) {
     $ADMIN->add('localplugins', new admin_externalpage(
         'local_deviceregistration_forcelogout',
         get_string('forcelogout_title', 'local_deviceregistration'),
-        new moodle_url('/local/deviceregistration/admin_force_logout.php')
+        new moodle_url('/local/deviceregistration/admin_force_logout.php'),
+        'local/deviceregistration:manage'
     ));
 }

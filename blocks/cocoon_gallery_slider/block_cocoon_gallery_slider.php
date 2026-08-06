@@ -109,7 +109,7 @@ class block_cocoon_gallery_slider extends block_base
     font-size: 32px;
 }
 
-/* nav arrows — same style as featured video block */
+/* nav arrows */
 .ccn-gslider-wrap-' . $iid . ' .ccn-vs-nav {
     position: absolute;
     top: 50%;
@@ -118,7 +118,8 @@ class block_cocoon_gallery_slider extends block_base
     height: 34px;
     border-radius: 50%;
     border: none;
-    background: rgba(255,255,255,.9);
+    background: #C9A227;
+    color: #fff;
     box-shadow: 0 2px 8px rgba(0,0,0,.25);
     font-size: 20px;
     line-height: 1;
@@ -131,7 +132,7 @@ class block_cocoon_gallery_slider extends block_base
     padding: 0;
 }
 .ccn-gslider-wrap-' . $iid . ' .ccn-vs-nav:hover {
-    background: #fff;
+    background: #b8911f;
     transform: translateY(-50%) scale(1.1);
 }
 .ccn-gslider-wrap-' . $iid . ' .ccn-vs-prev { left: 2px; }

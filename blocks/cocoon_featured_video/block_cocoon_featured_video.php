@@ -252,7 +252,8 @@ class block_cocoon_featured_video extends block_base
             height: 34px;
             border-radius: 50%;
             border: none;
-            background: rgba(255,255,255,.9);
+            background: #C9A227;
+            color: #fff;
             box-shadow: 0 2px 8px rgba(0,0,0,.25);
             font-size: 20px;
             line-height: 1;
@@ -264,7 +265,7 @@ class block_cocoon_featured_video extends block_base
             transition: background .2s, transform .2s;
             padding: 0;
         }
-        .ccn-vs-nav:hover { background: #fff; transform: translateY(-50%) scale(1.1); }
+        .ccn-vs-nav:hover { background: #b8911f; transform: translateY(-50%) scale(1.1); }
         .ccn-vs-prev { left: 2px; }
         .ccn-vs-next { right: 2px; }
         </style>

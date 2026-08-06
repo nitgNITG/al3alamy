@@ -144,6 +144,26 @@ function ccnGSliderScroll_' . $iid . '(dir) {
     var step  = strip.clientWidth * 0.85;
     strip.scrollBy({ left: dir * step, behavior: "smooth" });
 }
+
+function ccnGSliderArrows_' . $iid . '() {
+    var strip = document.getElementById("' . $strip_id . '");
+    if (!strip) return;
+    var wrap = strip.closest(".ccn-gslider-wrap-' . $iid . '");
+    if (!wrap) return;
+    var prev = wrap.querySelector(".ccn-vs-prev");
+    var next = wrap.querySelector(".ccn-vs-next");
+    var atStart = strip.scrollLeft <= 2;
+    var atEnd   = strip.scrollLeft + strip.clientWidth >= strip.scrollWidth - 2;
+    if (prev) prev.style.visibility = atStart ? "hidden" : "visible";
+    if (next) next.style.visibility = atEnd   ? "hidden" : "visible";
+}
+
+window.addEventListener("load", ccnGSliderArrows_' . $iid . ');
+window.addEventListener("resize", ccnGSliderArrows_' . $iid . ');
+document.addEventListener("DOMContentLoaded", function() {
+    var strip = document.getElementById("' . $strip_id . '");
+    if (strip) strip.addEventListener("scroll", ccnGSliderArrows_' . $iid . ');
+});
 </script>';
 
         // ── Build image items ─────────────────────────────────────────────────

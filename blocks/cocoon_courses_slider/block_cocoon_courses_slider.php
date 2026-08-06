@@ -325,16 +325,36 @@ function ccnCSliderScroll_' . $iid . '(dir) {
     var step  = item ? item.offsetWidth + gap : strip.clientWidth * 0.9;
     strip.scrollBy({ left: dir * step, behavior: "smooth" });
 }
-/* Center cards when they do not fill the strip (fewer courses than columns).
-   Falls back to flex-start (scroll) when items overflow. */
+
+/* Show/hide arrows based on scroll position */
+function ccnCSliderArrows_' . $iid . '() {
+    var strip = document.getElementById("' . $strip_id . '");
+    if (!strip) return;
+    var wrap  = strip.closest(".ccn-cslider-wrap-' . $iid . '");
+    if (!wrap) return;
+    var prev  = wrap.querySelector(".ccn-vs-prev");
+    var next  = wrap.querySelector(".ccn-vs-next");
+    var atStart = strip.scrollLeft <= 2;
+    var atEnd   = strip.scrollLeft + strip.clientWidth >= strip.scrollWidth - 2;
+    if (prev) prev.style.visibility = atStart ? "hidden" : "visible";
+    if (next) next.style.visibility = atEnd   ? "hidden" : "visible";
+}
+
+/* Center cards when they do not fill the strip */
 function ccnCSliderAlign_' . $iid . '() {
     var strip = document.getElementById("' . $strip_id . '");
     if (!strip) return;
     strip.style.justifyContent = (strip.scrollWidth <= strip.clientWidth + 2)
         ? "center" : "";
+    ccnCSliderArrows_' . $iid . '();
 }
+
 window.addEventListener("load",   ccnCSliderAlign_' . $iid . ');
 window.addEventListener("resize", ccnCSliderAlign_' . $iid . ');
+document.addEventListener("DOMContentLoaded", function() {
+    var strip = document.getElementById("' . $strip_id . '");
+    if (strip) strip.addEventListener("scroll", ccnCSliderArrows_' . $iid . ');
+});
 </script>';
 
     if (!empty($this->config->style) && $this->config->style == 1) {  //background

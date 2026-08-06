@@ -18,17 +18,15 @@ defined('MOODLE_INTERNAL') || die();
 class observer {
 
     /**
-     * Enforce the per-user concurrent session limit right after a successful login.
+     * Enforce the per-user device limit right after a successful login.
      *
-     * Checks how many OTHER active sessions this user already has.
-     * If the count is >= the configured maximum, the new login is refused
-     * and the just-created session is terminated. The user must log out
-     * from an existing device before they can log in from a new one.
+     * Uses a persistent browser cookie (device token) to identify devices.
+     * Site admins and managers are unconditionally allowed.
      *
      * @param \core\event\user_loggedin $event
      */
     public static function user_loggedin(\core\event\user_loggedin $event) {
-        global $DB, $CFG;
+        global $DB;
 
         require_once(__DIR__ . '/../lib.php');
 
@@ -43,52 +41,35 @@ class observer {
             return;
         }
 
+        // Never lock out managers (system-level manager role).
+        $systemcontext = \context_system::instance();
+        $managerroles  = get_archetype_roles('manager');
+        foreach ($managerroles as $role) {
+            if ($DB->record_exists('role_assignments', [
+                'userid'    => $userid,
+                'roleid'    => $role->id,
+                'contextid' => $systemcontext->id,
+            ])) {
+                return; // User is a manager — skip device check.
+            }
+        }
+
         $max = local_deviceregistration_max_devices();
         if ($max <= 0) {
             return; // 0 = unlimited.
         }
 
-        // Get the current session ID (the one just created by this login).
-        $currentsid = session_id();
+        // ── Device-token check (cookie-based) ────────────────────────────────
+        $token   = local_deviceregistration_get_cookie_token();
+        $allowed = local_deviceregistration_check_and_register($userid, $token);
 
-        // Count OTHER active sessions for this user (excluding the current one).
-        try {
-            $sql = "SELECT COUNT(*)
-                      FROM {sessions}
-                     WHERE userid = :userid
-                       AND sid <> :sid
-                       AND timemodified > :cutoff";
+        // --- DEBUG LOGGING ---
+        $log = date('Y-m-d H:i:s') . " - user_loggedin - userid: $userid, token: " . ($token ?: '(new)') . ", allowed: " . ($allowed ? 'yes' : 'NO') . ", max: $max\n";
+        file_put_contents(__DIR__ . '/debug_log.txt', $log, FILE_APPEND);
+        // ---------------------
 
-            // Consider sessions active if they were touched within the last 24 hours,
-            // or use Moodle's session timeout if configured.
-            $timeout = !empty($CFG->sessiontimeout) ? $CFG->sessiontimeout : 86400;
-            $cutoff = time() - $timeout;
-
-            $params = [
-                'userid' => $userid,
-                'sid'    => $currentsid,
-                'cutoff' => $cutoff,
-            ];
-
-            $othersessions = $DB->count_records_sql($sql, $params);
-            
-            // --- DEBUG LOGGING ---
-            $log = date('Y-m-d H:i:s') . " - user_loggedin - userid: $userid, sid: $currentsid, othersessions: $othersessions, max: $max, sql: $sql, params: " . json_encode($params) . "\n";
-            file_put_contents(__DIR__ . '/debug_log.txt', $log, FILE_APPEND);
-            // ---------------------
-        } catch (\dml_exception $e) {
-            // --- DEBUG LOGGING ---
-            $log = date('Y-m-d H:i:s') . " - dml_exception: " . $e->getMessage() . "\n";
-            file_put_contents(__DIR__ . '/debug_log.txt', $log, FILE_APPEND);
-            // ---------------------
-            debugging('local_deviceregistration: skipping enforcement - ' . $e->getMessage(), DEBUG_DEVELOPER);
-            return; // Fail open — never break login.
-        }
-
-        // If user already has max sessions active on other devices → block this login.
-        if ($othersessions >= $max) {
+        if (!$allowed) {
             local_deviceregistration_block_login(); // Redirects and exits.
-            return; // Guard.
         }
     }
 }

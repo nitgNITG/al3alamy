@@ -152,10 +152,16 @@ function ccnGSliderArrows_' . $iid . '() {
     if (!wrap) return;
     var prev = wrap.querySelector(".ccn-vs-prev");
     var next = wrap.querySelector(".ccn-vs-next");
-    var atStart = strip.scrollLeft <= 2;
-    var atEnd   = strip.scrollLeft + strip.clientWidth >= strip.scrollWidth - 2;
-    if (prev) prev.style.visibility = atStart ? "hidden" : "visible";
-    if (next) next.style.visibility = atEnd   ? "hidden" : "visible";
+    var rtl  = document.documentElement.dir === "rtl" || document.body.dir === "rtl";
+    var scrolled  = Math.abs(strip.scrollLeft);
+    var maxScroll = strip.scrollWidth - strip.clientWidth;
+    var canScroll = maxScroll > 2;
+    var atStart   = scrolled <= 2;
+    var atEnd     = scrolled >= maxScroll - 2;
+    var hidePrev  = !canScroll || (rtl ? atEnd   : atStart);
+    var hideNext  = !canScroll || (rtl ? atStart : atEnd);
+    if (prev) prev.style.visibility = hidePrev ? "hidden" : "visible";
+    if (next) next.style.visibility = hideNext ? "hidden" : "visible";
 }
 
 window.addEventListener("load", ccnGSliderArrows_' . $iid . ');

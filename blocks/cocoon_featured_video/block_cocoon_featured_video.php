@@ -295,6 +295,32 @@ class block_cocoon_featured_video extends block_base
             strip.scrollBy({ left: dir * step, behavior: "smooth" });
         }
 
+        // Show/hide arrows based on scroll position (RTL-aware)
+        function ccnVsArrows_' . $iid . '() {
+            var strip = document.getElementById("' . $strip_id . '");
+            if (!strip) return;
+            var wrap = strip.closest(".ccn-vs-wrap");
+            if (!wrap) return;
+            var prev = wrap.querySelector(".ccn-vs-prev");
+            var next = wrap.querySelector(".ccn-vs-next");
+            var rtl  = document.documentElement.dir === "rtl" || document.body.dir === "rtl";
+            var scrolled  = Math.abs(strip.scrollLeft);
+            var maxScroll = strip.scrollWidth - strip.clientWidth;
+            var canScroll = maxScroll > 2;
+            var atStart   = scrolled <= 2;
+            var atEnd     = scrolled >= maxScroll - 2;
+            var hidePrev  = !canScroll || (rtl ? atEnd   : atStart);
+            var hideNext  = !canScroll || (rtl ? atStart : atEnd);
+            if (prev) prev.style.visibility = hidePrev ? "hidden" : "visible";
+            if (next) next.style.visibility = hideNext ? "hidden" : "visible";
+        }
+        window.addEventListener("load",   ccnVsArrows_' . $iid . ');
+        window.addEventListener("resize", ccnVsArrows_' . $iid . ');
+        document.addEventListener("DOMContentLoaded", function() {
+            var strip = document.getElementById("' . $strip_id . '");
+            if (strip) strip.addEventListener("scroll", ccnVsArrows_' . $iid . ');
+        });
+
         // Stop video on close — three redundant paths so one always fires:
         (function() {
             function ccnClearFrame() {

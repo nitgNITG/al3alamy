@@ -326,7 +326,7 @@ function ccnCSliderScroll_' . $iid . '(dir) {
     strip.scrollBy({ left: dir * step, behavior: "smooth" });
 }
 
-/* Show/hide arrows based on scroll position */
+/* Show/hide arrows based on scroll position (RTL-aware) */
 function ccnCSliderArrows_' . $iid . '() {
     var strip = document.getElementById("' . $strip_id . '");
     if (!strip) return;
@@ -334,10 +334,18 @@ function ccnCSliderArrows_' . $iid . '() {
     if (!wrap) return;
     var prev  = wrap.querySelector(".ccn-vs-prev");
     var next  = wrap.querySelector(".ccn-vs-next");
-    var atStart = strip.scrollLeft <= 2;
-    var atEnd   = strip.scrollLeft + strip.clientWidth >= strip.scrollWidth - 2;
-    if (prev) prev.style.visibility = atStart ? "hidden" : "visible";
-    if (next) next.style.visibility = atEnd   ? "hidden" : "visible";
+    var rtl   = document.documentElement.dir === "rtl" || document.body.dir === "rtl";
+    var scrolled  = Math.abs(strip.scrollLeft);
+    var maxScroll = strip.scrollWidth - strip.clientWidth;
+    var canScroll = maxScroll > 2;
+    var atStart   = scrolled <= 2;
+    var atEnd     = scrolled >= maxScroll - 2;
+    /* In RTL the prev button (left side, scrolls negative) goes forward in the list,
+       so it should be hidden when we are at the list end, and vice-versa. */
+    var hidePrev = !canScroll || (rtl ? atEnd   : atStart);
+    var hideNext = !canScroll || (rtl ? atStart : atEnd);
+    if (prev) prev.style.visibility = hidePrev ? "hidden" : "visible";
+    if (next) next.style.visibility = hideNext ? "hidden" : "visible";
 }
 
 /* Center cards when they do not fill the strip */

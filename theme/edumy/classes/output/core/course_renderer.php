@@ -784,6 +784,61 @@ class course_renderer extends \core_course_renderer {
   }
 
   /**
+   * Returns HTML to display one course module for display within a section.
+   *
+   * Overrides core to add id/mod attributes on the activity title div so that
+   * the local_videopay JS (before_footer hook) can identify restricted modules
+   * and inject the "Buy now" button without touching Moodle core files.
+   *
+   * @param cm_info $mod
+   * @param array $displayoptions
+   * @return string
+   */
+  public function course_section_cm_name_title(cm_info $mod, $displayoptions = array()) {
+      global $USER, $CFG, $COURSE;
+
+      $output = '';
+      $url = $mod->url;
+      if (!$mod->is_visible_on_course_page() || !$url) {
+          return $output;
+      }
+
+      $instancename = $mod->get_formatted_name();
+      $altname = $mod->modfullname;
+      if (false !== strpos(
+          core_text::strtolower($instancename),
+          core_text::strtolower($altname)
+      )) {
+          $altname = '';
+      }
+      if ($altname) {
+          $altname = get_accesshide(' ' . $altname);
+      }
+
+      list($linkclasses, $textclasses) = $this->course_section_cm_classes($mod);
+      $onclick = htmlspecialchars_decode($mod->onclick, ENT_QUOTES);
+
+      $activitylink = html_writer::empty_tag('img', array(
+          'src'        => $mod->get_icon_url(),
+          'class'      => 'iconlarge activityicon',
+          'alt'        => '',
+          'role'       => 'presentation',
+          'aria-hidden' => 'true',
+      )) .
+          html_writer::tag('span', $instancename . $altname, array('class' => 'instancename'));
+
+      if ($mod->uservisible) {
+          $output .= html_writer::link($url, $activitylink, array('class' => 'aalink' . $linkclasses, 'onclick' => $onclick));
+      } else {
+          // Module is restricted. Attach id/mod data attributes so that the
+          // local_videopay JS (local_videopay_before_footer) can locate this
+          // element and append the Kashier "Buy now" link.
+          $output .= html_writer::tag('div', $activitylink, array('id' => $mod->id, 'mod' => $mod->id));
+      }
+      return $output;
+  }
+
+  /**
    * Renders HTML to display a list of course modules in a course section
    * Also displays "move here" controls in Javascript-disabled mode
    *

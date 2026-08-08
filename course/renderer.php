@@ -756,9 +756,7 @@ class core_course_renderer extends plugin_renderer_base
         } else {
             // We may be displaying this just in order to show information
             // about visibility, without the actual link ($mod->is_visible_on_course_page()).
-            // The videopay JS (local_videopay_before_footer) handles the buy-button UI
-            // for paid modules; Moodle's availability renderer handles the rest.
-            $output .= html_writer::tag('div', $activitylink, array('id' => $mod->id, 'mod' => $mod->id));
+            $output .= html_writer::tag('div', $activitylink);
         }
         return $output;
     }

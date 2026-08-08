@@ -374,6 +374,273 @@ class mod_resource2_mod_form extends moodleform_mod {
         }
 
         //-------------------------------------------------------
+        // ── Video management section (existing modules only) ─────────────
+        if ($this->current->instance) {
+            $vimeo_rec = $DB->get_record('vimeo_files2',
+                ['resource2_id' => $this->current->instance]);
+            $type_rec  = $DB->get_record('reda_video_type2',
+                ['resource2_id' => $this->current->instance]);
+
+            $mform->addElement('header', 'vimeo_manage_header',
+                get_string('vimeo_manage_section', 'resource2'));
+            $mform->setExpanded('vimeo_manage_header');
+
+            // ── Current video status ──────────────────────────────────────
+            if (empty($vimeo_rec)) {
+                $status_html = html_writer::div(
+                    get_string('vimeo_status_none', 'resource2'),
+                    'alert alert-warning');
+            } elseif (empty(trim($vimeo_rec->url))) {
+                $status_html = html_writer::div(
+                    get_string('vimeo_status_uploading', 'resource2'),
+                    'alert alert-info');
+            } else {
+                $vimeo_link = html_writer::link(
+                    'https://vimeo.com/' . $vimeo_rec->url,
+                    'Vimeo #' . $vimeo_rec->url,
+                    ['target' => '_blank', 'rel' => 'noopener noreferrer']
+                );
+                $status_html = html_writer::div(
+                    html_writer::tag('strong',
+                        get_string('vimeo_current_video', 'resource2') . ': ')
+                    . htmlspecialchars($vimeo_rec->name) . ' (' . $vimeo_link . ')',
+                    'alert alert-success');
+            }
+            $mform->addElement('html',
+                html_writer::div($status_html, 'form-group row')
+            );
+
+            // ── Video type selector ───────────────────────────────────────
+            $mform->addElement('hidden', 'video_type', 0);
+            $mform->setType('video_type', PARAM_INT);
+
+            $type_options = [
+                1 => get_string('vimeo_type_quiz',     'resource2'),
+                2 => get_string('vimeo_type_lecture',  'resource2'),
+                3 => get_string('vimeo_type_homework', 'resource2'),
+                4 => get_string('vimeo_type_summary',  'resource2'),
+                5 => get_string('vimeo_type_revision', 'resource2'),
+            ];
+            $mform->addElement('select', 'video_type_visible',
+                get_string('vimeo_type_label', 'resource2'), $type_options);
+            $cur_type = $type_rec ? (int)$type_rec->type : 2;
+            $mform->setDefault('video_type_visible', $cur_type);
+
+            // ── Replace / Delete UI (only when a valid video exists) ──────
+            if (!empty($vimeo_rec)) {
+                $replace_url  = new moodle_url('/mod/resource2/replace.php');
+                $delete_url   = new moodle_url('/mod/resource2/delete_video.php');
+                $sesskey      = sesskey();
+                $courseid_val = $this->_course->id;
+                $resource2_id = (int)$this->current->instance;
+                $max_size_mb  = (int)(get_config('resource2', 'max_video_size_mb') ?: 500);
+                $view_url     = new moodle_url('/mod/resource2/view.php',
+                    ['id' => $this->_cm->id]);
+
+                $manage_html = '
+<div id="r2-manage-wrap" style="margin:10px 0;">
+  <!-- ── Replace section ───────────────────────────────────────────── -->
+  <details id="r2-replace-details" style="margin-bottom:15px;">
+    <summary style="cursor:pointer;font-weight:600;color:#333;">'
+    . get_string('vimeo_replace_section', 'resource2') . '</summary>
+    <div style="margin-top:10px;">
+      <div class="form-group row">
+        <label class="col-sm-3 col-form-label" for="r2-replace-file">'
+    . get_string('vimeo_file_label', 'resource2') . '</label>
+        <div class="col-sm-9">
+          <input type="file" id="r2-replace-file" class="form-control-file"
+                 accept="video/mp4,video/quicktime,video/x-msvideo,video/*">
+        </div>
+      </div>
+      <div id="r2-replace-controls" class="form-group row" style="display:none;">
+        <div class="col-sm-9 offset-sm-3">
+          <button type="button" id="r2-replace-btn" class="btn btn-warning">'
+    . get_string('vimeo_replace_btn', 'resource2') . '</button>
+          <div class="progress mt-2" style="height:20px;">
+            <div id="r2-replace-bar" class="progress-bar progress-bar-striped progress-bar-animated bg-warning"
+                 role="progressbar" style="width:0%" aria-valuenow="0"
+                 aria-valuemin="0" aria-valuemax="100">0%</div>
+          </div>
+          <p id="r2-replace-status" class="mt-1 text-muted"></p>
+        </div>
+      </div>
+      <div id="r2-replace-done"  class="alert alert-success" style="display:none;"></div>
+      <div id="r2-replace-error" class="alert alert-danger"  style="display:none;"></div>
+    </div>
+  </details>
+
+  <!-- ── Delete section ────────────────────────────────────────────── -->
+  <div id="r2-delete-wrap">
+    <button type="button" id="r2-delete-btn" class="btn btn-danger btn-sm"
+            style="' . (empty(trim($vimeo_rec->url)) ? 'display:none;' : '') . '">'
+    . get_string('vimeo_delete_btn', 'resource2') . '</button>
+    <div id="r2-delete-done"  class="alert alert-success mt-2" style="display:none;"></div>
+    <div id="r2-delete-error" class="alert alert-danger  mt-2" style="display:none;"></div>
+  </div>
+</div>
+
+<script>
+(function () {
+  var CHUNK_SIZE   = 10 * 1024 * 1024;
+  var REPLACE_URL  = ' . json_encode($replace_url->out(false)) . ';
+  var DELETE_URL   = ' . json_encode($delete_url->out(false)) . ';
+  var VIEW_URL     = ' . json_encode($view_url->out(false)) . ';
+  var SESSKEY      = ' . json_encode($sesskey) . ';
+  var COURSEID     = ' . json_encode((string)$courseid_val) . ';
+  var RESOURCE2_ID = ' . json_encode((string)$resource2_id) . ';
+  var MAX_SIZE_MB  = ' . json_encode($max_size_mb) . ';
+
+  var replaceFile   = document.getElementById("r2-replace-file");
+  var replaceBtn    = document.getElementById("r2-replace-btn");
+  var replaceCtrl   = document.getElementById("r2-replace-controls");
+  var replaceBar    = document.getElementById("r2-replace-bar");
+  var replaceStatus = document.getElementById("r2-replace-status");
+  var replaceDone   = document.getElementById("r2-replace-done");
+  var replaceError  = document.getElementById("r2-replace-error");
+  var deleteBtn     = document.getElementById("r2-delete-btn");
+  var deleteDone    = document.getElementById("r2-delete-done");
+  var deleteError   = document.getElementById("r2-delete-error");
+  var typeVisible   = document.getElementById("id_video_type_visible");
+  var typeField     = document.getElementById("id_video_type");
+
+  // Sync visible type select → hidden field.
+  if (typeVisible && typeField) {
+    typeField.value = typeVisible.value;
+    typeVisible.addEventListener("change", function () {
+      typeField.value = typeVisible.value;
+    });
+  }
+
+  // Show replace controls when a file is chosen.
+  if (replaceFile) {
+    replaceFile.addEventListener("change", function () {
+      replaceError.style.display = "none";
+      replaceDone.style.display  = "none";
+      replaceCtrl.style.display  = replaceFile.files.length ? "block" : "none";
+    });
+  }
+
+  // ── Replace upload ────────────────────────────────────────────────────
+  if (replaceBtn) {
+    replaceBtn.addEventListener("click", async function () {
+      var file = replaceFile.files[0];
+      if (!file) return;
+
+      var sizeMb = file.size / (1024 * 1024);
+      if (MAX_SIZE_MB > 0 && sizeMb > MAX_SIZE_MB) {
+        showReplaceError("File too large (" + Math.round(sizeMb) + " MB). Max: " + MAX_SIZE_MB + " MB.");
+        return;
+      }
+
+      replaceBtn.disabled = true;
+      replaceError.style.display = "none";
+
+      var nameField = document.getElementById("id_name");
+      var vname = (nameField && nameField.value.trim()) ? nameField.value.trim() : file.name;
+      var tempKey = "r' . $USER->id . '_" + Date.now();
+      var totalChunks = Math.ceil(file.size / CHUNK_SIZE);
+
+      try {
+        await replaceChunked(file, vname, tempKey, totalChunks);
+        setReplaceProgress(100);
+        replaceDone.textContent = ' . json_encode(get_string('vimeo_replace_done', 'resource2')) . ';
+        replaceDone.style.display = "block";
+        replaceStatus.textContent = "";
+        replaceFile.value = "";
+        replaceCtrl.style.display = "none";
+        deleteBtn.style.display = "none"; // no video ID to delete anymore
+      } catch (err) {
+        showReplaceError(err.message || String(err));
+        replaceBtn.disabled = false;
+      }
+    });
+  }
+
+  async function replaceChunked(file, vname, tempKey, totalChunks) {
+    for (var i = 0; i < totalChunks; i++) {
+      var start = i * CHUNK_SIZE;
+      var end   = Math.min(start + CHUNK_SIZE, file.size);
+      var blob  = file.slice(start, end);
+
+      var fd = new FormData();
+      fd.append("file",         blob, file.name);
+      fd.append("chunk",        i);
+      fd.append("chunks",       totalChunks);
+      fd.append("temp_key",     tempKey);
+      fd.append("total_size",   file.size);
+      fd.append("vname",        vname);
+      fd.append("video_type",   typeVisible ? typeVisible.value : "0");
+      fd.append("resource2_id", RESOURCE2_ID);
+      fd.append("sesskey",      SESSKEY);
+      fd.append("courseid",     COURSEID);
+
+      var pct = Math.round(((i + 1) / totalChunks) * 100);
+      setReplaceProgress(pct);
+      replaceStatus.textContent = "' . get_string('vimeo_replacing', 'resource2', "' + pct + '") . '";
+
+      var resp = await fetch(REPLACE_URL, { method: "POST", body: fd });
+      var data = await resp.json();
+
+      if (!data.OK) {
+        throw new Error(data.info || "Upload error on chunk " + i);
+      }
+    }
+  }
+
+  function setReplaceProgress(pct) {
+    replaceBar.style.width = pct + "%";
+    replaceBar.textContent = pct + "%";
+    replaceBar.setAttribute("aria-valuenow", pct);
+  }
+
+  function showReplaceError(msg) {
+    replaceError.textContent   = msg;
+    replaceError.style.display = "block";
+    replaceDone.style.display  = "none";
+  }
+
+  // ── Delete video ──────────────────────────────────────────────────────
+  if (deleteBtn) {
+    deleteBtn.addEventListener("click", async function () {
+      var confirmed = confirm(' . json_encode(get_string('vimeo_delete_confirm', 'resource2')) . ');
+      if (!confirmed) return;
+
+      deleteBtn.disabled = true;
+      deleteError.style.display = "none";
+
+      var fd = new FormData();
+      fd.append("resource2_id", RESOURCE2_ID);
+      fd.append("sesskey",      SESSKEY);
+      fd.append("courseid",     COURSEID);
+
+      try {
+        var resp = await fetch(DELETE_URL, { method: "POST", body: fd });
+        var data = await resp.json();
+        if (data.OK) {
+          deleteDone.textContent   = ' . json_encode(get_string('vimeo_delete_done', 'resource2')) . ';
+          deleteDone.style.display = "block";
+          deleteBtn.style.display  = "none";
+          // Also hide the replace section — nothing to replace.
+          var rd = document.getElementById("r2-replace-details");
+          if (rd) rd.style.display = "none";
+        } else {
+          throw new Error(data.info || "Delete failed.");
+        }
+      } catch (err) {
+        deleteError.textContent   = err.message || String(err);
+        deleteError.style.display = "block";
+        deleteBtn.disabled        = false;
+      }
+    });
+  }
+})();
+</script>';
+
+                $mform->addElement('html', $manage_html);
+            }
+        }
+
+        //-------------------------------------------------------
         $this->add_action_buttons();
 
         //-------------------------------------------------------

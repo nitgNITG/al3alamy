@@ -146,6 +146,55 @@ function resource2_update_instance($data, $mform) {
     $DB->update_record('resource2', $data);
     resource2_set_mainfile($data);
 
+    // ── Sync video metadata ───────────────────────────────────────────────
+    // Update the video type in reda_video_type2 if the teacher changed it.
+    $new_video_type = isset($data->video_type) ? (int)$data->video_type : 0;
+    if ($new_video_type > 0) {
+        $type_rec = $DB->get_record('reda_video_type2', ['resource2_id' => $data->id]);
+        if ($type_rec) {
+            if ((int)$type_rec->type !== $new_video_type) {
+                $type_rec->type = $new_video_type;
+                $DB->update_record('reda_video_type2', $type_rec);
+            }
+        } else {
+            // No type record yet — create one.
+            $new_type_rec               = new stdClass();
+            $new_type_rec->resource2_id = $data->id;
+            $new_type_rec->type         = $new_video_type;
+            $DB->insert_record('reda_video_type2', $new_type_rec);
+        }
+    }
+
+    // Sync the Vimeo video title with the activity name (metadata-only PATCH).
+    // Only when a real numeric Vimeo video ID exists (skip during a replace).
+    $vimeo_rec = $DB->get_record('vimeo_files2', ['resource2_id' => $data->id]);
+    if ($vimeo_rec && !empty(trim((string)$vimeo_rec->url))
+            && ctype_digit(trim((string)$vimeo_rec->url))) {
+        $new_name = trim($data->name ?? '');
+        if ($new_name !== '' && $new_name !== trim((string)($vimeo_rec->name ?? ''))) {
+            // Update DB name.
+            $upd       = new stdClass();
+            $upd->id   = $vimeo_rec->id;
+            $upd->name = $new_name;
+            $DB->update_record('vimeo_files2', $upd);
+
+            // PATCH Vimeo (fast metadata-only call — no upload involved).
+            try {
+                require_once($CFG->dirroot . '/vimeo/vendor/autoload.php');
+                $vimeoclient = new \Vimeo\Vimeo(
+                    "4dad588b7f47a44426afc26f398fe2367ea49c92",
+                    "IHRxCFjq5qvsKlU6DjWGfNQwtZGHGmK1pByyCYWGrkWnE9F91BbNqPdqXY+dHVyvKjvRWYTu3ba2A8KM1GR2gcqqYiz+jXAx6uLrsEb0jFJrUSMIi3KMIyS+Je+nsN3s",
+                    "195c95a4e775fca8d6e70cb8db4aca73"
+                );
+                $vimeoclient->request('/videos/' . trim((string)$vimeo_rec->url),
+                    ['name' => $new_name], 'PATCH');
+            } catch (Exception $e) {
+                error_log('resource2_update_instance: Vimeo PATCH failed — ' . $e->getMessage());
+            }
+        }
+    }
+    // ─────────────────────────────────────────────────────────────────────
+
     $completiontimeexpected = !empty($data->completionexpected) ? $data->completionexpected : null;
     \core_completion\api::update_completion_date_event($data->coursemodule, 'resource2', $data->id, $completiontimeexpected);
 

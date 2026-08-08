@@ -130,3 +130,37 @@ If the file type is not known to the system, it will not display.';
 $string['uploadeddate'] = 'Uploaded {$a}';
 $string['delete_from_vimeo'] = 'Delete video from Vimeo when module is deleted';
 $string['delete_from_vimeo_desc'] = 'When enabled, deleting a resource2 module that has a Vimeo-hosted video will also permanently delete that video from the Vimeo account via the API. Leave disabled to keep videos on Vimeo even after removing them from the academy.';
+
+// ── Video quota settings (super admin only) ────────────────────────────────
+$string['quota_heading']           = 'Video Upload Quota';
+$string['quota_heading_desc']      = 'Set platform-wide limits for video uploads. These settings are visible to site administrators only.';
+$string['max_video_count']         = 'Maximum number of videos';
+$string['max_video_count_desc']    = 'Maximum total number of videos allowed on the platform. Upload is blocked when this limit is reached.';
+$string['max_video_size_mb']       = 'Maximum size per video (MB)';
+$string['max_video_size_mb_desc']  = 'Maximum file size in megabytes allowed for a single video upload. Uploads larger than this are rejected with a "please compress your video" message.';
+$string['max_total_storage_gb']    = 'Maximum total storage (GB)';
+$string['max_total_storage_gb_desc'] = 'Maximum combined storage in gigabytes for all uploaded videos. Upload is blocked when this limit is reached.';
+$string['quota_status_heading']    = 'Current Usage';
+$string['quota_usage_count']       = 'Videos uploaded: {$a->current} / {$a->max}';
+$string['quota_usage_storage']     = 'Storage used: {$a->current} GB / {$a->max} GB';
+
+// ── Quota error messages (shown to teachers on upload) ────────────────────
+$string['quota_error_count']       = 'Upload blocked: the platform has reached its maximum video limit ({$a} videos). Please contact the site administrator.';
+$string['quota_error_size']        = 'This video is too large ({$a->size} MB). The maximum allowed size is {$a->max} MB. Please compress the video and try again.';
+$string['quota_error_storage']     = 'Upload blocked: the platform storage limit has been reached. Please contact the site administrator.';
+
+// ── Video upload UI strings (shown in mod_form) ───────────────────────────
+$string['vimeo_upload_section']   = 'Upload Video';
+$string['vimeo_file_label']       = 'Select video file (MP4, MOV, etc.)';
+$string['vimeo_name_label']       = 'Video title on Vimeo (defaults to activity name)';
+$string['vimeo_type_label']       = 'Video type';
+$string['vimeo_type_quiz']        = 'Quiz';
+$string['vimeo_type_lecture']     = 'Lecture';
+$string['vimeo_type_homework']    = 'Homework';
+$string['vimeo_type_summary']     = 'Summary';
+$string['vimeo_type_revision']    = 'Revision';
+$string['vimeo_upload_btn']       = 'Start Upload';
+$string['vimeo_upload_required']  = 'You must upload a video before saving this activity.';
+$string['vimeo_uploading']        = 'Uploading\u2026 {$a}%';
+$string['vimeo_upload_done']      = 'Video received \u2713 \u2014 Vimeo processing in background. You can now save the activity.';
+$string['vimeo_upload_error']     = 'Upload failed: {$a}. Please try again.';

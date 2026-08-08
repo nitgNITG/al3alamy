@@ -26,13 +26,74 @@
 defined('MOODLE_INTERNAL') || die;
 
 if ($ADMIN->fulltree) {
-    // Delete Vimeo video when module is deleted.
+
+    // ── Existing: delete from Vimeo on module delete ──────────────────────────
     $settings->add(new admin_setting_configcheckbox(
         'resource2/delete_from_vimeo',
         get_string('delete_from_vimeo', 'resource2'),
         get_string('delete_from_vimeo_desc', 'resource2'),
         0   // default: disabled (safe)
     ));
+
+    // ── Video Quota — super admin only ────────────────────────────────────────
+    if (is_siteadmin()) {
+
+        $settings->add(new admin_setting_heading(
+            'resource2/quota_heading',
+            get_string('quota_heading', 'resource2'),
+            get_string('quota_heading_desc', 'resource2')
+        ));
+
+        // Max number of videos allowed on the platform.
+        $settings->add(new admin_setting_configtext(
+            'resource2/max_video_count',
+            get_string('max_video_count', 'resource2'),
+            get_string('max_video_count_desc', 'resource2'),
+            500,
+            PARAM_INT
+        ));
+
+        // Max size of a single uploaded video (MB).
+        $settings->add(new admin_setting_configtext(
+            'resource2/max_video_size_mb',
+            get_string('max_video_size_mb', 'resource2'),
+            get_string('max_video_size_mb_desc', 'resource2'),
+            500,
+            PARAM_INT
+        ));
+
+        // Max total storage for all videos (GB).
+        $settings->add(new admin_setting_configtext(
+            'resource2/max_total_storage_gb',
+            get_string('max_total_storage_gb', 'resource2'),
+            get_string('max_total_storage_gb_desc', 'resource2'),
+            50,
+            PARAM_INT
+        ));
+
+        // ── Read-only usage counters ──────────────────────────────────────────
+        $current_count    = (int)(get_config('resource2', 'video_count') ?: 0);
+        $current_bytes    = (int)(get_config('resource2', 'total_storage_bytes') ?: 0);
+        $current_gb       = round($current_bytes / (1024 * 1024 * 1024), 2);
+        $max_count        = (int)(get_config('resource2', 'max_video_count') ?: 500);
+        $max_gb           = (int)(get_config('resource2', 'max_total_storage_gb') ?: 50);
+
+        $usage_html = html_writer::tag('ul',
+            html_writer::tag('li',
+                get_string('quota_usage_count', 'resource2',
+                    (object)['current' => $current_count, 'max' => $max_count])) .
+            html_writer::tag('li',
+                get_string('quota_usage_storage', 'resource2',
+                    (object)['current' => $current_gb, 'max' => $max_gb])),
+            ['style' => 'margin:4px 0 0;padding-inline-start:20px;']
+        );
+
+        $settings->add(new admin_setting_heading(
+            'resource2/quota_status_heading',
+            get_string('quota_status_heading', 'resource2'),
+            $usage_html
+        ));
+    }
 }
 
 // if ($ADMIN->fulltree) {

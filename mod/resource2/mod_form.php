@@ -143,6 +143,237 @@ class mod_resource2_mod_form extends moodleform_mod {
         $this->standard_coursemodule_elements();
 
         //-------------------------------------------------------
+        // ── Video upload section (new modules only) ──────────────────────
+        if (!$this->current->instance) {
+            // Quota pre-check: if limits exceeded, show error and skip upload UI.
+            $max_count      = (int)(get_config('resource2', 'max_video_count')      ?: 500);
+            $cur_count      = (int)(get_config('resource2', 'video_count')          ?: 0);
+            $max_size_mb    = (int)(get_config('resource2', 'max_video_size_mb')    ?: 500);
+            $max_storage_gb = (int)(get_config('resource2', 'max_total_storage_gb') ?: 50);
+            $cur_bytes      = (int)(get_config('resource2', 'total_storage_bytes')  ?: 0);
+            $cur_gb         = round($cur_bytes / (1024 * 1024 * 1024), 2);
+            $quota_ok       = ($cur_count < $max_count) && ($cur_gb < $max_storage_gb);
+
+            $mform->addElement('header', 'vimeo_upload_header',
+                get_string('vimeo_upload_section', 'resource2'));
+            $mform->setExpanded('vimeo_upload_header');
+
+            if (!$quota_ok) {
+                // Show which quota is exceeded.
+                if ($cur_count >= $max_count) {
+                    $mform->addElement('static', 'quota_error_display', '',
+                        html_writer::tag('div',
+                            get_string('quota_error_count', 'resource2', $max_count),
+                            ['class' => 'alert alert-danger']));
+                } else {
+                    $mform->addElement('static', 'quota_error_display', '',
+                        html_writer::tag('div',
+                            get_string('quota_error_storage', 'resource2'),
+                            ['class' => 'alert alert-danger']));
+                }
+            } else {
+                // Hidden fields — populated by JS when upload completes.
+                $mform->addElement('hidden', 'vimeo_pending_record_id', 0);
+                $mform->setType('vimeo_pending_record_id', PARAM_INT);
+
+                $mform->addElement('hidden', 'video_type', 2);
+                $mform->setType('video_type', PARAM_INT);
+
+                // Video type selector.
+                $type_options = [
+                    1 => get_string('vimeo_type_quiz',     'resource2'),
+                    2 => get_string('vimeo_type_lecture',  'resource2'),
+                    3 => get_string('vimeo_type_homework', 'resource2'),
+                    4 => get_string('vimeo_type_summary',  'resource2'),
+                    5 => get_string('vimeo_type_revision', 'resource2'),
+                ];
+                $mform->addElement('select', 'video_type_visible',
+                    get_string('vimeo_type_label', 'resource2'), $type_options);
+                $mform->setDefault('video_type_visible', 2);
+
+                // Upload UI rendered as raw HTML.
+                $upload_url = new moodle_url('/mod/resource2/upload.php');
+                $sesskey    = sesskey();
+                $courseid   = $this->_course->id;
+
+                $upload_html = '
+<div id="r2-upload-wrap" style="margin:10px 0;">
+  <div class="form-group row">
+    <label class="col-sm-3 col-form-label" for="r2-file-input">'
+    . get_string('vimeo_file_label', 'resource2') . '</label>
+    <div class="col-sm-9">
+      <input type="file" id="r2-file-input" class="form-control-file"
+             accept="video/mp4,video/quicktime,video/x-msvideo,video/*">
+    </div>
+  </div>
+  <div class="form-group row" id="r2-upload-controls" style="display:none;">
+    <div class="col-sm-9 offset-sm-3">
+      <button type="button" id="r2-upload-btn" class="btn btn-primary">'
+    . get_string('vimeo_upload_btn', 'resource2') . '</button>
+      <div class="progress mt-2" style="height:20px;">
+        <div id="r2-progress-bar" class="progress-bar progress-bar-striped progress-bar-animated"
+             role="progressbar" style="width:0%" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">0%</div>
+      </div>
+      <p id="r2-upload-status" class="mt-1 text-muted"></p>
+    </div>
+  </div>
+  <div id="r2-upload-done" class="alert alert-success" style="display:none;"></div>
+  <div id="r2-upload-error" class="alert alert-danger" style="display:none;"></div>
+</div>
+<script>
+(function () {
+  var CHUNK_SIZE  = 10 * 1024 * 1024; // 10 MB
+  var UPLOAD_URL  = ' . json_encode($upload_url->out(false)) . ';
+  var SESSKEY     = ' . json_encode($sesskey) . ';
+  var COURSEID    = ' . json_encode((string)$courseid) . ';
+  var MAX_SIZE_MB = ' . json_encode($max_size_mb) . ';
+
+  var fileInput   = document.getElementById("r2-file-input");
+  var uploadBtn   = document.getElementById("r2-upload-btn");
+  var controls    = document.getElementById("r2-upload-controls");
+  var progressBar = document.getElementById("r2-progress-bar");
+  var statusEl    = document.getElementById("r2-upload-status");
+  var doneEl      = document.getElementById("r2-upload-done");
+  var errorEl     = document.getElementById("r2-upload-error");
+  var pendingField= document.getElementById("id_vimeo_pending_record_id");
+  var typeField   = document.getElementById("id_video_type");
+  var typeVisible = document.getElementById("id_video_type_visible");
+
+  // Sync visible select → hidden field.
+  if (typeVisible && typeField) {
+    typeVisible.addEventListener("change", function () {
+      typeField.value = typeVisible.value;
+    });
+    typeField.value = typeVisible.value;
+  }
+
+  // Show upload controls when a file is chosen.
+  fileInput.addEventListener("change", function () {
+    errorEl.style.display = "none";
+    doneEl.style.display  = "none";
+    controls.style.display = fileInput.files.length ? "block" : "none";
+  });
+
+  // Upload button handler.
+  uploadBtn.addEventListener("click", async function () {
+    var file = fileInput.files[0];
+    if (!file) return;
+
+    var sizeMb = file.size / (1024 * 1024);
+    if (MAX_SIZE_MB > 0 && sizeMb > MAX_SIZE_MB) {
+      showError("' . get_string('quota_error_size', 'resource2', (object)['size' => "' + Math.round(sizeMb) + '", 'max' => "' + MAX_SIZE_MB + '"]) . '");
+      return;
+    }
+
+    uploadBtn.disabled = true;
+    errorEl.style.display = "none";
+
+    // Read video title from the activity name field (or filename).
+    var nameField = document.getElementById("id_name");
+    var vname = (nameField && nameField.value.trim()) ? nameField.value.trim() : file.name;
+
+    var tempKey = "u' . $USER->id . '_" + Date.now();
+    var chunks  = Math.ceil(file.size / CHUNK_SIZE);
+
+    try {
+      var recordId = await uploadChunked(file, vname, tempKey, chunks);
+      // Success.
+      pendingField.value = recordId;
+      // Keep video_type in sync.
+      typeField.value = typeVisible ? typeVisible.value : "2";
+      setProgress(100);
+      doneEl.textContent = ' . json_encode(get_string('vimeo_upload_done', 'resource2')) . ';
+      doneEl.style.display = "block";
+      statusEl.textContent = "";
+      // Enable the submit buttons.
+      enableSaveButtons();
+    } catch (err) {
+      showError(err.message || String(err));
+      uploadBtn.disabled = false;
+    }
+  });
+
+  async function uploadChunked(file, vname, tempKey, totalChunks) {
+    for (var i = 0; i < totalChunks; i++) {
+      var start = i * CHUNK_SIZE;
+      var end   = Math.min(start + CHUNK_SIZE, file.size);
+      var blob  = file.slice(start, end);
+
+      var fd = new FormData();
+      fd.append("file",       blob, file.name);
+      fd.append("chunk",      i);
+      fd.append("chunks",     totalChunks);
+      fd.append("temp_key",   tempKey);
+      fd.append("total_size", file.size);
+      fd.append("vname",      vname);
+      fd.append("description", vname);
+      fd.append("video_type",  typeVisible ? typeVisible.value : "2");
+      fd.append("sesskey",     SESSKEY);
+      fd.append("courseid",    COURSEID);
+
+      var pct = Math.round(((i + 1) / totalChunks) * 100);
+      setProgress(pct);
+      statusEl.textContent = "' . get_string('vimeo_uploading', 'resource2', "' + pct + '") . '";
+
+      var resp = await fetch(UPLOAD_URL, { method: "POST", body: fd });
+      var data = await resp.json();
+
+      if (!data.OK) {
+        throw new Error(data.info || "Upload error on chunk " + i);
+      }
+      if (data.record_id) {
+        return data.record_id; // Last chunk returned the DB record id.
+      }
+    }
+    throw new Error("No record_id returned from server.");
+  }
+
+  function setProgress(pct) {
+    progressBar.style.width  = pct + "%";
+    progressBar.textContent  = pct + "%";
+    progressBar.setAttribute("aria-valuenow", pct);
+  }
+
+  function showError(msg) {
+    errorEl.textContent    = msg;
+    errorEl.style.display  = "block";
+    doneEl.style.display   = "none";
+    pendingField.value     = 0;
+    disableSaveButtons("Please fix the upload error before saving.");
+  }
+
+  function enableSaveButtons() {
+    var btns = document.querySelectorAll(
+      "#id_submitbutton, #id_submitbutton2, [name=submitbutton], [name=submitbutton2]");
+    btns.forEach(function (b) {
+      b.disabled = false;
+      b.removeAttribute("title");
+    });
+  }
+
+  function disableSaveButtons(msg) {
+    var btns = document.querySelectorAll(
+      "#id_submitbutton, #id_submitbutton2, [name=submitbutton], [name=submitbutton2]");
+    btns.forEach(function (b) {
+      b.disabled = true;
+      if (msg) b.title = msg;
+    });
+  }
+
+  // On page load: disable save buttons until upload completes (new module only).
+  document.addEventListener("DOMContentLoaded", function () {
+    if (!pendingField || pendingField.value == "0" || pendingField.value === "") {
+      disableSaveButtons("' . get_string('vimeo_upload_required', 'resource2') . '");
+    }
+  });
+})();
+</script>';
+
+                $mform->addElement('html', $upload_html);
+            }
+        }
+
+        //-------------------------------------------------------
         $this->add_action_buttons();
 
         //-------------------------------------------------------
@@ -201,6 +432,11 @@ class mod_resource2_mod_form extends moodleform_mod {
         global $USER;
 
         $errors = parent::validation($data, $files);
+
+        // For new modules: require a video upload to be started.
+        if (empty($this->current->instance) && empty($data['vimeo_pending_record_id'])) {
+            $errors['vimeo_upload_header'] = get_string('vimeo_upload_required', 'resource2');
+        }
 
         $usercontext = context_user::instance($USER->id);
         $fs = get_file_storage();

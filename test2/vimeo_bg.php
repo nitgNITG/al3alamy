@@ -217,6 +217,23 @@ try {
         $DB->update_record('vimeo_files2', $upd);
 
         error_log('vimeo_bg.php: DB updated, video_id=' . $video_id);
+
+        // ── Increment quota counters ──────────────────────────────────────
+        // Fetch video size from Vimeo so the storage counter is accurate.
+        $video_bytes = 0;
+        try {
+            $size_resp = $client->request('/videos/' . $video_id . '?fields=upload.size', [], 'GET');
+            if (!empty($size_resp['body']['upload']['size'])) {
+                $video_bytes = (int)$size_resp['body']['upload']['size'];
+            }
+        } catch (Exception $e) {
+            error_log('vimeo_bg.php: could not fetch size for video ' . $video_id . ' — ' . $e->getMessage());
+        }
+        $cur_count   = (int)(get_config('resource2', 'video_count')          ?: 0);
+        $cur_storage = (int)(get_config('resource2', 'total_storage_bytes')  ?: 0);
+        set_config('video_count',         $cur_count + 1,               'resource2');
+        set_config('total_storage_bytes', $cur_storage + $video_bytes,  'resource2');
+        error_log('vimeo_bg.php: quota updated — count=' . ($cur_count + 1) . ' storage_bytes=' . ($cur_storage + $video_bytes));
     }
 
     // ── Clean up temp files ───────────────────────────────────────────────

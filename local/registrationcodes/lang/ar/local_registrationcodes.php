@@ -15,9 +15,9 @@ $string['error_code_expired']   = 'انتهت صلاحية هذا الكود.';
 
 // Signup form — بيانات الطالب.
 $string['field_parentphone']             = 'رقم هاتف ولي الأمر';
-$string['field_parentphone_help']        = 'أدخل رقم الهاتف المحمول المصري لولي الأمر (مثال: 01012345678). يجب أن يكون رقم فودافون أو أورنج أو اتصالات أو WE.';
+$string['field_parentphone_help']        = 'أدخل رقم الهاتف المحمول المصري لولي الأمر. يُقبل الرقم بأي من الصيغ: 01012345678 أو 201012345678 أو +201012345678 أو 00201012345678.';
 $string['field_parentphone_placeholder'] = '01012345678';
-$string['error_invalid_phone']           = 'يرجى إدخال رقم هاتف محمول مصري صحيح (01[0/1/2/5]XXXXXXXX).';
+$string['error_invalid_phone']           = 'يرجى إدخال رقم هاتف محمول مصري صحيح. الصيغ المقبولة: 01XXXXXXXXX أو +201XXXXXXXXX أو 00201XXXXXXXXX (فودافون/أورنج/اتصالات/WE).';
 
 $string['field_governorate']      = 'المحافظة';
 $string['field_governorate_help'] = 'اختر المحافظة التي يقيم فيها الطالب.';

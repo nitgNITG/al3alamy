@@ -95,7 +95,7 @@ function local_registrationcodes_extend_signup_form($mform) {
             'text',
             'profile_field_parentphone',
             get_string('field_parentphone', 'local_registrationcodes'),
-            ['size' => 20, 'maxlength' => 15, 'autocomplete' => 'off',
+            ['size' => 20, 'maxlength' => 20, 'autocomplete' => 'off',
              'placeholder' => get_string('field_parentphone_placeholder', 'local_registrationcodes')]
         ),
         'password'
@@ -203,13 +203,20 @@ function local_registrationcodes_validate_extend_signup_form($data) {
 
     // ── Parent phone ───────────────────────────────────────────────────────
     $phone = trim($data['profile_field_parentphone'] ?? '');
+    // Strip spaces and dashes entered by the user.
+    $phone = preg_replace('/[\s\-]/', '', $phone);
     if ($phone === '') {
         if (local_registrationcodes_is_field_required('parentphone')) {
             $errors['profile_field_parentphone'] = get_string('required');
         }
-    } elseif (!preg_match('/^01[0125][0-9]{8}$/', $phone)) {
-        // Always validate format when a value is provided.
-        $errors['profile_field_parentphone'] = get_string('error_invalid_phone', 'local_registrationcodes');
+    } else {
+        // Normalise: remove optional Egyptian country-code prefix
+        // Accepts: +20… / 0020… / 20… (with or without leading zero after prefix)
+        $normalised = preg_replace('/^(\+20|0020|20)(0?)/', '0', $phone);
+        // Now must be 01[0125]XXXXXXXX (11 digits)
+        if (!preg_match('/^01[0125][0-9]{8}$/', $normalised)) {
+            $errors['profile_field_parentphone'] = get_string('error_invalid_phone', 'local_registrationcodes');
+        }
     }
 
     // ── Governorate ────────────────────────────────────────────────────────

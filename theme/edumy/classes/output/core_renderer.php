@@ -715,6 +715,11 @@ return $output;
           $idx = 0;
           foreach ($opts->navitems as $key => $value) {
 
+            // Hide the e-wallet link from the profile dropdown.
+            if (isset($value->url) && strpos((string)$value->url, 'e-wallet') !== false) {
+                continue;
+            }
+
             $ccnMenuItemIcon = '';
 
             if(strpos($value->url, '/my')){

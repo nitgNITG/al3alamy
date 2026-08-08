@@ -452,89 +452,10 @@ function local_videopay_before_footer(): string {
     target.appendChild(b);
   }
 
-  // ── Build the payment modal once ────────────────────────────────────────
-  var modal = document.createElement('div');
-  modal.id = 'vp-modal';
-  modal.style.cssText = 'display:none;position:fixed;inset:0;z-index:100000;background:rgba(0,0,0,.5);';
-  modal.innerHTML =
-    '<div style="background:#fff;max-width:420px;margin:12vh auto;padding:24px;border-radius:12px;position:relative;text-align:center;font-family:inherit;">'
-    + '<span id="vp-close" style="position:absolute;top:10px;inset-inline-end:16px;font-size:26px;cursor:pointer;color:#999;">&times;</span>'
-    + '<h4 style="margin:0 0 4px;color:#00126C;">افتح هذا الدرس / Unlock this lesson</h4>'
-    + '<div id="vp-price" style="font-size:22px;font-weight:700;color:#C9A227;margin-bottom:14px;"></div>'
-    + '<div id="vp-msg" style="display:none;margin-bottom:10px;padding:8px;border-radius:6px;font-size:14px;"></div>'
-    + '<form id="vp-codeform" style="margin-bottom:10px;">'
-    +   '<input id="vp-code" type="text" placeholder="أدخل الكود / Enter code" '
-    +     'style="width:100%;padding:8px;text-align:center;border:1px solid #ccc;border-radius:6px;margin-bottom:8px;">'
-    +   '<button type="submit" style="width:100%;padding:9px;border:0;border-radius:6px;background:#6c757d;color:#fff;font-weight:600;cursor:pointer;">إرسال الكود / Submit code</button>'
-    + '</form>'
-    + '<button id="vp-wallet" type="button" style="width:100%;padding:9px;border:1px solid #00126C;border-radius:6px;background:#fff;color:#00126C;font-weight:600;cursor:pointer;margin-bottom:8px;">💰 الدفع بالمحفظة / Pay with Wallet</button>'
-    + '<a id="vp-card" href="#" style="display:block;width:100%;padding:10px;border-radius:6px;background:#00126C;color:#fff;font-weight:600;text-decoration:none;">💳 ادفع بالكارت / Pay by Card (Kashier)</a>'
-    + '</div>';
-  document.body.appendChild(modal);
-
-  var current = null;
-  var priceEl = document.getElementById('vp-price');
-  var msgEl   = document.getElementById('vp-msg');
-  var cardEl  = document.getElementById('vp-card');
-
-  function showMsg(text, ok){
-    msgEl.textContent = text;
-    msgEl.style.display = 'block';
-    msgEl.style.background = ok ? '#d4edda' : '#f8d7da';
-    msgEl.style.color = ok ? '#155724' : '#721c24';
-  }
-  function openModal(item){
-    current = item;
-    msgEl.style.display = 'none';
-    document.getElementById('vp-code').value = '';
-    priceEl.textContent = money(item.price);
-    cardEl.href = CFG.wwwroot + '/kashier/pay.php?cmid=' + item.cmid
+  function kashierUrl(item){
+    return CFG.wwwroot + '/kashier/pay.php?cmid=' + item.cmid
       + '&groupid=' + item.groupid + '&courseid=' + CFG.courseid + '&amount=' + item.price;
-    modal.style.display = 'block';
   }
-  function closeModal(){ modal.style.display = 'none'; }
-
-  document.getElementById('vp-close').addEventListener('click', closeModal);
-  modal.addEventListener('click', function(e){ if (e.target === modal) closeModal(); });
-
-  function post(url, params, done){
-    var xhr = new XMLHttpRequest();
-    xhr.open('POST', url, true);
-    xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
-    xhr.onreadystatechange = function(){
-      if (xhr.readyState === 4){
-        var res = null;
-        try { res = JSON.parse(xhr.responseText); } catch(e){}
-        done(res);
-      }
-    };
-    var body = Object.keys(params).map(function(k){
-      return encodeURIComponent(k) + '=' + encodeURIComponent(params[k]);
-    }).join('&');
-    xhr.send(body);
-  }
-
-  document.getElementById('vp-codeform').addEventListener('submit', function(e){
-    e.preventDefault();
-    if (!current) return;
-    post(CFG.wwwroot + '/checkcode.php', {
-      code: document.getElementById('vp-code').value,
-      groupid: current.groupid, userid: CFG.userid, courseid: CFG.courseid, clickedAct: 'mod'
-    }, function(res){
-      if (res && res.status === 'success'){ showMsg(res.message || 'تم / Done', true); setTimeout(function(){ location.reload(); }, 1200); }
-      else { showMsg((res && res.message) || 'خطأ / Error', false); }
-    });
-  });
-
-  document.getElementById('vp-wallet').addEventListener('click', function(){
-    if (!current) return;
-    post(CFG.wwwroot + '/paywallet.php', {
-      groupid: current.groupid, userid: CFG.userid, courseid: CFG.courseid, clickedAct: 'mod'
-    }, function(res){
-      if (res && res.status === 'success'){ showMsg(res.message || 'تم / Done', true); setTimeout(function(){ location.reload(); }, 1200); }
-      else { showMsg((res && res.message) || 'خطأ / Error', false); }
-    });
-  });
 
   // ── Enhance each priced module ──────────────────────────────────────────
   CFG.items.forEach(function(item){
@@ -544,7 +465,7 @@ function local_videopay_before_footer(): string {
       || el.querySelector('.activityinstance') || el;
 
     if (item.free){
-      addBadge(title, 'Free / مجاني', '#1a9c5b');
+      addBadge(title, 'مجاني', '#1a9c5b');
       return;
     }
     addBadge(title, money(item.price), '#00126C');
@@ -554,19 +475,23 @@ function local_videopay_before_footer(): string {
     var info = el.querySelector('.availabilityinfo');
     if (info) info.style.display = 'none';
 
-    var buy = document.createElement('button');
-    buy.type = 'button';
+    // Buy button — direct redirect to Kashier, no popup.
+    var buy = document.createElement('a');
+    buy.href = kashierUrl(item);
     buy.className = 'vp-buy-btn';
-    buy.textContent = 'شراء / Buy';
-    buy.style.cssText = 'margin-inline-start:10px;padding:3px 14px;border:0;border-radius:8px;'
-      + 'background:#C9A227;color:#fff;font-weight:700;cursor:pointer;font-size:13px;vertical-align:middle;';
-    buy.addEventListener('click', function(e){ e.preventDefault(); e.stopPropagation(); openModal(item); });
+    buy.textContent = 'اشتري الآن';
+    buy.style.cssText = 'margin-inline-start:10px;padding:3px 14px;border-radius:8px;'
+      + 'background:#C9A227;color:#fff;font-weight:700;cursor:pointer;font-size:13px;'
+      + 'vertical-align:middle;text-decoration:none;display:inline-block;';
     title.appendChild(buy);
 
-    // Clicking the lesson name itself also opens the popup.
+    // Clicking the lesson name itself also goes to Kashier.
     var clickable = el.querySelector('.activityinstance') || title;
     clickable.style.cursor = 'pointer';
-    clickable.addEventListener('click', function(e){ e.preventDefault(); openModal(item); });
+    clickable.addEventListener('click', function(e){
+      e.preventDefault();
+      window.location.href = kashierUrl(item);
+    });
   });
 
   // ── Supporting activities locked behind their section's video ───────────────

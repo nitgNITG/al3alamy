@@ -757,7 +757,7 @@ class core_course_renderer extends plugin_renderer_base
             // We may be displaying this just in order to show information
             // about visibility, without the actual link ($mod->is_visible_on_course_page()).
             $output .= html_writer::tag('div', $activitylink, array('id' => $mod->id, 'mod' => $mod->id));
-            $output1 = $mod->availableinfo;
+            $output1 = (string)($mod->availableinfo ?? '');
             if (strpos($output1, 'week') !== false || strpos($output1, 'اسبوع') !== false) {
 
                 $output .= '

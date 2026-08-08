@@ -10,6 +10,21 @@ defined('MOODLE_INTERNAL') || die();
 // ── Option helpers ─────────────────────────────────────────────────────────────
 
 /**
+ * Read the 'required' flag for a custom profile field from the database.
+ *
+ * This is the single source of truth — admins control it via:
+ *   Site Administration → Users → User profile fields → edit field → Required
+ *
+ * @param  string $shortname  e.g. 'parentphone', 'governorate', 'track', 'address'
+ * @return bool
+ */
+function local_registrationcodes_is_field_required(string $shortname): bool {
+    global $DB;
+    $field = $DB->get_record('user_info_field', ['shortname' => $shortname], 'required', IGNORE_MISSING);
+    return $field ? (bool)$field->required : false;
+}
+
+/**
  * Returns the ordered list of Egyptian governorates for the signup dropdown.
  * Keys and values are identical (Arabic text) — that is what gets stored in
  * user_info_data and displayed on the profile page.
@@ -86,16 +101,10 @@ function local_registrationcodes_extend_signup_form($mform) {
         'password'
     );
     $mform->setType('profile_field_parentphone', PARAM_TEXT);
-    $mform->addRule(
-        'profile_field_parentphone',
-        get_string('required'),
-        'required', null, 'client'
-    );
-    $mform->addRule(
-        'profile_field_parentphone',
-        get_string('required'),
-        'required', null, 'server'
-    );
+    if (local_registrationcodes_is_field_required('parentphone')) {
+        $mform->addRule('profile_field_parentphone', get_string('required'), 'required', null, 'client');
+        $mform->addRule('profile_field_parentphone', get_string('required'), 'required', null, 'server');
+    }
     $mform->addHelpButton('profile_field_parentphone', 'field_parentphone', 'local_registrationcodes');
 
     // ── 2. Governorate ─────────────────────────────────────────────────────
@@ -109,6 +118,10 @@ function local_registrationcodes_extend_signup_form($mform) {
         'password'
     );
     $mform->setType('profile_field_governorate', PARAM_TEXT);
+    if (local_registrationcodes_is_field_required('governorate')) {
+        $mform->addRule('profile_field_governorate', get_string('required'), 'required', null, 'client');
+        $mform->addRule('profile_field_governorate', get_string('required'), 'required', null, 'server');
+    }
     $mform->addHelpButton('profile_field_governorate', 'field_governorate', 'local_registrationcodes');
 
     // ── 3. Track ───────────────────────────────────────────────────────────
@@ -122,9 +135,13 @@ function local_registrationcodes_extend_signup_form($mform) {
         'password'
     );
     $mform->setType('profile_field_track', PARAM_TEXT);
+    if (local_registrationcodes_is_field_required('track')) {
+        $mform->addRule('profile_field_track', get_string('required'), 'required', null, 'client');
+        $mform->addRule('profile_field_track', get_string('required'), 'required', null, 'server');
+    }
     $mform->addHelpButton('profile_field_track', 'field_track', 'local_registrationcodes');
 
-    // ── 4. Address (optional) ──────────────────────────────────────────────
+    // ── 4. Address ─────────────────────────────────────────────────────────
     $mform->insertElementBefore(
         $mform->createElement(
             'textarea',
@@ -135,6 +152,10 @@ function local_registrationcodes_extend_signup_form($mform) {
         'password'
     );
     $mform->setType('profile_field_address', PARAM_TEXT);
+    if (local_registrationcodes_is_field_required('address')) {
+        $mform->addRule('profile_field_address', get_string('required'), 'required', null, 'client');
+        $mform->addRule('profile_field_address', get_string('required'), 'required', null, 'server');
+    }
     $mform->addHelpButton('profile_field_address', 'field_address', 'local_registrationcodes');
 
     // ── 5. Registration code (appended after city/country as before) ───────
@@ -183,15 +204,20 @@ function local_registrationcodes_validate_extend_signup_form($data) {
     // ── Parent phone ───────────────────────────────────────────────────────
     $phone = trim($data['profile_field_parentphone'] ?? '');
     if ($phone === '') {
-        $errors['profile_field_parentphone'] = get_string('required');
+        if (local_registrationcodes_is_field_required('parentphone')) {
+            $errors['profile_field_parentphone'] = get_string('required');
+        }
     } elseif (!preg_match('/^01[0125][0-9]{8}$/', $phone)) {
+        // Always validate format when a value is provided.
         $errors['profile_field_parentphone'] = get_string('error_invalid_phone', 'local_registrationcodes');
     }
 
     // ── Governorate ────────────────────────────────────────────────────────
     $gov = $data['profile_field_governorate'] ?? '';
     if ($gov === '') {
-        $errors['profile_field_governorate'] = get_string('required');
+        if (local_registrationcodes_is_field_required('governorate')) {
+            $errors['profile_field_governorate'] = get_string('required');
+        }
     } elseif (!array_key_exists($gov, local_registrationcodes_governorate_options())) {
         $errors['profile_field_governorate'] = get_string('invalid', 'error');
     }
@@ -199,12 +225,18 @@ function local_registrationcodes_validate_extend_signup_form($data) {
     // ── Track ──────────────────────────────────────────────────────────────
     $track = $data['profile_field_track'] ?? '';
     if ($track === '') {
-        $errors['profile_field_track'] = get_string('required');
+        if (local_registrationcodes_is_field_required('track')) {
+            $errors['profile_field_track'] = get_string('required');
+        }
     } elseif (!array_key_exists($track, local_registrationcodes_track_options())) {
         $errors['profile_field_track'] = get_string('invalid', 'error');
     }
 
-    // address is optional — no validation needed.
+    // ── Address ────────────────────────────────────────────────────────────
+    $address = trim($data['profile_field_address'] ?? '');
+    if ($address === '' && local_registrationcodes_is_field_required('address')) {
+        $errors['profile_field_address'] = get_string('required');
+    }
 
     return $errors;
 }

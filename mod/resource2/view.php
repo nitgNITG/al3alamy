@@ -89,34 +89,61 @@ $video=$DB->get_record("resource2",array("id"=>$course_modules->instance));
 $record=$DB->get_record("vimeo_files2",array('resource2_id'=>$video->id));
 $PAGE->set_title($video->name);
 $PAGE->set_heading($video->name);
-// echo'<link href="https://vjs.zencdn.net/7.19.2/video-js.css" rel="stylesheet" />';
 
 echo $OUTPUT->header();
 
+// ── Guard: no vimeo_files2 row yet, or upload still in background ─────────
+if (empty($record) || empty(trim($record->url))) {
+    echo '
+    <div class="alert alert-info d-flex align-items-center gap-3" role="alert"
+         style="max-width:600px;margin:40px auto;">
+        <div class="spinner-border text-info flex-shrink-0" role="status">
+            <span class="visually-hidden">Loading…</span>
+        </div>
+        <div>
+            <strong>الفيديو قيد الرفع / Video is being uploaded</strong><br>
+            <span style="font-size:14px;">
+                يتم رفع الفيديو إلى Vimeo في الخلفية. يرجى تحديث الصفحة بعد قليل.<br>
+                The video is being uploaded to Vimeo in the background.
+                Please refresh the page in a moment.
+            </span>
+        </div>
+    </div>
+    <script>
+        // Auto-refresh every 15 seconds until the video is ready.
+        setTimeout(function(){ window.location.reload(); }, 15000);
+    </script>';
+    echo $OUTPUT->footer();
+    exit;
+}
 
 $client = new Vimeo("4dad588b7f47a44426afc26f398fe2367ea49c92", "IHRxCFjq5qvsKlU6DjWGfNQwtZGHGmK1pByyCYWGrkWnE9F91BbNqPdqXY+dHVyvKjvRWYTu3ba2A8KM1GR2gcqqYiz+jXAx6uLrsEb0jFJrUSMIi3KMIyS+Je+nsN3s", "195c95a4e775fca8d6e70cb8db4aca73");
-$uri="/videos/".$record->url;
-$response = $client->request($uri, [], 'GET');
- $status=$response['body']['transcode']['status'];
- if($status=="in_progress"){
-     echo '<div class="spinner-border text-warning"></div>
-     <span>Your video is still transcoding Refresh again after a while.</span>
-     ';
- }
- else{
-   
-    $time =$DB->get_records_sql("SELECT UNIX_TIMESTAMP(current_Timestamp())-UNIX_TIMESTAMP(timecreated) as time from mo_vimeo_files where id='$record->id'");
-    foreach($time as $t){
-        if($t->time<150){
-            echo '
-            <div class="alert alert-success" role="alert" id="alert">
-            Your video finished transcoding.
-       </div>
-            ';
+
+// ── Vimeo-hosted numeric ID ───────────────────────────────────────────────
+if (ctype_digit(trim($record->url))) {
+    $uri = "/videos/" . trim($record->url);
+    try {
+        $response = $client->request($uri, [], 'GET');
+    } catch (Exception $e) {
+        $response = ['body' => []];
+    }
+    $status = $response['body']['transcode']['status'] ?? '';
+    if ($status === 'in_progress') {
+        echo '<div class="spinner-border text-warning"></div>
+        <span>Your video is still transcoding. Refresh again after a while.</span>';
+    } else {
+        $time = $DB->get_records_sql(
+            "SELECT UNIX_TIMESTAMP(CURRENT_TIMESTAMP())-UNIX_TIMESTAMP(timecreated) AS time
+               FROM {vimeo_files2} WHERE id = ?", [$record->id]);
+        foreach ($time as $t) {
+            if ($t->time < 150) {
+                echo '<div class="alert alert-success" role="alert" id="alert">
+                          Your video finished transcoding.
+                      </div>';
+            }
         }
     }
-
- }
+}
 //  var_dump($response['body']);
 
 

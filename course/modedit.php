@@ -274,7 +274,9 @@ if ($mform->is_cancelled()) {
 
         // Old quota UI removed — quota is now managed via
         // Admin > Plugins > resource2 settings and shown inside mod_form.
+    }
 
+    if ($add == 'resource2') {
             $teacherRoleID = $DB->get_field('role', 'id', array('shortname' => 'editingteacher'));
             $teacherRole = $DB->record_exists('role_assignments', ['userid' => $USER->id, 'roleid' => $teacherRoleID]);
 
@@ -339,7 +341,6 @@ if ($mform->is_cancelled()) {
             
                 </script>';
                     }
-        }
     } else {
 
         $teacherRoleID = $DB->get_field('role', 'id', array('shortname' => 'editingteacher'));

@@ -279,7 +279,7 @@ class mod_resource2_mod_form extends moodleform_mod {
     try {
       var recordId = await uploadChunked(file, vname, tempKey, chunks);
       // Success.
-      pendingField.value = token;
+      pendingField.value = recordId;
       // Keep video_type in sync.
       typeField.value = typeVisible ? typeVisible.value : "2";
       setProgress(100);
@@ -511,7 +511,7 @@ class mod_resource2_mod_form extends moodleform_mod {
     var chunks  = Math.ceil(file.size / CHUNK_SIZE);
     try {
       var recordId = await uploadChunked(file, vname, tempKey, chunks);
-      pendingField.value = token;
+      pendingField.value = recordId;
       typeField.value = typeVisible ? typeVisible.value : "2";
       setProgress(100);
       doneEl.textContent = ' . json_encode(get_string('vimeo_upload_done', 'resource2')) . ';

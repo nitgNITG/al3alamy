@@ -181,3 +181,6 @@ $string['vimeo_delete_done']      = 'Video deleted successfully.';
 $string['vimeo_delete_error']     = 'Delete failed: {$a}. Please try again.';
 $string['vimeo_meta_saved']       = 'Video type updated.';
 $string['vimeo_type_update_btn']  = 'Save video type';
+
+// ── Scheduled task strings ─────────────────────────────────────────────────
+$string['task_cleanup_orphans'] = 'Clean up orphaned Vimeo upload records';

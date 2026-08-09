@@ -123,11 +123,14 @@ if ($vname === '') {
 
 // Create placeholder vimeo_files2 row (resource2_id=0).
 // resource2_add_instance() will update it to the real ID after form save.
+// timecreated is used by the cleanup_orphan_uploads scheduled task to
+// age-filter rows and only delete those older than 24 h.
 $ins               = new stdClass();
 $ins->name         = $vname;
 $ins->description  = $description;
 $ins->resource2_id = 0;   // linked later in resource2_add_instance()
 $ins->url          = '';  // filled by vimeo_bg.php after Vimeo upload completes
+$ins->timecreated  = time();
 $record_id = $DB->insert_record('vimeo_files2', $ins);
 
 // Write params JSON for vimeo_bg.php.

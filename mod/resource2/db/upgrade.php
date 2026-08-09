@@ -65,5 +65,20 @@ function xmldb_resource2_upgrade($oldversion) {
     // Automatically generated Moodle v3.11.0 release upgrade line.
     // Put any upgrade step following this.
 
+    if ($oldversion < 2021051701) {
+        // Add timecreated column to vimeo_files2 so the orphan-cleanup task
+        // can age-filter rows (only delete orphans older than 24 h).
+        // The table is not managed by XMLDB so we add the column manually,
+        // guarded by a column-existence check to make the step re-runnable.
+        $dbman = $DB->get_manager();
+        $table = new xmldb_table('vimeo_files2');
+        $field = new xmldb_field('timecreated', XMLDB_TYPE_INTEGER, '10',
+            null, XMLDB_NOTNULL, null, '0');
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+        upgrade_mod_savepoint(true, 2021051701, 'resource2');
+    }
+
     return true;
 }

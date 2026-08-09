@@ -142,6 +142,7 @@ class mod_resource2_mod_form extends moodleform_mod {
         // ── Video upload section (new activities only) ────────────────────────
         if (!$this->current->instance) {
             $mform->addElement('header', 'videosection', get_string('video_upload_header', 'resource2'));
+            $mform->setExpanded('videosection', true);
 
             // Hidden field to carry the pre-upload token through to add_instance
             $mform->addElement('hidden', 'vimeo_pending_file_token');

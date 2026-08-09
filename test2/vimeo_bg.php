@@ -195,6 +195,39 @@ try {
 
         error_log('vimeo_bg.php: replace done, video_id=' . $video_id);
 
+        // ── Wait for transcoding, then regenerate thumbnail ───────────────
+        // Vimeo keeps the old thumbnail after a replace; we must wait for
+        // the new content to finish transcoding before requesting a new one.
+        $max_wait  = 1800; // 30 minutes
+        $poll_int  = 15;   // check every 15 seconds
+        $elapsed   = 0;
+        $transcode_ok = false;
+        error_log('vimeo_bg.php: waiting for transcode of replaced video ' . $video_id);
+        while ($elapsed < $max_wait) {
+            sleep($poll_int);
+            $elapsed += $poll_int;
+            $resp = $client->request('/videos/' . $video_id . '?fields=transcode', [], 'GET');
+            $ts   = $resp['body']['transcode']['status'] ?? 'in_progress';
+            error_log('vimeo_bg.php: transcode status=' . $ts . ' elapsed=' . $elapsed . 's');
+            if ($ts === 'complete') { $transcode_ok = true; break; }
+            if ($ts === 'error')    { error_log('vimeo_bg.php: transcode error — skipping thumbnail'); break; }
+        }
+        if ($transcode_ok) {
+            // Delete old thumbnails so Vimeo generates fresh ones from the new content.
+            $pics = $client->request('/videos/' . $video_id . '/pictures', [], 'GET');
+            foreach (($pics['body']['data'] ?? []) as $pic) {
+                if (!empty($pic['uri'])) {
+                    $client->request($pic['uri'], [], 'DELETE');
+                }
+            }
+            // Request a new auto-generated thumbnail (frame at 5 s or first frame).
+            $new_pic = $client->request('/videos/' . $video_id . '/pictures', [
+                'time'   => 5,
+                'active' => true,
+            ], 'POST');
+            error_log('vimeo_bg.php: thumbnail regenerated — ' . ($new_pic['status'] ?? '?'));
+        }
+
     } else {
         // ── Upload new video to Vimeo ─────────────────────────────────────
         $uri = $client->upload($perm_file, [

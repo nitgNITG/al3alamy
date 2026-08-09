@@ -109,6 +109,55 @@ function resource2_add_instance($data, $mform) {
     $completiontimeexpected = !empty($data->completionexpected) ? $data->completionexpected : null;
     \core_completion\api::update_completion_date_event($cmid, 'resource2', $data->id, $completiontimeexpected);
 
+    // ── Handle pre-uploaded video token (new activity with inline upload) ────
+    if (!empty($data->vimeo_pending_file_token)) {
+        $token = preg_replace('/[^a-zA-Z0-9_-]/', '', $data->vimeo_pending_file_token);
+        if ($token) {
+            $chunks_dir = $CFG->dirroot . '/test2/chunks';
+            $perm_file  = $chunks_dir . '/' . $token . '.mp4';
+            if (file_exists($perm_file)) {
+                $vname = trim($data->name) ?: ('video_' . time());
+
+                // Insert vimeo_files2 — exact same columns as script.php (no timecreated)
+                $ins               = new stdClass();
+                $ins->name         = $vname;
+                $ins->description  = $vname;
+                $ins->resource2_id = $data->id;
+                $ins->url          = '';
+                $record_id = $DB->insert_record('vimeo_files2', $ins);
+
+                // Insert reda_video_type2
+                $type_data               = new stdClass();
+                $type_data->resource2_id = $data->id;
+                $type_data->type         = (int)(isset($data->video_type) ? $data->video_type : 2);
+                $DB->insert_record('reda_video_type2', $type_data);
+
+                // Write params JSON — exact same format as script.php
+                $params_file = $chunks_dir . '/vimeo_params_' . $record_id . '.json';
+                file_put_contents($params_file, json_encode([
+                    'file'        => $perm_file,
+                    'id'          => $data->id,
+                    'name'        => $vname,
+                    'description' => $vname,
+                    'record_id'   => $record_id,
+                ]));
+
+                // Spawn vimeo_bg.php — exact same exec() as script.php
+                $bg      = escapeshellarg($CFG->dirroot . '/test2/vimeo_bg.php');
+                $pf      = escapeshellarg($params_file);
+                $logfile = escapeshellarg($chunks_dir . '/vimeo_bg.log');
+                $php_cli = trim(shell_exec('which php') ?: '');
+                if (!$php_cli) {
+                    foreach (['/usr/bin/php', '/usr/bin/php8.1', '/usr/bin/php8.0', '/usr/local/bin/php'] as $try) {
+                        if (is_executable($try)) { $php_cli = $try; break; }
+                    }
+                }
+                $php = escapeshellarg($php_cli);
+                exec("$php $bg $pf >> $logfile 2>&1 &");
+            }
+        }
+    }
+
     return $data->id;
 }
 

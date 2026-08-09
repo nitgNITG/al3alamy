@@ -149,6 +149,13 @@ $string['quota_error_count']       = 'Upload blocked: the platform has reached i
 $string['quota_error_size']        = 'This video is too large ({$a->size} MB). The maximum allowed size is {$a->max} MB. Please compress the video and try again.';
 $string['quota_error_storage']     = 'Upload blocked: the platform storage limit has been reached. Please contact the site administrator.';
 
+// ── Inline mod_form upload UI strings ────────────────────────────────────
+$string['video_upload_header']    = 'Upload Video';
+$string['choose_video_file']      = 'Choose video file (MP4, MOV, etc.)';
+$string['uploading']              = 'Uploading\u2026';
+$string['upload_complete']        = 'Video received \u2713 \u2014 Vimeo processing in background. You can now save.';
+$string['upload_error']           = 'Upload failed. Please try again.';
+
 // ── Video upload UI strings (shown in mod_form) ───────────────────────────
 $string['vimeo_upload_section']   = 'Upload Video';
 $string['vimeo_file_label']       = 'Select video file (MP4, MOV, etc.)';

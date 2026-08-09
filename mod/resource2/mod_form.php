@@ -31,7 +31,7 @@ require_once($CFG->libdir.'/filelib.php');
 
 class mod_resource2_mod_form extends moodleform_mod {
     function definition() {
-        global $CFG, $DB;
+        global $CFG, $DB, $USER;
         $mform =& $this->_form;
 
         $config = get_config('resource2');
@@ -138,6 +138,121 @@ class mod_resource2_mod_form extends moodleform_mod {
         $mform->addElement('select', 'filterfiles', get_string('filterfiles', 'resource2'), $options);
         $mform->setDefault('filterfiles', $config->filterfiles);
         $mform->setAdvanced('filterfiles', true);
+
+        // ── Video upload section (new activities only) ────────────────────────
+        if (!$this->current->instance) {
+            $mform->addElement('header', 'videosection', get_string('video_upload_header', 'resource2'));
+
+            // Hidden field to carry the pre-upload token through to add_instance
+            $mform->addElement('hidden', 'vimeo_pending_file_token');
+            $mform->setType('vimeo_pending_file_token', PARAM_ALPHANUMEXT);
+            $mform->setDefault('vimeo_pending_file_token', '');
+
+            // Raw HTML for the upload UI
+            $upload_url = new moodle_url('/mod/resource2/upload.php');
+            $sesskey    = sesskey();
+            $courseid   = $this->_course->id;
+            $chunk_size = 5 * 1024 * 1024; // 5 MB chunks
+
+            $html = '
+<div id="r2-upload-box" style="margin:10px 0;">
+  <label for="r2_video_file" style="display:block;margin-bottom:6px;font-weight:bold;">
+    ' . get_string('choose_video_file', 'resource2') . '
+  </label>
+  <input type="file" id="r2_video_file" accept="video/*" style="margin-bottom:8px;">
+  <div id="r2-progress-wrap" style="display:none;margin-top:8px;">
+    <progress id="r2-progress-bar" value="0" max="100" style="width:100%;height:20px;"></progress>
+    <span id="r2-progress-label" style="display:block;margin-top:4px;font-size:0.9em;color:#555;"></span>
+  </div>
+  <div id="r2-status" style="margin-top:6px;font-weight:bold;color:#c00;"></div>
+</div>
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    var fileInput   = document.getElementById("r2_video_file");
+    var progressWrap = document.getElementById("r2-progress-wrap");
+    var progressBar  = document.getElementById("r2-progress-bar");
+    var progressLabel = document.getElementById("r2-progress-label");
+    var statusDiv   = document.getElementById("r2-status");
+
+    // Find the pending token field and the submit button
+    var pendingField = document.querySelector(\'input[name="vimeo_pending_file_token"]\');
+    var submitBtn    = document.querySelector(\'#id_submitbutton\') ||
+                       document.querySelector(\'[name="submitbutton"]\');
+
+    if (!pendingField) { return; }
+
+    // Disable Save until a video is uploaded
+    if (submitBtn) { submitBtn.disabled = true; }
+
+    fileInput.addEventListener("change", function() {
+        var file = fileInput.files[0];
+        if (!file) { return; }
+
+        var chunkSize  = ' . $chunk_size . ';
+        var totalChunks = Math.ceil(file.size / chunkSize);
+        var tempKey    = "pre_' . $USER->id . '_" + Date.now();
+        var chunkIndex = 0;
+
+        progressWrap.style.display = "block";
+        progressBar.value = 0;
+        progressLabel.textContent = "' . get_string('uploading', 'resource2') . ' 0%";
+        statusDiv.textContent = "";
+        if (submitBtn) { submitBtn.disabled = true; }
+
+        function uploadChunk() {
+            var start = chunkIndex * chunkSize;
+            var end   = Math.min(start + chunkSize, file.size);
+            var blob  = file.slice(start, end);
+
+            var fd = new FormData();
+            fd.append("file",       blob, file.name);
+            fd.append("chunk",      chunkIndex);
+            fd.append("chunks",     totalChunks);
+            fd.append("temp_key",   tempKey);
+            fd.append("total_size", file.size);
+            fd.append("sesskey",    "' . $sesskey . '");
+            fd.append("courseid",   "' . $courseid . '");
+
+            var xhr = new XMLHttpRequest();
+            xhr.open("POST", "' . $upload_url->out(false) . '", true);
+            xhr.onload = function() {
+                var resp;
+                try { resp = JSON.parse(xhr.responseText); } catch(e) { resp = {OK:0, info:"Parse error"}; }
+                if (!resp.OK) {
+                    statusDiv.textContent = resp.info || "' . get_string('upload_error', 'resource2') . '";
+                    progressWrap.style.display = "none";
+                    return;
+                }
+                if (resp.file_token) {
+                    // Final chunk done
+                    pendingField.value = resp.file_token;
+                    progressBar.value  = 100;
+                    progressLabel.textContent = "100%";
+                    statusDiv.style.color = "#080";
+                    statusDiv.textContent = "' . get_string('upload_complete', 'resource2') . '";
+                    if (submitBtn) { submitBtn.disabled = false; }
+                } else {
+                    // Intermediate chunk
+                    chunkIndex++;
+                    var pct = Math.round((chunkIndex / totalChunks) * 100);
+                    progressBar.value = pct;
+                    progressLabel.textContent = pct + "%";
+                    uploadChunk();
+                }
+            };
+            xhr.onerror = function() {
+                statusDiv.textContent = "' . get_string('upload_error', 'resource2') . '";
+            };
+            xhr.send(fd);
+        }
+
+        uploadChunk();
+    });
+});
+</script>';
+
+            $mform->addElement('html', $html);
+        }
 
         //-------------------------------------------------------
         $this->standard_coursemodule_elements();

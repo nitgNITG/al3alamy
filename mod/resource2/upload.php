@@ -63,6 +63,14 @@ if (empty($_FILES['file']) || $_FILES['file']['error']) {
     die(json_encode(['OK' => 0, 'info' => 'No file chunk received.']));
 }
 
+// ── MP4-only check (extension from browser-supplied filename) ───────────────
+$original_name = $_FILES['file']['name'] ?? '';
+$ext = strtolower(pathinfo($original_name, PATHINFO_EXTENSION));
+if ($ext !== 'mp4') {
+    die(json_encode(['OK' => 0, 'info' =>
+        get_string('upload_error_mp4_only', 'resource2')]));
+}
+
 $chunk    = max(0, (int)($_POST['chunk']    ?? 0));
 $chunks   = max(1, (int)($_POST['chunks']   ?? 1));
 $token    = preg_replace('/[^a-zA-Z0-9_-]/', '',

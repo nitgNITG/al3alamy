@@ -151,7 +151,9 @@ $string['quota_error_storage']     = 'Upload blocked: the platform storage limit
 
 // ── Inline mod_form upload UI strings ────────────────────────────────────
 $string['video_upload_header']    = 'Upload Video';
-$string['choose_video_file']      = 'Choose video file (MP4, MOV, etc.)';
+$string['choose_video_file']      = 'Choose video file';
+$string['upload_mp4_only_hint']   = 'Only MP4 files are accepted (.mp4)';
+$string['upload_error_mp4_only']  = 'Only MP4 files are allowed. Please convert your video to .mp4 and try again.';
 $string['uploading']              = 'Uploading\u2026';
 $string['upload_complete']        = 'Video received \u2713 \u2014 Vimeo processing in background. You can now save.';
 $string['upload_error']           = 'Upload failed. Please try again.';

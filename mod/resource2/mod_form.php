@@ -217,7 +217,10 @@ class mod_resource2_mod_form extends moodleform_mod {
   <label for="r2_video_file" style="display:block;margin-bottom:6px;font-weight:bold;">
     ' . get_string('choose_video_file', 'resource2') . '
   </label>
-  <input type="file" id="r2_video_file" accept="video/*"
+  <small style="display:block;margin-bottom:6px;color:#555;">
+    ' . get_string('upload_mp4_only_hint', 'resource2') . '
+  </small>
+  <input type="file" id="r2_video_file" accept=".mp4,video/mp4"
          style="margin-bottom:8px;"' . (!$r2_can_upload ? ' disabled' : '') . '>
 
   <!-- ── Progress bar ──────────────────────────────────────────────────── -->
@@ -270,6 +273,17 @@ document.addEventListener("DOMContentLoaded", function() {
     fileInput.addEventListener("change", function() {
         var file = fileInput.files[0];
         if (!file) { return; }
+
+        /* ── MP4-only check ───────────────────────────────────────── */
+        var ext = file.name.split(\'.\').pop().toLowerCase();
+        if (ext !== \'mp4\') {
+            statusDiv.style.color = "#c00";
+            statusDiv.textContent = "' . get_string('upload_error_mp4_only', 'resource2') . '";
+            fileInput.value = "";
+            fileSizeCell.textContent = "—";
+            fileSizeStat.textContent = "—";
+            return;
+        }
 
         var fileMB = file.size / (1024 * 1024);
         var sizeOK = (MAX_MB <= 0 || fileMB <= MAX_MB);

@@ -485,10 +485,19 @@ function local_videopay_before_footer(): string {
       + 'vertical-align:middle;text-decoration:none;display:inline-block;';
     title.appendChild(buy);
 
-    // Clicking the lesson name itself also goes to Kashier.
+    // Clicking the lesson name itself also goes to Kashier —
+    // but only when the user has no subscription unlock button (ls-unlock-btn).
+    // If a subscription button is present, it handles access; we must not
+    // intercept the click and redirect to payment.
     var clickable = el.querySelector('.activityinstance') || title;
     clickable.style.cursor = 'pointer';
     clickable.addEventListener('click', function(e){
+      // If the click originated from or passed through a subscription unlock
+      // button, let that button's own handler deal with it.
+      if (e.target.closest && e.target.closest('.ls-unlock-btn')) return;
+      // If a subscription unlock button already exists in this module,
+      // do not intercept — the student should use that button to unlock.
+      if (el.querySelector('.ls-unlock-btn')) return;
       e.preventDefault();
       window.location.href = kashierUrl(item);
     });

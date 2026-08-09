@@ -712,20 +712,39 @@ class manager {
     }
 
     /**
-     * The unlock limit that applies to a given subscription. Read from the stored
-     * snapshot so later plan edits don't change what an existing buyer paid for;
-     * falls back to the live plan if no snapshot is present.
+     * The unlock limit that applies to a given subscription.
+     *
+     * Priority order:
+     *   1. Snapshot value — preserves what the subscriber paid for if the admin
+     *      later lowers the plan's limit.
+     *   2. Live plan value — used when the snapshot has unlock_limit = 0 (plan was
+     *      created/assigned before sessions were configured, or sessions were added
+     *      to the plan after the subscription was created).
+     *
+     * This means: if an admin assigns a student to a plan that has no sessions yet
+     * and later adds sessions to that plan, existing subscribers automatically
+     * benefit from the updated limit.
      *
      * @param \stdClass $sub  a local_subscriptions_users record
      * @return int
      */
     public static function get_unlock_limit_for(\stdClass $sub): int {
+        $snapshot_limit = 0;
         if (!empty($sub->snapshot)) {
             $snap = json_decode($sub->snapshot, true);
             if (is_array($snap) && isset($snap['unlock_limit'])) {
-                return max(0, (int)$snap['unlock_limit']);
+                $snapshot_limit = max(0, (int)$snap['unlock_limit']);
             }
         }
+
+        // If the snapshot already records a positive limit, honour it.
+        if ($snapshot_limit > 0) {
+            return $snapshot_limit;
+        }
+
+        // Snapshot says 0 (plan had no sessions at assignment time, or no snapshot).
+        // Fall back to the current live plan value so the student isn't locked out
+        // just because their subscription was created before sessions were configured.
         $plan = self::get_plan((int)$sub->planid);
         return $plan ? max(0, (int)$plan->unlock_limit) : 0;
     }

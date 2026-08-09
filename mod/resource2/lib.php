@@ -823,7 +823,11 @@ function _resource2_spawn_vimeo_upload(int $resource2_id, string $token,
     $ins->name         = $vname;
     $ins->description  = $vname;
     $ins->url          = '';          // blank until vimeo_bg.php fills it in
-    $ins->timecreated  = time();
+    // Only set timecreated if the column exists (added by upgrade 2021051701).
+    $vf2_columns = $DB->get_columns('vimeo_files2');
+    if (isset($vf2_columns['timecreated'])) {
+        $ins->timecreated = time();
+    }
     $record_id = $DB->insert_record('vimeo_files2', $ins);
 
     // Create (or overwrite) the video type record.

@@ -149,60 +149,162 @@ class mod_resource2_mod_form extends moodleform_mod {
             $mform->setType('vimeo_pending_file_token', PARAM_ALPHANUMEXT);
             $mform->setDefault('vimeo_pending_file_token', '');
 
-            // Raw HTML for the upload UI
+            // ── Quota values from config ───────────────────────────────────────
+            $r2_cur_count  = (int)(get_config('resource2', 'video_count')          ?: 0);
+            $r2_max_count  = (int)(get_config('resource2', 'max_video_count')       ?: 500);
+            $r2_cur_bytes  = (int)(get_config('resource2', 'total_storage_bytes')   ?: 0);
+            $r2_max_gb     = (int)(get_config('resource2', 'max_total_storage_gb')  ?: 50);
+            $r2_max_mb     = (int)(get_config('resource2', 'max_video_size_mb')     ?: 500);
+            $r2_cur_gb     = round($r2_cur_bytes / (1024 * 1024 * 1024), 2);
+            $r2_count_ok   = $r2_cur_count < $r2_max_count;
+            $r2_storage_ok = $r2_cur_gb < $r2_max_gb;
+            $r2_can_upload = $r2_count_ok && $r2_storage_ok;
+
+            $tick   = '&#10003;';  // ✓
+            $cross  = '&#10007;';  // ✗
+            $ok_col = '#1a7a1a';
+            $no_col = '#c00';
+
+            // ── Upload URL / session params ────────────────────────────────────
             $upload_url = new moodle_url('/mod/resource2/upload.php');
             $sesskey    = sesskey();
             $courseid   = $this->_course->id;
             $chunk_size = 5 * 1024 * 1024; // 5 MB chunks
 
             $html = '
-<div id="r2-upload-box" style="margin:10px 0;">
+<div id="r2-upload-box" style="margin:10px 0;max-width:600px;">
+
+  <!-- ── Quota info table ───────────────────────────────────────────────── -->
+  <table style="width:100%;border-collapse:collapse;margin-bottom:14px;font-size:0.92em;">
+    <thead>
+      <tr style="background:#f0f0f0;">
+        <th style="text-align:left;padding:5px 8px;border:1px solid #ddd;">Item</th>
+        <th style="text-align:center;padding:5px 8px;border:1px solid #ddd;">Used</th>
+        <th style="text-align:center;padding:5px 8px;border:1px solid #ddd;">Limit</th>
+        <th style="text-align:center;padding:5px 8px;border:1px solid #ddd;">Status</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td style="padding:5px 8px;border:1px solid #ddd;">Videos count</td>
+        <td style="text-align:center;padding:5px 8px;border:1px solid #ddd;">' . $r2_cur_count . '</td>
+        <td style="text-align:center;padding:5px 8px;border:1px solid #ddd;">' . $r2_max_count . '</td>
+        <td style="text-align:center;padding:5px 8px;border:1px solid #ddd;color:' . ($r2_count_ok ? $ok_col : $no_col) . ';font-weight:bold;">'
+            . ($r2_count_ok ? $tick : $cross) . '</td>
+      </tr>
+      <tr>
+        <td style="padding:5px 8px;border:1px solid #ddd;">Storage used</td>
+        <td style="text-align:center;padding:5px 8px;border:1px solid #ddd;">' . $r2_cur_gb . ' GB</td>
+        <td style="text-align:center;padding:5px 8px;border:1px solid #ddd;">' . $r2_max_gb . ' GB</td>
+        <td style="text-align:center;padding:5px 8px;border:1px solid #ddd;color:' . ($r2_storage_ok ? $ok_col : $no_col) . ';font-weight:bold;">'
+            . ($r2_storage_ok ? $tick : $cross) . '</td>
+      </tr>
+      <tr>
+        <td style="padding:5px 8px;border:1px solid #ddd;">Max file size</td>
+        <td style="text-align:center;padding:5px 8px;border:1px solid #ddd;" id="r2-file-size-cell">—</td>
+        <td style="text-align:center;padding:5px 8px;border:1px solid #ddd;">' . $r2_max_mb . ' MB</td>
+        <td style="text-align:center;padding:5px 8px;border:1px solid #ddd;font-weight:bold;" id="r2-file-size-status">—</td>
+      </tr>
+    </tbody>
+  </table>
+
+  ' . (!$r2_can_upload ? '<div style="color:' . $no_col . ';font-weight:bold;margin-bottom:10px;">'
+      . get_string('quota_error_' . (!$r2_count_ok ? 'count' : 'storage'), 'resource2',
+          !$r2_count_ok ? $r2_max_count : null)
+      . '</div>' : '') . '
+
+  <!-- ── File picker ───────────────────────────────────────────────────── -->
   <label for="r2_video_file" style="display:block;margin-bottom:6px;font-weight:bold;">
     ' . get_string('choose_video_file', 'resource2') . '
   </label>
-  <input type="file" id="r2_video_file" accept="video/*" style="margin-bottom:8px;">
+  <input type="file" id="r2_video_file" accept="video/*"
+         style="margin-bottom:8px;"' . (!$r2_can_upload ? ' disabled' : '') . '>
+
+  <!-- ── Progress bar ──────────────────────────────────────────────────── -->
   <div id="r2-progress-wrap" style="display:none;margin-top:8px;">
-    <progress id="r2-progress-bar" value="0" max="100" style="width:100%;height:20px;"></progress>
-    <span id="r2-progress-label" style="display:block;margin-top:4px;font-size:0.9em;color:#555;"></span>
+    <progress id="r2-progress-bar" value="0" max="100"
+              style="width:100%;height:22px;"></progress>
+    <span id="r2-progress-label"
+          style="display:block;margin-top:4px;font-size:0.9em;color:#555;"></span>
   </div>
-  <div id="r2-status" style="margin-top:6px;font-weight:bold;color:#c00;"></div>
+
+  <!-- ── Status message ────────────────────────────────────────────────── -->
+  <div id="r2-status" style="margin-top:8px;font-weight:bold;color:#c00;"></div>
 </div>
+
 <script>
 document.addEventListener("DOMContentLoaded", function() {
-    var fileInput   = document.getElementById("r2_video_file");
-    var progressWrap = document.getElementById("r2-progress-wrap");
-    var progressBar  = document.getElementById("r2-progress-bar");
-    var progressLabel = document.getElementById("r2-progress-label");
-    var statusDiv   = document.getElementById("r2-status");
 
-    // Find the pending token field and the submit button
-    var pendingField = document.querySelector(\'input[name="vimeo_pending_file_token"]\');
-    var submitBtn    = document.querySelector(\'#id_submitbutton\') ||
-                       document.querySelector(\'[name="submitbutton"]\');
+    /* ── helpers ──────────────────────────────────────────────────────── */
+    function fmtBytes(b) {
+        if (b < 1024 * 1024)             return (b / 1024).toFixed(1) + \' KB\';
+        if (b < 1024 * 1024 * 1024)      return (b / (1024 * 1024)).toFixed(1) + \' MB\';
+        return (b / (1024 * 1024 * 1024)).toFixed(2) + \' GB\';
+    }
+
+    var MAX_MB      = ' . $r2_max_mb . ';
+    var CAN_UPLOAD  = ' . ($r2_can_upload ? 'true' : 'false') . ';
+    var CHUNK_SIZE  = ' . $chunk_size . ';
+    var UPLOAD_URL  = "' . $upload_url->out(false) . '";
+    var SESSKEY     = "' . $sesskey . '";
+    var COURSE_ID   = "' . $courseid . '";
+    var USER_ID     = "' . $USER->id . '";
+
+    var fileInput     = document.getElementById("r2_video_file");
+    var progressWrap  = document.getElementById("r2-progress-wrap");
+    var progressBar   = document.getElementById("r2-progress-bar");
+    var progressLabel = document.getElementById("r2-progress-label");
+    var statusDiv     = document.getElementById("r2-status");
+    var fileSizeCell  = document.getElementById("r2-file-size-cell");
+    var fileSizeStat  = document.getElementById("r2-file-size-status");
+    var pendingField  = document.querySelector(\'input[name="vimeo_pending_file_token"]\');
+    var submitBtn     = document.querySelector(\'#id_submitbutton\') ||
+                        document.querySelector(\'[name="submitbutton"]\');
 
     if (!pendingField) { return; }
 
-    // Disable Save until a video is uploaded
+    /* Disable Save until upload finishes */
     if (submitBtn) { submitBtn.disabled = true; }
 
+    /* ── File picked ─────────────────────────────────────────────────── */
     fileInput.addEventListener("change", function() {
         var file = fileInput.files[0];
         if (!file) { return; }
 
-        var chunkSize  = ' . $chunk_size . ';
-        var totalChunks = Math.ceil(file.size / chunkSize);
-        var tempKey    = "pre_' . $USER->id . '_" + Date.now();
-        var chunkIndex = 0;
+        var fileMB = file.size / (1024 * 1024);
+        var sizeOK = (MAX_MB <= 0 || fileMB <= MAX_MB);
 
+        /* Update quota table row */
+        fileSizeCell.textContent = fmtBytes(file.size);
+        fileSizeStat.style.color  = sizeOK ? "#1a7a1a" : "#c00";
+        fileSizeStat.textContent  = sizeOK ? "\u2713" : "\u2717";
+
+        if (!CAN_UPLOAD) { return; }
+
+        if (!sizeOK) {
+            statusDiv.style.color   = "#c00";
+            statusDiv.textContent   = "' . addslashes(get_string('quota_error_size', 'resource2',
+                (object)['size' => '{size}', 'max' => $r2_max_mb])) . '"
+                .replace("{size}", fileMB.toFixed(1));
+            progressWrap.style.display = "none";
+            return;
+        }
+
+        /* ── Start chunked upload ─────────────────────────────────── */
+        statusDiv.textContent  = "";
         progressWrap.style.display = "block";
-        progressBar.value = 0;
-        progressLabel.textContent = "' . get_string('uploading', 'resource2') . ' 0%";
-        statusDiv.textContent = "";
+        progressBar.value      = 0;
+        progressLabel.textContent = "0% — " + fmtBytes(0) + " / " + fmtBytes(file.size);
         if (submitBtn) { submitBtn.disabled = true; }
 
+        var totalChunks    = Math.ceil(file.size / CHUNK_SIZE);
+        var chunkIndex     = 0;
+        var uploadedBytes  = 0;   /* bytes from fully-sent chunks */
+        var tempKey        = "pre_" + USER_ID + "_" + Date.now();
+
         function uploadChunk() {
-            var start = chunkIndex * chunkSize;
-            var end   = Math.min(start + chunkSize, file.size);
+            var start = chunkIndex * CHUNK_SIZE;
+            var end   = Math.min(start + CHUNK_SIZE, file.size);
             var blob  = file.slice(start, end);
 
             var fd = new FormData();
@@ -211,39 +313,55 @@ document.addEventListener("DOMContentLoaded", function() {
             fd.append("chunks",     totalChunks);
             fd.append("temp_key",   tempKey);
             fd.append("total_size", file.size);
-            fd.append("sesskey",    "' . $sesskey . '");
-            fd.append("courseid",   "' . $courseid . '");
+            fd.append("sesskey",    SESSKEY);
+            fd.append("courseid",   COURSE_ID);
 
             var xhr = new XMLHttpRequest();
-            xhr.open("POST", "' . $upload_url->out(false) . '", true);
+            xhr.open("POST", UPLOAD_URL, true);
+
+            /* ── Real-time progress for THIS chunk ────────────────── */
+            xhr.upload.onprogress = function(e) {
+                if (!e.lengthComputable) { return; }
+                var sent = uploadedBytes + e.loaded;
+                var pct  = Math.min(99, Math.round((sent / file.size) * 100));
+                progressBar.value     = pct;
+                progressLabel.textContent = pct + "% — " + fmtBytes(sent) + " / " + fmtBytes(file.size);
+            };
+
             xhr.onload = function() {
                 var resp;
-                try { resp = JSON.parse(xhr.responseText); } catch(e) { resp = {OK:0, info:"Parse error"}; }
+                try { resp = JSON.parse(xhr.responseText); }
+                catch(err) { resp = {OK: 0, info: "Parse error"}; }
+
                 if (!resp.OK) {
+                    statusDiv.style.color = "#c00";
                     statusDiv.textContent = resp.info || "' . get_string('upload_error', 'resource2') . '";
                     progressWrap.style.display = "none";
                     return;
                 }
+
+                uploadedBytes += (end - start);   /* chunk fully ACKed */
+
                 if (resp.file_token) {
-                    // Final chunk done
-                    pendingField.value = resp.file_token;
-                    progressBar.value  = 100;
-                    progressLabel.textContent = "100%";
-                    statusDiv.style.color = "#080";
-                    statusDiv.textContent = "' . get_string('upload_complete', 'resource2') . '";
+                    /* ── All done ─────────────────────────────────── */
+                    pendingField.value        = resp.file_token;
+                    progressBar.value         = 100;
+                    progressLabel.textContent = "100% — " + fmtBytes(file.size) + " / " + fmtBytes(file.size);
+                    statusDiv.style.color     = "#1a7a1a";
+                    statusDiv.textContent     = "' . get_string('upload_complete', 'resource2') . '";
                     if (submitBtn) { submitBtn.disabled = false; }
                 } else {
-                    // Intermediate chunk
+                    /* ── Next chunk ───────────────────────────────── */
                     chunkIndex++;
-                    var pct = Math.round((chunkIndex / totalChunks) * 100);
-                    progressBar.value = pct;
-                    progressLabel.textContent = pct + "%";
                     uploadChunk();
                 }
             };
+
             xhr.onerror = function() {
+                statusDiv.style.color = "#c00";
                 statusDiv.textContent = "' . get_string('upload_error', 'resource2') . '";
             };
+
             xhr.send(fd);
         }
 

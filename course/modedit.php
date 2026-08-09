@@ -411,7 +411,7 @@ if ($mform->is_cancelled()) {
                 ';
                         echo '  <script>
             
-                document.querySelector("#id_submitbutton").value="Next";
+                document.querySelector("#id_submitbutton").value="Save";
             
                 </script>';
                     }
@@ -478,7 +478,7 @@ if ($mform->is_cancelled()) {
         ';
             echo '  <script>
     
-        document.querySelector("#id_submitbutton").value="Next";
+        document.querySelector("#id_submitbutton").value="Save";
     
         </script>';
         }

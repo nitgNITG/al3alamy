@@ -21,6 +21,9 @@ defined('MOODLE_INTERNAL') || die();
  * (on the site front page) render the subscription-plans grid after the last
  * content section.
  *
+ * For users with local/subscriptions:manage (managers/admins) an additional
+ * "إدارة الاشتراكات" admin link is injected pointing to assign.php.
+ *
  * The nav link is placed next to the other menu titles (the primary navigation),
  * not next to the user avatar. A gold badge shows the remaining days when the
  * user has an active subscription.
@@ -28,11 +31,119 @@ defined('MOODLE_INTERNAL') || die();
 function local_subscriptions_before_standard_top_of_body_html() {
     global $USER, $CFG, $PAGE;
 
-    // Only for logged-in non-guests, non-admins.
-    if (!isloggedin() || isguestuser() || is_siteadmin()) {
+    if (!isloggedin() || isguestuser()) {
         return '';
     }
 
+    $context    = context_system::instance();
+    $can_manage = has_capability('local/subscriptions:manage', $context, null, false);
+
+    // ── Manager / admin nav link ──────────────────────────────────────────────
+    // Show an "إدارة الاشتراكات" link for anyone with the manage capability.
+    $manager_js = '';
+    if ($can_manage) {
+        $assignurl  = $CFG->wwwroot . '/local/subscriptions/admin/assign.php';
+        $plansadmin = $CFG->wwwroot . '/local/subscriptions/admin/plans.php';
+        $reporturl  = $CFG->wwwroot . '/local/subscriptions/admin/report.php';
+
+        $manager_js = <<<JS
+<script>
+(function() {
+    var LINKS = [
+        { label: 'تعيين اشتراك', url: '{$assignurl}' },
+        { label: 'الخطط',        url: '{$plansadmin}' },
+        { label: 'التقارير',     url: '{$reporturl}' },
+    ];
+    var MENU_LABEL = 'إدارة الاشتراكات';
+    var MENU_ID    = 'ls-admin-nav-menu';
+
+    function makeDropdown() {
+        if (document.getElementById(MENU_ID)) return true;
+
+        // Build dropdown list.
+        var ul = document.createElement('ul');
+        ul.style.cssText = 'list-style:none;margin:0;padding:6px 0;min-width:180px;'
+            + 'background:#fff;border:1px solid #ddd;border-radius:6px;'
+            + 'box-shadow:0 4px 12px rgba(0,0,0,.15);position:absolute;'
+            + 'top:100%;inset-inline-end:0;z-index:9999;display:none;';
+        LINKS.forEach(function(lnk) {
+            var li = document.createElement('li');
+            var a  = document.createElement('a');
+            a.href = lnk.url;
+            a.textContent = lnk.label;
+            a.style.cssText = 'display:block;padding:8px 16px;color:#1a1a1a;'
+                + 'text-decoration:none;font-size:.95em;white-space:nowrap;';
+            a.onmouseover = function(){ a.style.background='#f0f4fa'; };
+            a.onmouseout  = function(){ a.style.background=''; };
+            li.appendChild(a);
+            ul.appendChild(li);
+        });
+
+        // Wrapper <li>.
+        var li = document.createElement('li');
+        li.id = MENU_ID;
+        li.className = 'nav-item';
+        li.setAttribute('role', 'none');
+        li.style.cssText = 'position:relative;';
+
+        var btn = document.createElement('button');
+        btn.className = 'nav-link';
+        btn.style.cssText = 'background:none;border:none;cursor:pointer;'
+            + 'display:inline-flex;align-items:center;gap:4px;padding:0 8px;font-size:inherit;color:inherit;';
+        btn.innerHTML = '<span>' + MENU_LABEL + '</span>'
+            + '<span style="font-size:.7em;vertical-align:middle;">&#9660;</span>';
+
+        btn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            var open = ul.style.display !== 'none';
+            ul.style.display = open ? 'none' : 'block';
+        });
+        document.addEventListener('click', function() { ul.style.display = 'none'; });
+
+        li.appendChild(btn);
+        li.appendChild(ul);
+
+        // Insert into primary nav, before any More overflow item.
+        var menu = document.querySelector('.primary-navigation ul.more-nav') ||
+                   document.querySelector('nav.moremenu ul.more-nav') ||
+                   document.querySelector('ul.ace-responsive-menu');
+        if (menu) {
+            var more = menu.querySelector('.dropdownmoremenu');
+            if (more) { menu.insertBefore(li, more); } else { menu.appendChild(li); }
+            return true;
+        }
+
+        // Fallback: user area.
+        var container = document.querySelector('ul.sign_up_btn') ||
+                        document.querySelector('.usermenu') ||
+                        document.querySelector('.navbar-nav') ||
+                        document.querySelector('header ul');
+        if (container) { container.insertBefore(li, container.firstChild); return true; }
+        return false;
+    }
+
+    var tries = 0;
+    function ensure() {
+        if (document.getElementById(MENU_ID)) return;
+        if (!makeDropdown() && tries++ < 6) { setTimeout(ensure, 500); }
+    }
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', ensure);
+    } else {
+        ensure();
+    }
+    [300, 800, 1500, 2500].forEach(function(d){ setTimeout(ensure, d); });
+})();
+</script>
+JS;
+    }
+
+    // Site admins get only the manager dropdown above — skip the student nav link.
+    if (is_siteadmin()) {
+        return $manager_js;
+    }
+
+    // ── Student nav link ("الاشتراكات") ──────────────────────────────────────
     // Primary destination is the plans catalogue (the cards). From there the
     // active-subscription banner links to "my subscriptions".
     $plansurl  = $CFG->wwwroot . '/local/subscriptions/index.php';
@@ -162,7 +273,8 @@ JS;
         $js .= local_subscriptions_home_plans_script($active_sub);
     }
 
-    return $js;
+    // Append the manager dropdown if this user also has the manage capability.
+    return $js . $manager_js;
 }
 
 /**

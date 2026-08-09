@@ -15,7 +15,9 @@ require_login();
 $context = context_system::instance();
 require_capability('local/subscriptions:viewreports', $context);
 
-admin_externalpage_setup('local_subscriptions_report');
+$PAGE->set_context($context);
+$PAGE->set_url(new moodle_url('/local/subscriptions/admin/report.php'));
+$PAGE->set_pagelayout('admin');
 
 use local_subscriptions\manager;
 

@@ -8,7 +8,17 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-if ($hassiteconfig) {
+// Allow site admins AND anyone with the manage/viewreports capability
+// (e.g. manager role) to see these pages in the admin navigation.
+$_ctx = context_system::instance();
+$_can_manage  = $hassiteconfig
+    || (!isguestuser() && isloggedin()
+        && has_capability('local/subscriptions:manage', $_ctx, null, false));
+$_can_report  = $hassiteconfig
+    || (!isguestuser() && isloggedin()
+        && has_capability('local/subscriptions:viewreports', $_ctx, null, false));
+
+if ($_can_manage) {
     // Admin page: Manage Plans.
     $ADMIN->add('users', new admin_externalpage(
         'local_subscriptions_admin',
@@ -24,7 +34,9 @@ if ($hassiteconfig) {
         new moodle_url('/local/subscriptions/admin/assign.php'),
         'local/subscriptions:manage'
     ));
+}
 
+if ($_can_report) {
     // Admin page: Reports.
     $ADMIN->add('users', new admin_externalpage(
         'local_subscriptions_report',

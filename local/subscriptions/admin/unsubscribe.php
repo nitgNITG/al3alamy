@@ -21,7 +21,10 @@ require_login();
 $context = context_system::instance();
 require_capability('local/subscriptions:manage', $context);
 
-admin_externalpage_setup('local_subscriptions_report');
+$subid_for_url = optional_param('subid', 0, PARAM_INT);
+$PAGE->set_context($context);
+$PAGE->set_url(new moodle_url('/local/subscriptions/admin/unsubscribe.php', ['subid' => $subid_for_url]));
+$PAGE->set_pagelayout('admin');
 
 use local_subscriptions\manager;
 

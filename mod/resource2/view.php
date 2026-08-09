@@ -92,6 +92,28 @@ $PAGE->set_heading($video->name);
 
 echo $OUTPUT->header();
 
+// ── Guard: video replacement in progress ─────────────────────────────────
+if (get_config('resource2', 'replacing_' . $resource2->id)) {
+    echo '
+    <div class="alert alert-info d-flex align-items-center gap-3" role="alert"
+         style="max-width:600px;margin:40px auto;">
+        <div class="spinner-border text-info flex-shrink-0" role="status">
+            <span class="visually-hidden">Loading…</span>
+        </div>
+        <div>
+            <strong>جارٍ استبدال الفيديو / Video replacement in progress</strong><br>
+            <span style="font-size:14px;">
+                يتم رفع الفيديو الجديد إلى Vimeo في الخلفية. يرجى تحديث الصفحة بعد قليل.<br>
+                The new video is being uploaded to Vimeo in the background.
+                Please refresh the page in a few minutes.
+            </span>
+        </div>
+    </div>
+    <script>setTimeout(function(){ window.location.reload(); }, 15000);</script>';
+    echo $OUTPUT->footer();
+    exit;
+}
+
 // ── Guard: no vimeo_files2 row yet, or upload still in background ─────────
 if (empty($record) || empty(trim($record->url))) {
     echo '

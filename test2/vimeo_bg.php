@@ -228,6 +228,9 @@ try {
             error_log('vimeo_bg.php: thumbnail regenerated — ' . ($new_pic['status'] ?? '?'));
         }
 
+        // ── Clear the "replacing" flag so view.php stops showing the spinner ──
+        set_config('replacing_' . $id, '', 'resource2');
+
     } else {
         // ── Upload new video to Vimeo ─────────────────────────────────────
         $uri = $client->upload($perm_file, [

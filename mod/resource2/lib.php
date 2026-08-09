@@ -208,6 +208,8 @@ function resource2_update_instance($data, $mform) {
                     // ── Replace in place on Vimeo (same video ID, new content) ──
                     $record_id  = $existing->id;
                     $vimeo_uri  = '/videos/' . trim($existing->url);
+                    // Flag so view.php shows a spinner instead of the old video.
+                    set_config('replacing_' . $data->id, '1', 'resource2');
                     resource2_spawn_vimeo_bg([
                         'mode'           => 'replace',
                         'file'           => $perm_file,

@@ -110,6 +110,13 @@ function resource2_add_instance($data, $mform) {
     // upload.php no longer touches the DB (avoids FK constraint on resource2_id).
     // It just assembles the file and returns a file_token. Here we have a real
     // resource2.id so we can insert vimeo_files2 properly and spawn vimeo_bg.php.
+    $r2debug_dir = $CFG->dataroot . '/resource2_tmp_uploads';
+    $r2debug_log = $r2debug_dir . '/r2debug.log';
+    @file_put_contents($r2debug_log,
+        date('[Y-m-d H:i:s]') . ' add_instance called, resource2_id=' . $data->id
+        . ' token=' . ($data->vimeo_pending_file_token ?? '(empty)')
+        . ' video_type=' . ($data->video_type ?? '(empty)') . "\n",
+        FILE_APPEND);
     if (!empty($data->vimeo_pending_file_token)) {
         _resource2_spawn_vimeo_upload($data->id, $data->vimeo_pending_file_token,
             trim($data->name ?? ''), (int)($data->video_type ?? 2), $CFG, $DB);
@@ -785,18 +792,24 @@ function mod_resource2_get_path_from_pluginfile(string $filearea, array $args) :
 function _resource2_spawn_vimeo_upload(int $resource2_id, string $token,
         string $vname, int $video_type, $CFG, $DB): void {
 
+    $upload_dir = rtrim($CFG->dataroot, '/') . '/resource2_tmp_uploads';
+    $dbg        = function(string $msg) use ($upload_dir): void {
+        @file_put_contents($upload_dir . '/r2debug.log',
+            date('[Y-m-d H:i:s]') . ' spawn: ' . $msg . "\n", FILE_APPEND);
+    };
+
     // Sanitise the token (must match the pattern used in upload.php).
     $token = preg_replace('/[^a-zA-Z0-9_-]/', '', $token);
     if ($token === '') {
-        error_log('resource2: empty/invalid token passed to _resource2_spawn_vimeo_upload');
+        $dbg('ERROR: empty/invalid token');
         return;
     }
 
-    $upload_dir = $CFG->dataroot . '/resource2_tmp_uploads';
-    $file_path  = $upload_dir . '/' . $token . '_video.part_assembled';
+    $file_path = $upload_dir . '/' . $token . '_video.part_assembled';
+    $dbg('token=' . $token . ' file_path=' . $file_path . ' exists=' . (file_exists($file_path) ? 'YES' : 'NO'));
 
     if (!file_exists($file_path)) {
-        error_log('resource2: assembled file not found for token ' . $token . ' (path: ' . $file_path . ')');
+        $dbg('ERROR: assembled file not found');
         return;
     }
 
@@ -836,10 +849,10 @@ function _resource2_spawn_vimeo_upload(int $resource2_id, string $token,
         'record_id'   => $record_id,
     ]));
     if ($written === false) {
-        error_log('resource2: FAILED to write params file: ' . $params_file);
+        $dbg('ERROR: FAILED to write params file: ' . $params_file);
         return;
     }
-    error_log('resource2: params written to ' . $params_file);
+    $dbg('params written to ' . $params_file);
 
     // Spawn vimeo_bg.php in the background.
     // Use nohup + output redirect so the child survives after the web request ends.
@@ -848,15 +861,14 @@ function _resource2_spawn_vimeo_upload(int $resource2_id, string $token,
     $pf      = escapeshellarg($params_file);
     $logfile = $upload_dir . '/vimeo_bg.log';
 
-    error_log('resource2: spawning vimeo_bg — php=' . $php . ' bg=' . $CFG->dirroot . '/test2/vimeo_bg.php' . ' pf=' . $params_file);
-
-    // Build a self-contained shell command that detaches from the web process.
     $cmd = 'nohup ' . $php . ' ' . $bg . ' ' . $pf
          . ' >> ' . escapeshellarg($logfile) . ' 2>&1 </dev/null &';
+    $dbg('exec cmd: ' . $cmd);
+
     $output = [];
     $ret    = -1;
     exec($cmd, $output, $ret);
-    error_log('resource2: exec returned ' . $ret . (empty($output) ? '' : ' output: ' . implode(' ', $output)));
+    $dbg('exec returned ' . $ret . (empty($output) ? '' : ' | output: ' . implode(' | ', $output)));
 }
 
 /**

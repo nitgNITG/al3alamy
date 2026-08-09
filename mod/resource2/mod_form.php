@@ -317,10 +317,12 @@ class mod_resource2_mod_form extends moodleform_mod {
       statusEl.textContent = UPLOADING_TPL.replace("{PCT}", pct);
 
       var resp = await fetch(UPLOAD_URL, { method: "POST", body: fd });
-      var data = await resp.json();
-
+      var data;
+      try { data = await resp.json(); } catch(e) {
+        throw new Error("Server error (HTTP " + resp.status + ") on chunk " + i);
+      }
       if (!data.OK) {
-        throw new Error(data.info || "Upload error on chunk " + i);
+        throw new Error(data.info || data.error || ("Server error on chunk " + i + " — check server logs"));
       }
       if (data.record_id) {
         return data.record_id; // Last chunk returned the DB record id.
@@ -535,8 +537,12 @@ class mod_resource2_mod_form extends moodleform_mod {
       var pct = Math.round(((i + 1) / totalChunks) * 100);
       setProgress(pct);
       statusEl.textContent = UPLOADING_TPL.replace("{PCT}", pct);
-      var data = await (await fetch(UPLOAD_URL, {method:"POST", body:fd})).json();
-      if (!data.OK) throw new Error(data.info || "Upload error on chunk " + i);
+      var resp2 = await fetch(UPLOAD_URL, {method:"POST", body:fd});
+      var data;
+      try { data = await resp2.json(); } catch(e) {
+        throw new Error("Server error (HTTP " + resp2.status + ") on chunk " + i);
+      }
+      if (!data.OK) throw new Error(data.info || data.error || ("Server error on chunk " + i + " — check server logs"));
       if (data.record_id) return data.record_id;
     }
     throw new Error("No record_id returned.");
@@ -725,10 +731,12 @@ class mod_resource2_mod_form extends moodleform_mod {
       replaceStatus.textContent = REPLACING_TPL.replace("{PCT}", pct);
 
       var resp = await fetch(REPLACE_URL, { method: "POST", body: fd });
-      var data = await resp.json();
-
+      var data;
+      try { data = await resp.json(); } catch(e) {
+        throw new Error("Server error (HTTP " + resp.status + ") on chunk " + i);
+      }
       if (!data.OK) {
-        throw new Error(data.info || "Upload error on chunk " + i);
+        throw new Error(data.info || data.error || ("Server error on chunk " + i + " — check server logs"));
       }
     }
   }

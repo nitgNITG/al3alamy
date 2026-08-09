@@ -375,24 +375,22 @@ function local_videopay_before_footer(): string {
     }
 
     $modinfo = get_fast_modinfo($courseid);
-    $priced = [];               // cmid => true, for every priced video module.
+    $priced = [];
     foreach ($records as $r) {
         $priced[(int)$r->cmid] = true;
     }
 
     $items = [];
-    $lockedsections = [];       // sectionnum => true, sections with a locked paid video.
+    $lockedsections = [];
     foreach ($records as $r) {
         try {
             $cminfo = $modinfo->get_cm((int)$r->cmid);
         } catch (Exception $e) {
-            continue; // module deleted / not in modinfo.
+            continue;
         }
-        $paid = ((int)$r->is_free === 0);
-        // "unlocked" = availability conditions met for this user (covers group
-        // membership and accessallgroups for staff).
+        $paid     = ((int)$r->is_free === 0);
         $unlocked = !$paid || (bool)$cminfo->available;
-        $items[] = [
+        $items[]  = [
             'cmid'     => (int)$r->cmid,
             'price'    => (int)$r->price,
             'free'     => !$paid,
@@ -407,9 +405,7 @@ function local_videopay_before_footer(): string {
         return '';
     }
 
-    // Supporting activities that are locked because their section's video isn't
-    // paid yet (Phase 2 gating). We surface a friendly hint instead of Moodle's
-    // raw "Not available unless…" text on these.
+    // Supporting activities locked behind their section's video.
     $gated = [];
     foreach (array_keys($lockedsections) as $sn) {
         if (empty($modinfo->sections[$sn])) {
@@ -418,22 +414,60 @@ function local_videopay_before_footer(): string {
         foreach ($modinfo->sections[$sn] as $scmid) {
             $scmid = (int)$scmid;
             if (isset($priced[$scmid])) {
-                continue; // The videos themselves are handled as items above.
+                continue;
             }
             $scminfo = $modinfo->get_cm($scmid);
             if ($scminfo->available || !$scminfo->is_visible_on_course_page()) {
-                continue; // Already unlocked for this user, or not shown.
+                continue;
             }
             $gated[] = $scmid;
         }
     }
 
+    // ── Subscription unlock data ──────────────────────────────────────────────
+    // Check if this logged-in student has an active credit-based subscription
+    // that covers lessons in this course. If so, show "دخول على الحصة" instead
+    // of "اشتري الآن" for lessons they can unlock with their subscription.
+    $sub_can_unlock = [];   // cmids the student can unlock right now
+    $sub_remaining  = 0;
+    $sub_sesskey    = '';
+
+    if (isloggedin() && !isguestuser() && !is_siteadmin()
+            && class_exists('\local_subscriptions\manager')) {
+        try {
+            $sub = \local_subscriptions\manager::get_active_subscription((int)$USER->id);
+            if ($sub) {
+                $limit = \local_subscriptions\manager::get_unlock_limit_for($sub);
+                if ($limit > 0) {
+                    $sub_remaining = \local_subscriptions\manager::get_remaining_unlocks($sub);
+                    if ($sub_remaining > 0) {
+                        $pool = \local_subscriptions\manager::get_pool_cmids((int)$sub->planid);
+                        // Intersect pool with locked items in this course.
+                        foreach ($items as $item) {
+                            if (!$item['unlocked'] && isset($pool[$item['cmid']])) {
+                                $sub_can_unlock[] = $item['cmid'];
+                            }
+                        }
+                    }
+                }
+            }
+            if (!empty($sub_can_unlock)) {
+                $sub_sesskey = sesskey();
+            }
+        } catch (\Throwable $e) {
+            // Subscriptions plugin not ready — ignore.
+        }
+    }
+
     $config = json_encode([
-        'wwwroot'  => $CFG->wwwroot,
-        'courseid' => $courseid,
-        'userid'   => (int)$USER->id,
-        'items'    => $items,
-        'gated'    => array_values(array_unique($gated)),
+        'wwwroot'       => $CFG->wwwroot,
+        'courseid'      => $courseid,
+        'userid'        => (int)$USER->id,
+        'items'         => $items,
+        'gated'         => array_values(array_unique($gated)),
+        'sub_can_unlock'=> $sub_can_unlock,
+        'sub_remaining' => $sub_remaining,
+        'sub_sesskey'   => $sub_sesskey,
     ], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
 
     $js = <<<JS
@@ -457,6 +491,10 @@ function local_videopay_before_footer(): string {
       + '&groupid=' + item.groupid + '&courseid=' + CFG.courseid + '&amount=' + item.price;
   }
 
+  // Build a Set for fast lookup.
+  var canUnlock = {};
+  (CFG.sub_can_unlock || []).forEach(function(cmid){ canUnlock[cmid] = true; });
+
   // ── Enhance each priced module ──────────────────────────────────────────
   CFG.items.forEach(function(item){
     var el = document.getElementById('module-' + item.cmid);
@@ -471,40 +509,71 @@ function local_videopay_before_footer(): string {
     addBadge(title, money(item.price), '#00126C');
     if (item.unlocked) return; // already purchased / staff — leave normal link.
 
-    // Hide Moodle's default "Not available unless..." restriction text.
+    // Hide Moodle's "Not available unless..." text.
     var info = el.querySelector('.availabilityinfo');
     if (info) info.style.display = 'none';
 
-    // Buy button — direct redirect to Kashier, no popup.
-    var buy = document.createElement('a');
-    buy.href = kashierUrl(item);
-    buy.className = 'vp-buy-btn';
-    buy.textContent = 'اشتري الآن';
-    buy.style.cssText = 'margin-inline-start:10px;padding:3px 14px;border-radius:8px;'
-      + 'background:#C9A227;color:#fff;font-weight:700;cursor:pointer;font-size:13px;'
-      + 'vertical-align:middle;text-decoration:none;display:inline-block;';
-    title.appendChild(buy);
+    if (canUnlock[item.cmid]) {
+      // ── Student has subscription credits for this lesson ──────────────────
+      // Show "دخول على الحصة" — unlocks via subscription, no payment needed.
+      var unlockBtn = document.createElement('button');
+      unlockBtn.type = 'button';
+      unlockBtn.className = 'vp-unlock-btn';
+      unlockBtn.textContent = 'دخول على الحصة (' + CFG.sub_remaining + ' متبقية)';
+      unlockBtn.style.cssText = 'margin-inline-start:10px;padding:3px 14px;border:0;'
+        + 'border-radius:8px;background:#1a9c5b;color:#fff;font-weight:700;'
+        + 'cursor:pointer;font-size:13px;vertical-align:middle;';
 
-    // Clicking the lesson name itself also goes to Kashier —
-    // but only when the user has no subscription unlock button (ls-unlock-btn).
-    // If a subscription button is present, it handles access; we must not
-    // intercept the click and redirect to payment.
-    var clickable = el.querySelector('.activityinstance') || title;
-    clickable.style.cursor = 'pointer';
-    clickable.addEventListener('click', function(e){
-      // If the click originated from or passed through a subscription unlock
-      // button, let that button's own handler deal with it.
-      if (e.target.closest && e.target.closest('.ls-unlock-btn')) return;
-      // If a subscription unlock button already exists in this module,
-      // do not intercept — the student should use that button to unlock.
-      if (el.querySelector('.ls-unlock-btn')) return;
-      e.preventDefault();
-      window.location.href = kashierUrl(item);
-    });
+      unlockBtn.addEventListener('click', function(e) {
+        e.preventDefault(); e.stopPropagation();
+        if (unlockBtn.disabled) return;
+        unlockBtn.disabled = true;
+        var prev = unlockBtn.textContent;
+        unlockBtn.textContent = 'جارٍ الفتح…';
+
+        var xhr = new XMLHttpRequest();
+        xhr.open('POST', CFG.wwwroot + '/local/subscriptions/unlock.php', true);
+        xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+        xhr.onreadystatechange = function() {
+          if (xhr.readyState !== 4) return;
+          var res = null;
+          try { res = JSON.parse(xhr.responseText); } catch(ex) {}
+          if (res && res.status === 'success') {
+            location.reload();
+          } else {
+            unlockBtn.disabled = false;
+            unlockBtn.textContent = (res && res.message) ? res.message : prev;
+            setTimeout(function(){ unlockBtn.textContent = prev; }, 3000);
+          }
+        };
+        xhr.send('cmid=' + encodeURIComponent(item.cmid)
+          + '&sesskey=' + encodeURIComponent(CFG.sub_sesskey));
+      });
+      title.appendChild(unlockBtn);
+
+    } else {
+      // ── No subscription credits — show Buy button → Kashier ──────────────
+      var buy = document.createElement('a');
+      buy.href = kashierUrl(item);
+      buy.className = 'vp-buy-btn';
+      buy.textContent = 'اشتري الآن';
+      buy.style.cssText = 'margin-inline-start:10px;padding:3px 14px;border-radius:8px;'
+        + 'background:#C9A227;color:#fff;font-weight:700;cursor:pointer;font-size:13px;'
+        + 'vertical-align:middle;text-decoration:none;display:inline-block;';
+      title.appendChild(buy);
+
+      // Clicking the lesson name also goes to Kashier.
+      var clickable = el.querySelector('.activityinstance') || title;
+      clickable.style.cursor = 'pointer';
+      clickable.addEventListener('click', function(e){
+        if (e.target.closest && e.target.closest('.vp-buy-btn, .vp-unlock-btn')) return;
+        e.preventDefault();
+        window.location.href = kashierUrl(item);
+      });
+    }
   });
 
   // ── Supporting activities locked behind their section's video ───────────────
-  // Replace Moodle's raw "Not available unless…" text with a friendly hint.
   (CFG.gated || []).forEach(function(cmid){
     var el = document.getElementById('module-' + cmid);
     if (!el) return;
@@ -515,7 +584,7 @@ function local_videopay_before_footer(): string {
     if (title.querySelector('.vp-lock-hint')) return;
     var hint = document.createElement('span');
     hint.className = 'vp-lock-hint';
-    hint.textContent = '🔒 افتح فيديو الدرس أولاً / Unlock by buying the lesson video';
+    hint.textContent = '🔒 افتح فيديو الدرس أولاً';
     hint.style.cssText = 'display:inline-block;margin-inline-start:8px;padding:1px 8px;'
       + 'border-radius:10px;font-size:12px;font-weight:600;color:#fff;vertical-align:middle;background:#8a6d1f;';
     title.appendChild(hint);

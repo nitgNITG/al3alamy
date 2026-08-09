@@ -412,19 +412,22 @@ JS;
 }
 
 /**
- * On course pages, add an "Unlock with subscription" button to each locked paid
- * lesson that belongs to the current user's active credit-plan and that they have
- * not unlocked yet. Sits alongside videopay's "Buy" button (buy OR unlock).
+ * On course pages, subscription unlock buttons are now injected by
+ * local_videopay_before_footer() which is subscription-aware. This function
+ * intentionally returns '' on course-view pages to avoid duplicate buttons.
+ * It is kept for non-course-view pages (e.g. future use).
  *
  * @return string HTML/JS appended near the footer.
  */
 function local_subscriptions_before_footer() {
     global $PAGE, $USER, $CFG, $COURSE;
 
-    // Course view pages only, real courses only, never while editing.
-    if (strpos((string)$PAGE->pagetype, 'course-view') !== 0) {
+    // Buttons on course-view pages are now handled by local_videopay_before_footer()
+    // which is subscription-aware. Return early to avoid duplicate buttons.
+    if (strpos((string)$PAGE->pagetype, 'course-view') === 0) {
         return '';
     }
+    // Non-course-view pages: keep original guards.
     if (!isloggedin() || isguestuser() || is_siteadmin()) {
         return '';
     }

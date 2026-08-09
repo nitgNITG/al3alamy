@@ -222,6 +222,7 @@ class mod_resource2_mod_form extends moodleform_mod {
 </div>
 <script>
 (function () {
+  // Constants are set at parse time (no DOM needed).
   var CHUNK_SIZE    = 10 * 1024 * 1024; // 10 MB
   var UPLOAD_URL    = ' . json_encode($upload_url->out(false)) . ';
   var SESSKEY       = ' . json_encode($sesskey) . ';
@@ -229,146 +230,134 @@ class mod_resource2_mod_form extends moodleform_mod {
   var MAX_SIZE_MB   = ' . json_encode($max_size_mb) . ';
   var UPLOADING_TPL = ' . json_encode(get_string('vimeo_uploading', 'resource2', '{PCT}')) . ';
 
-  var fileInput   = document.getElementById("r2-file-input");
-  var uploadBtn   = document.getElementById("r2-upload-btn");
-  var controls    = document.getElementById("r2-upload-controls");
-  var progressBar = document.getElementById("r2-progress-bar");
-  var statusEl    = document.getElementById("r2-upload-status");
-  var doneEl      = document.getElementById("r2-upload-done");
-  var errorEl     = document.getElementById("r2-upload-error");
-  var pendingField= document.getElementById("id_vimeo_pending_file_token");
-  var typeField   = document.getElementById("id_video_type");
-  var typeVisible = document.getElementById("id_video_type_visible");
-
-  // Sync visible select → hidden field.
-  if (typeVisible && typeField) {
-    typeVisible.addEventListener("change", function () {
-      typeField.value = typeVisible.value;
-    });
-    typeField.value = typeVisible.value;
-  }
-
-  // Show upload controls when a file is chosen.
-  fileInput.addEventListener("change", function () {
-    errorEl.style.display = "none";
-    doneEl.style.display  = "none";
-    controls.style.display = fileInput.files.length ? "block" : "none";
-  });
-
-  // Upload button handler.
-  uploadBtn.addEventListener("click", async function () {
-    var file = fileInput.files[0];
-    if (!file) return;
-
-    var sizeMb = file.size / (1024 * 1024);
-    if (MAX_SIZE_MB > 0 && sizeMb > MAX_SIZE_MB) {
-      showError("' . get_string('quota_error_size', 'resource2', (object)['size' => "' + Math.round(sizeMb) + '", 'max' => "' + MAX_SIZE_MB + '"]) . '");
-      return;
-    }
-
-    uploadBtn.disabled = true;
-    errorEl.style.display = "none";
-
-    // Read video title from the activity name field (or filename).
-    var nameField = document.getElementById("id_name");
-    var vname = (nameField && nameField.value.trim()) ? nameField.value.trim() : file.name;
-
-    var tempKey = "u' . $USER->id . '_" + Date.now();
-    var chunks  = Math.ceil(file.size / CHUNK_SIZE);
-
-    try {
-      var recordId = await uploadChunked(file, vname, tempKey, chunks);
-      // Success.
-      pendingField.value = recordId;
-      // Keep video_type in sync.
-      typeField.value = typeVisible ? typeVisible.value : "2";
-      setProgress(100);
-      doneEl.textContent = ' . json_encode(get_string('vimeo_upload_done', 'resource2')) . ';
-      doneEl.style.display = "block";
-      statusEl.textContent = "";
-      // Enable the submit buttons.
-      enableSaveButtons();
-    } catch (err) {
-      showError(err.message || String(err));
-      uploadBtn.disabled = false;
-    }
-  });
-
-  async function uploadChunked(file, vname, tempKey, totalChunks) {
-    for (var i = 0; i < totalChunks; i++) {
-      var start = i * CHUNK_SIZE;
-      var end   = Math.min(start + CHUNK_SIZE, file.size);
-      var blob  = file.slice(start, end);
-
-      var fd = new FormData();
-      fd.append("file",       blob, file.name);
-      fd.append("chunk",      i);
-      fd.append("chunks",     totalChunks);
-      fd.append("temp_key",   tempKey);
-      fd.append("total_size", file.size);
-      fd.append("vname",      vname);
-      fd.append("description", vname);
-      fd.append("video_type",  typeVisible ? typeVisible.value : "2");
-      fd.append("sesskey",     SESSKEY);
-      fd.append("courseid",    COURSEID);
-
-      var pct = Math.round(((i + 1) / totalChunks) * 100);
-      setProgress(pct);
-      statusEl.textContent = UPLOADING_TPL.replace("{PCT}", pct);
-
-      var resp = await fetch(UPLOAD_URL, { method: "POST", body: fd });
-      var data;
-      try { data = await resp.json(); } catch(e) {
-        throw new Error("Server error (HTTP " + resp.status + ") on chunk " + i);
-      }
-      if (!data.OK) {
-        throw new Error(data.info || data.error || ("Server error on chunk " + i + " — check server logs"));
-      }
-      if (data.file_token) {
-        return data.file_token;
-      }
-    }
-    throw new Error("No file_token returned from server.");
-  }
-
-  function setProgress(pct) {
-    progressBar.style.width  = pct + "%";
-    progressBar.textContent  = pct + "%";
-    progressBar.setAttribute("aria-valuenow", pct);
-  }
-
-  function showError(msg) {
-    errorEl.textContent    = msg;
-    errorEl.style.display  = "block";
-    doneEl.style.display   = "none";
-    pendingField.value     = "";
-    disableSaveButtons("Please fix the upload error before saving.");
-  }
-
-  function enableSaveButtons() {
-    var btns = document.querySelectorAll(
-      "#id_submitbutton, #id_submitbutton2, [name=submitbutton], [name=submitbutton2]");
-    btns.forEach(function (b) {
-      b.disabled = false;
-      b.removeAttribute("title");
-    });
-  }
-
-  function disableSaveButtons(msg) {
-    var btns = document.querySelectorAll(
-      "#id_submitbutton, #id_submitbutton2, [name=submitbutton], [name=submitbutton2]");
-    btns.forEach(function (b) {
-      b.disabled = true;
-      if (msg) b.title = msg;
-    });
-  }
-
-  // On page load: disable save buttons until upload completes (new module only).
+  // All DOM lookups and event wiring deferred until the full page is parsed.
+  // Moodle renders hidden fields AFTER the html block, so getElementById
+  // returns null if called immediately.
   document.addEventListener("DOMContentLoaded", function () {
+    var fileInput    = document.getElementById("r2-file-input");
+    var uploadBtn    = document.getElementById("r2-upload-btn");
+    var controls     = document.getElementById("r2-upload-controls");
+    var progressBar  = document.getElementById("r2-progress-bar");
+    var statusEl     = document.getElementById("r2-upload-status");
+    var doneEl       = document.getElementById("r2-upload-done");
+    var errorEl      = document.getElementById("r2-upload-error");
+    var pendingField = document.querySelector("input[name=\"vimeo_pending_file_token\"]");
+    var typeField    = document.querySelector("input[name=\"video_type\"]");
+    var typeVisible  = document.getElementById("id_video_type_visible");
+
+    // Sync visible select → hidden field.
+    if (typeVisible && typeField) {
+      typeVisible.addEventListener("change", function () {
+        typeField.value = typeVisible.value;
+      });
+      typeField.value = typeVisible.value;
+    }
+
+    // Show upload controls when a file is chosen.
+    fileInput.addEventListener("change", function () {
+      errorEl.style.display  = "none";
+      doneEl.style.display   = "none";
+      controls.style.display = fileInput.files.length ? "block" : "none";
+    });
+
+    // Upload button handler.
+    uploadBtn.addEventListener("click", async function () {
+      var file = fileInput.files[0];
+      if (!file) return;
+
+      var sizeMb = file.size / (1024 * 1024);
+      if (MAX_SIZE_MB > 0 && sizeMb > MAX_SIZE_MB) {
+        showError("' . get_string('quota_error_size', 'resource2', (object)['size' => "' + Math.round(sizeMb) + '", 'max' => "' + MAX_SIZE_MB + '"]) . '");
+        return;
+      }
+
+      uploadBtn.disabled    = true;
+      errorEl.style.display = "none";
+
+      var nameField = document.getElementById("id_name");
+      var vname = (nameField && nameField.value.trim()) ? nameField.value.trim() : file.name;
+      var tempKey = "u' . $USER->id . '_" + Date.now();
+      var chunks  = Math.ceil(file.size / CHUNK_SIZE);
+
+      try {
+        var recordId = await uploadChunked(file, vname, tempKey, chunks);
+        pendingField.value = recordId;
+        if (typeField && typeVisible) typeField.value = typeVisible.value;
+        setProgress(100);
+        doneEl.textContent   = ' . json_encode(get_string('vimeo_upload_done', 'resource2')) . ';
+        doneEl.style.display = "block";
+        statusEl.textContent = "";
+        enableSaveButtons();
+      } catch (err) {
+        showError(err.message || String(err));
+        uploadBtn.disabled = false;
+      }
+    });
+
+    async function uploadChunked(file, vname, tempKey, totalChunks) {
+      for (var i = 0; i < totalChunks; i++) {
+        var start = i * CHUNK_SIZE;
+        var end   = Math.min(start + CHUNK_SIZE, file.size);
+        var fd    = new FormData();
+        fd.append("file",        file.slice(start, end), file.name);
+        fd.append("chunk",       i);
+        fd.append("chunks",      totalChunks);
+        fd.append("temp_key",    tempKey);
+        fd.append("total_size",  file.size);
+        fd.append("vname",       vname);
+        fd.append("description", vname);
+        fd.append("video_type",  typeVisible ? typeVisible.value : "2");
+        fd.append("sesskey",     SESSKEY);
+        fd.append("courseid",    COURSEID);
+
+        var pct = Math.round(((i + 1) / totalChunks) * 100);
+        setProgress(pct);
+        statusEl.textContent = UPLOADING_TPL.replace("{PCT}", pct);
+
+        var resp = await fetch(UPLOAD_URL, { method: "POST", body: fd });
+        var data;
+        try { data = await resp.json(); } catch(e) {
+          throw new Error("Server error (HTTP " + resp.status + ") on chunk " + i);
+        }
+        if (!data.OK) {
+          throw new Error(data.info || data.error || ("Server error on chunk " + i + " — check server logs"));
+        }
+        if (data.file_token) return data.file_token;
+      }
+      throw new Error("No file_token returned from server.");
+    }
+
+    function setProgress(pct) {
+      progressBar.style.width = pct + "%";
+      progressBar.textContent = pct + "%";
+      progressBar.setAttribute("aria-valuenow", pct);
+    }
+
+    function showError(msg) {
+      errorEl.textContent   = msg;
+      errorEl.style.display = "block";
+      doneEl.style.display  = "none";
+      if (pendingField) pendingField.value = "";
+      disableSaveButtons("Please fix the upload error before saving.");
+    }
+
+    function enableSaveButtons() {
+      document.querySelectorAll(
+        "#id_submitbutton, #id_submitbutton2, [name=submitbutton], [name=submitbutton2]"
+      ).forEach(function (b) { b.disabled = false; b.removeAttribute("title"); });
+    }
+
+    function disableSaveButtons(msg) {
+      document.querySelectorAll(
+        "#id_submitbutton, #id_submitbutton2, [name=submitbutton], [name=submitbutton2]"
+      ).forEach(function (b) { b.disabled = true; if (msg) b.title = msg; });
+    }
+
+    // Disable save buttons on load until a video is uploaded.
     if (!pendingField || pendingField.value === "") {
       disableSaveButtons("' . get_string('vimeo_upload_required', 'resource2') . '");
     }
-  });
+  }); // end DOMContentLoaded
 })();
 </script>';
 
@@ -473,105 +462,113 @@ class mod_resource2_mod_form extends moodleform_mod {
   var MAX_SIZE_MB   = ' . json_encode($max_size_mb_u) . ';
   var UPLOADING_TPL = ' . json_encode(get_string('vimeo_uploading', 'resource2', '{PCT}')) . ';
 
-  var fileInput   = document.getElementById("r2-file-input");
-  var uploadBtn   = document.getElementById("r2-upload-btn");
-  var controls    = document.getElementById("r2-upload-controls");
-  var progressBar = document.getElementById("r2-progress-bar");
-  var statusEl    = document.getElementById("r2-upload-status");
-  var doneEl      = document.getElementById("r2-upload-done");
-  var errorEl     = document.getElementById("r2-upload-error");
-  var pendingField= document.getElementById("id_vimeo_pending_file_token");
-  var typeVisible = document.getElementById("id_video_type_visible");
-  var typeField   = document.getElementById("id_video_type");
-
-  if (typeVisible && typeField) {
-    typeField.value = typeVisible.value;
-    typeVisible.addEventListener("change", function () { typeField.value = typeVisible.value; });
-  }
-
-  fileInput.addEventListener("change", function () {
-    errorEl.style.display = "none";
-    doneEl.style.display  = "none";
-    controls.style.display = fileInput.files.length ? "block" : "none";
-  });
-
-  uploadBtn.addEventListener("click", async function () {
-    var file = fileInput.files[0];
-    if (!file) return;
-    var sizeMb = file.size / (1024 * 1024);
-    if (MAX_SIZE_MB > 0 && sizeMb > MAX_SIZE_MB) {
-      showError("File too large (" + Math.round(sizeMb) + " MB). Max: " + MAX_SIZE_MB + " MB.");
-      return;
-    }
-    uploadBtn.disabled = true;
-    errorEl.style.display = "none";
-    var nameField = document.getElementById("id_name");
-    var vname = (nameField && nameField.value.trim()) ? nameField.value.trim() : file.name;
-    var tempKey = "u' . $USER->id . '_" + Date.now();
-    var chunks  = Math.ceil(file.size / CHUNK_SIZE);
-    try {
-      var recordId = await uploadChunked(file, vname, tempKey, chunks);
-      pendingField.value = recordId;
-      typeField.value = typeVisible ? typeVisible.value : "2";
-      setProgress(100);
-      doneEl.textContent = ' . json_encode(get_string('vimeo_upload_done', 'resource2')) . ';
-      doneEl.style.display = "block";
-      statusEl.textContent = "";
-      enableSaveButtons();
-    } catch (err) {
-      showError(err.message || String(err));
-      uploadBtn.disabled = false;
-    }
-  });
-
-  async function uploadChunked(file, vname, tempKey, totalChunks) {
-    for (var i = 0; i < totalChunks; i++) {
-      var start = i * CHUNK_SIZE, end = Math.min(start + CHUNK_SIZE, file.size);
-      var fd = new FormData();
-      fd.append("file", file.slice(start, end), file.name);
-      fd.append("chunk", i); fd.append("chunks", totalChunks);
-      fd.append("temp_key", tempKey); fd.append("total_size", file.size);
-      fd.append("vname", vname); fd.append("description", vname);
-      fd.append("video_type", typeVisible ? typeVisible.value : "2");
-      fd.append("sesskey", SESSKEY); fd.append("courseid", COURSEID);
-      var pct = Math.round(((i + 1) / totalChunks) * 100);
-      setProgress(pct);
-      statusEl.textContent = UPLOADING_TPL.replace("{PCT}", pct);
-      var resp2 = await fetch(UPLOAD_URL, {method:"POST", body:fd});
-      var data;
-      try { data = await resp2.json(); } catch(e) {
-        throw new Error("Server error (HTTP " + resp2.status + ") on chunk " + i);
-      }
-      if (!data.OK) throw new Error(data.info || data.error || ("Server error on chunk " + i + " — check server logs"));
-      if (data.file_token) return data.file_token;
-    }
-    throw new Error("No file_token returned.");
-  }
-
-  function setProgress(pct) {
-    progressBar.style.width = pct + "%"; progressBar.textContent = pct + "%";
-    progressBar.setAttribute("aria-valuenow", pct);
-  }
-  function showError(msg) {
-    errorEl.textContent = msg; errorEl.style.display = "block";
-    doneEl.style.display = "none"; pendingField.value = "";
-    disableSaveButtons("Please fix the upload error before saving.");
-  }
-  function enableSaveButtons() {
-    document.querySelectorAll(
-      "#id_submitbutton, #id_submitbutton2, [name=submitbutton], [name=submitbutton2]"
-    ).forEach(function(b){ b.disabled = false; b.removeAttribute("title"); });
-  }
-  function disableSaveButtons(msg) {
-    document.querySelectorAll(
-      "#id_submitbutton, #id_submitbutton2, [name=submitbutton], [name=submitbutton2]"
-    ).forEach(function(b){ b.disabled = true; if (msg) b.title = msg; });
-  }
   document.addEventListener("DOMContentLoaded", function () {
+    var fileInput    = document.getElementById("r2-file-input");
+    var uploadBtn    = document.getElementById("r2-upload-btn");
+    var controls     = document.getElementById("r2-upload-controls");
+    var progressBar  = document.getElementById("r2-progress-bar");
+    var statusEl     = document.getElementById("r2-upload-status");
+    var doneEl       = document.getElementById("r2-upload-done");
+    var errorEl      = document.getElementById("r2-upload-error");
+    var pendingField = document.querySelector("input[name=\"vimeo_pending_file_token\"]");
+    var typeVisible  = document.getElementById("id_video_type_visible");
+    var typeField    = document.querySelector("input[name=\"video_type\"]");
+
+    if (typeVisible && typeField) {
+      typeField.value = typeVisible.value;
+      typeVisible.addEventListener("change", function () { typeField.value = typeVisible.value; });
+    }
+
+    fileInput.addEventListener("change", function () {
+      errorEl.style.display  = "none";
+      doneEl.style.display   = "none";
+      controls.style.display = fileInput.files.length ? "block" : "none";
+    });
+
+    uploadBtn.addEventListener("click", async function () {
+      var file = fileInput.files[0];
+      if (!file) return;
+      var sizeMb = file.size / (1024 * 1024);
+      if (MAX_SIZE_MB > 0 && sizeMb > MAX_SIZE_MB) {
+        showError("File too large (" + Math.round(sizeMb) + " MB). Max: " + MAX_SIZE_MB + " MB.");
+        return;
+      }
+      uploadBtn.disabled    = true;
+      errorEl.style.display = "none";
+      var nameField = document.getElementById("id_name");
+      var vname = (nameField && nameField.value.trim()) ? nameField.value.trim() : file.name;
+      var tempKey = "u' . $USER->id . '_" + Date.now();
+      var chunks  = Math.ceil(file.size / CHUNK_SIZE);
+      try {
+        var recordId = await uploadChunked(file, vname, tempKey, chunks);
+        pendingField.value = recordId;
+        if (typeField && typeVisible) typeField.value = typeVisible.value;
+        setProgress(100);
+        doneEl.textContent   = ' . json_encode(get_string('vimeo_upload_done', 'resource2')) . ';
+        doneEl.style.display = "block";
+        statusEl.textContent = "";
+        enableSaveButtons();
+      } catch (err) {
+        showError(err.message || String(err));
+        uploadBtn.disabled = false;
+      }
+    });
+
+    async function uploadChunked(file, vname, tempKey, totalChunks) {
+      for (var i = 0; i < totalChunks; i++) {
+        var start = i * CHUNK_SIZE, end = Math.min(start + CHUNK_SIZE, file.size);
+        var fd = new FormData();
+        fd.append("file",        file.slice(start, end), file.name);
+        fd.append("chunk",       i);
+        fd.append("chunks",      totalChunks);
+        fd.append("temp_key",    tempKey);
+        fd.append("total_size",  file.size);
+        fd.append("vname",       vname);
+        fd.append("description", vname);
+        fd.append("video_type",  typeVisible ? typeVisible.value : "2");
+        fd.append("sesskey",     SESSKEY);
+        fd.append("courseid",    COURSEID);
+        var pct = Math.round(((i + 1) / totalChunks) * 100);
+        setProgress(pct);
+        statusEl.textContent = UPLOADING_TPL.replace("{PCT}", pct);
+        var resp2 = await fetch(UPLOAD_URL, {method:"POST", body:fd});
+        var data;
+        try { data = await resp2.json(); } catch(e) {
+          throw new Error("Server error (HTTP " + resp2.status + ") on chunk " + i);
+        }
+        if (!data.OK) throw new Error(data.info || data.error || ("Server error on chunk " + i + " — check server logs"));
+        if (data.file_token) return data.file_token;
+      }
+      throw new Error("No file_token returned.");
+    }
+
+    function setProgress(pct) {
+      progressBar.style.width = pct + "%";
+      progressBar.textContent = pct + "%";
+      progressBar.setAttribute("aria-valuenow", pct);
+    }
+    function showError(msg) {
+      errorEl.textContent   = msg;
+      errorEl.style.display = "block";
+      doneEl.style.display  = "none";
+      if (pendingField) pendingField.value = "";
+      disableSaveButtons("Please fix the upload error before saving.");
+    }
+    function enableSaveButtons() {
+      document.querySelectorAll(
+        "#id_submitbutton, #id_submitbutton2, [name=submitbutton], [name=submitbutton2]"
+      ).forEach(function(b){ b.disabled = false; b.removeAttribute("title"); });
+    }
+    function disableSaveButtons(msg) {
+      document.querySelectorAll(
+        "#id_submitbutton, #id_submitbutton2, [name=submitbutton], [name=submitbutton2]"
+      ).forEach(function(b){ b.disabled = true; if (msg) b.title = msg; });
+    }
+
     if (!pendingField || pendingField.value === "") {
       disableSaveButtons(' . json_encode(get_string('vimeo_upload_required', 'resource2')) . ');
     }
-  });
+  }); // end DOMContentLoaded
 })();
 </script>';
                 $mform->addElement('html', $no_vid_html);

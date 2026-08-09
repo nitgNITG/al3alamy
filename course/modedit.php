@@ -186,13 +186,7 @@ if ($mform->is_cancelled()) {
             if ($module->name == "resource") {
                 $url = $CFG->wwwroot . "/test/submit.php?resource_id=" . $fromform->id . "&update=" . $check;
             } elseif ($module->name == "resource2") {
-                if ($check == 1) {
-                    // UPDATE: teacher wants to replace/edit the existing video —
-                    // keep the legacy video-management page.
-                    $url = $CFG->wwwroot . "/test2/submit1.php?resource_id=" . $fromform->id . "&update=1";
-                }
-                // CREATE ($check == 0): upload was done inside mod_form before save,
-                // so use the standard Moodle view.php redirect (URL already set above).
+                $url = $CFG->wwwroot . "/test2/submit1.php?resource_id=" . $fromform->id . "&update=" . $check;
             }
 
             redirect($url);

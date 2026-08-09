@@ -174,7 +174,8 @@ function resource2_add_instance($data, $mform) {
  */
 function resource2_update_instance($data, $mform) {
     global $CFG, $DB;
-    require_once("$CFG->libdir/resource2lib.php");
+    require_once("$CFG->libdir/resourcelib.php");
+    require_once("$CFG->dirroot/mod/resource2/locallib.php");
     $data->timemodified = time();
     $data->id           = $data->instance;
     $data->revision++;
@@ -562,7 +563,7 @@ function resource2_get_file_info($browser, $areas, $course, $cm, $context, $file
  */
 function resource2_pluginfile($course, $cm, $context, $filearea, $args, $forcedownload, array $options=array()) {
     global $CFG, $DB;
-    require_once("$CFG->libdir/resource2lib.php");
+    require_once("$CFG->libdir/resourcelib.php");
 
     if ($context->contextlevel != CONTEXT_MODULE) {
         return false;

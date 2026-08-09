@@ -161,8 +161,8 @@ $string['vimeo_type_summary']     = 'Summary';
 $string['vimeo_type_revision']    = 'Revision';
 $string['vimeo_upload_btn']       = 'Start Upload';
 $string['vimeo_upload_required']  = 'You must upload a video before saving this activity.';
-$string['vimeo_uploading']        = 'Uploading… {$a}%';
-$string['vimeo_upload_done']      = 'Video received ✓ — Vimeo processing in background. You can now save the activity.';
+$string['vimeo_uploading']        = 'Uploading\u2026 {$a}%';
+$string['vimeo_upload_done']      = 'Video received \u2713 \u2014 Vimeo processing in background. You can now save the activity.';
 $string['vimeo_upload_error']     = 'Upload failed: {$a}. Please try again.';
 
 // ── Video management strings (shown when editing an existing module) ───────
@@ -172,8 +172,8 @@ $string['vimeo_status_uploading'] = 'Video is currently uploading to Vimeo — c
 $string['vimeo_status_none']      = 'No video found for this activity.';
 $string['vimeo_replace_section']  = 'Replace Video';
 $string['vimeo_replace_btn']      = 'Upload Replacement';
-$string['vimeo_replacing']        = 'Uploading replacement… {$a}%';
-$string['vimeo_replace_done']     = 'Replacement received ✓ — Vimeo is processing the new video in the background.';
+$string['vimeo_replacing']        = 'Uploading replacement\u2026 {$a}%';
+$string['vimeo_replace_done']     = 'Replacement received \u2713 \u2014 Vimeo is processing the new video in the background.';
 $string['vimeo_replace_error']    = 'Replacement upload failed: {$a}. Please try again.';
 $string['vimeo_delete_btn']       = 'Delete this video';
 $string['vimeo_delete_confirm']   = 'Are you sure you want to delete this video? This cannot be undone.';
@@ -181,6 +181,3 @@ $string['vimeo_delete_done']      = 'Video deleted successfully.';
 $string['vimeo_delete_error']     = 'Delete failed: {$a}. Please try again.';
 $string['vimeo_meta_saved']       = 'Video type updated.';
 $string['vimeo_type_update_btn']  = 'Save video type';
-
-// ── Scheduled task strings ─────────────────────────────────────────────────
-$string['task_cleanup_orphans'] = 'Clean up orphaned Vimeo upload records';

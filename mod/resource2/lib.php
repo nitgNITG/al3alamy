@@ -106,20 +106,20 @@ function resource2_add_instance($data, $mform) {
     $DB->set_field('course_modules', 'instance', $data->id, array('id'=>$cmid));
     resource2_set_mainfile($data);
 
-    // ── Create vimeo record + spawn Vimeo upload for the assembled file ──────
-    // upload.php no longer touches the DB (avoids FK constraint on resource2_id).
-    // It just assembles the file and returns a file_token. Here we have a real
-    // resource2.id so we can insert vimeo_files2 properly and spawn vimeo_bg.php.
-    $r2debug_dir = $CFG->dataroot . '/resource2_tmp_uploads';
-    $r2debug_log = $r2debug_dir . '/r2debug.log';
-    @file_put_contents($r2debug_log,
-        date('[Y-m-d H:i:s]') . ' add_instance called, resource2_id=' . $data->id
-        . ' token=' . ($data->vimeo_pending_file_token ?? '(empty)')
-        . ' video_type=' . ($data->video_type ?? '(empty)') . "\n",
-        FILE_APPEND);
-    if (!empty($data->vimeo_pending_file_token)) {
-        _resource2_spawn_vimeo_upload($data->id, $data->vimeo_pending_file_token,
-            trim($data->name ?? ''), (int)($data->video_type ?? 2), $CFG, $DB);
+    // ── Link the pre-uploaded vimeo record to this new resource2 ────────────
+    // The mod_form upload.php creates a vimeo_files2 row with resource2_id=0
+    // before the module is saved. Here we update it to the real ID atomically.
+    if (!empty($data->vimeo_pending_record_id)) {
+        $pending_id = (int)$data->vimeo_pending_record_id;
+        // Only link it if it still has resource2_id=0 (not already claimed).
+        $DB->set_field('vimeo_files2', 'resource2_id', $data->id,
+            ['id' => $pending_id, 'resource2_id' => 0]);
+        // Create the video type record.
+        $video_type = (int)($data->video_type ?? 2);
+        $type_rec              = new stdClass();
+        $type_rec->resource2_id = $data->id;
+        $type_rec->type        = $video_type;
+        $DB->insert_record('reda_video_type2', $type_rec);
     }
 
     $completiontimeexpected = !empty($data->completionexpected) ? $data->completionexpected : null;
@@ -145,12 +145,6 @@ function resource2_update_instance($data, $mform) {
 
     $DB->update_record('resource2', $data);
     resource2_set_mainfile($data);
-
-    // ── Upload new video for a module that had none (edge case after delete) ─
-    if (!empty($data->vimeo_pending_file_token)) {
-        _resource2_spawn_vimeo_upload($data->id, $data->vimeo_pending_file_token,
-            trim($data->name ?? ''), (int)($data->video_type ?? 2), $CFG, $DB);
-    }
 
     // ── Sync video metadata ───────────────────────────────────────────────
     // Update the video type in reda_video_type2 if the teacher changed it.
@@ -774,127 +768,4 @@ function mod_resource2_get_path_from_pluginfile(string $filearea, array $args) :
         'itemid' => 0,
         'filepath' => $filepath,
     ];
-}
-
-/**
- * Insert the vimeo_files2 / reda_video_type2 rows and spawn vimeo_bg.php.
- *
- * Called from resource2_add_instance() and resource2_update_instance() once we
- * have a real resource2.id (so there is no FK violation).
- *
- * @param int    $resource2_id   The newly-created / existing resource2 row id.
- * @param string $token          The file_token returned by upload.php (temp_key).
- * @param string $vname          Video title (falls back to a timestamp string).
- * @param int    $video_type     Video type id (1=Quiz, 2=Lecture, …).
- * @param object $CFG            Moodle $CFG global.
- * @param object $DB             Moodle $DB global.
- */
-function _resource2_spawn_vimeo_upload(int $resource2_id, string $token,
-        string $vname, int $video_type, $CFG, $DB): void {
-
-    $upload_dir = rtrim($CFG->dataroot, '/') . '/resource2_tmp_uploads';
-    $dbg        = function(string $msg) use ($upload_dir): void {
-        @file_put_contents($upload_dir . '/r2debug.log',
-            date('[Y-m-d H:i:s]') . ' spawn: ' . $msg . "\n", FILE_APPEND);
-    };
-
-    // Sanitise the token (must match the pattern used in upload.php).
-    $token = preg_replace('/[^a-zA-Z0-9_-]/', '', $token);
-    if ($token === '') {
-        $dbg('ERROR: empty/invalid token');
-        return;
-    }
-
-    $file_path = $upload_dir . '/' . $token . '_video.part_assembled';
-    $dbg('token=' . $token . ' file_path=' . $file_path . ' exists=' . (file_exists($file_path) ? 'YES' : 'NO'));
-
-    if (!file_exists($file_path)) {
-        $dbg('ERROR: assembled file not found');
-        return;
-    }
-
-    if ($vname === '') {
-        $vname = 'video_' . time();
-    }
-
-    // Insert vimeo_files2 with the real resource2_id — no FK violation.
-    $ins               = new stdClass();
-    $ins->resource2_id = $resource2_id;
-    $ins->name         = $vname;
-    $ins->description  = $vname;
-    $ins->url          = '';          // blank until vimeo_bg.php fills it in
-    // Only set timecreated if the column exists (added by upgrade 2021051701).
-    $vf2_columns = $DB->get_columns('vimeo_files2');
-    if (isset($vf2_columns['timecreated'])) {
-        $ins->timecreated = time();
-    }
-    $record_id = $DB->insert_record('vimeo_files2', $ins);
-
-    // Create (or overwrite) the video type record.
-    $type_rec = $DB->get_record('reda_video_type2', ['resource2_id' => $resource2_id]);
-    if ($type_rec) {
-        $type_rec->type = $video_type;
-        $DB->update_record('reda_video_type2', $type_rec);
-    } else {
-        $new_type               = new stdClass();
-        $new_type->resource2_id = $resource2_id;
-        $new_type->type         = $video_type;
-        $DB->insert_record('reda_video_type2', $new_type);
-    }
-
-    // Write the params JSON that vimeo_bg.php reads.
-    $params_file = $upload_dir . '/vimeo_params_' . $record_id . '_' . time() . '.json';
-    $written = file_put_contents($params_file, json_encode([
-        'mode'        => 'upload',
-        'file'        => $file_path,
-        'id'          => $resource2_id,
-        'name'        => $vname,
-        'description' => $vname,
-        'record_id'   => $record_id,
-    ]));
-    if ($written === false) {
-        $dbg('ERROR: FAILED to write params file: ' . $params_file);
-        return;
-    }
-    $dbg('params written to ' . $params_file);
-
-    // Spawn vimeo_bg.php in the background.
-    // Use nohup + output redirect so the child survives after the web request ends.
-    $php     = _resource2_find_php_cli();
-    $bg      = escapeshellarg($CFG->dirroot . '/test2/vimeo_bg.php');
-    $pf      = escapeshellarg($params_file);
-    $logfile = $upload_dir . '/vimeo_bg.log';
-
-    $cmd = 'nohup ' . $php . ' ' . $bg . ' ' . $pf
-         . ' >> ' . escapeshellarg($logfile) . ' 2>&1 </dev/null &';
-    $dbg('exec cmd: ' . $cmd);
-
-    $output = [];
-    $ret    = -1;
-    exec($cmd, $output, $ret);
-    $dbg('exec returned ' . $ret . (empty($output) ? '' : ' | output: ' . implode(' | ', $output)));
-}
-
-/**
- * Locate the PHP CLI binary suitable for spawning background scripts.
- *
- * @return string Absolute path to the php executable.
- */
-function _resource2_find_php_cli(): string {
-    $php = trim((string)shell_exec('which php 2>/dev/null'));
-    if ($php !== '' && is_executable($php)) {
-        return $php;
-    }
-    foreach ([
-        '/usr/bin/php',
-        '/usr/bin/php8.2',
-        '/usr/bin/php8.1',
-        '/usr/bin/php8.0',
-        '/usr/local/bin/php',
-    ] as $try) {
-        if (is_executable($try)) {
-            return $try;
-        }
-    }
-    return '/usr/bin/php';
 }

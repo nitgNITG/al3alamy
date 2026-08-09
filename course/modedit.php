@@ -186,9 +186,10 @@ if ($mform->is_cancelled()) {
             if ($module->name == "resource") {
                 $url = $CFG->wwwroot . "/test/submit.php?resource_id=" . $fromform->id . "&update=" . $check;
             } elseif ($module->name == "resource2") {
-                // If a pre-upload token was submitted, video is already handled — go to view.php.
-                // Otherwise redirect to submit1.php for the old manual-upload flow.
-                $has_inline_video = !empty($fromform->vimeo_pending_file_token);
+                // Inline upload (new or replace) — video handled, go to view.php.
+                // No token — old manual-upload flow via submit1.php.
+                $has_inline_video = !empty($fromform->vimeo_pending_file_token)
+                                 || !empty($fromform->vimeo_replace_file_token);
                 if ($has_inline_video) {
                     $url = new moodle_url("/mod/resource2/view.php",
                         array('id' => $fromform->coursemodule, 'forceview' => 1));

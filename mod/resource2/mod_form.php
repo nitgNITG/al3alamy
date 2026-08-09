@@ -139,6 +139,193 @@ class mod_resource2_mod_form extends moodleform_mod {
         $mform->setDefault('filterfiles', $config->filterfiles);
         $mform->setAdvanced('filterfiles', true);
 
+        // ── Video management section (existing activities only) ───────────────
+        if ($this->current->instance) {
+            $mform->addElement('header', 'videomgmtsection', get_string('video_manage_header', 'resource2'));
+            $mform->setExpanded('videomgmtsection', true);
+
+            // Hidden field for the replacement video token
+            $mform->addElement('hidden', 'vimeo_replace_file_token');
+            $mform->setType('vimeo_replace_file_token', PARAM_ALPHANUMEXT);
+            $mform->setDefault('vimeo_replace_file_token', '');
+
+            // ── Current video status ───────────────────────────────────────
+            $vimeo_record = $DB->get_record('vimeo_files2',
+                ['resource2_id' => $this->current->instance]);
+
+            if ($vimeo_record && !empty($vimeo_record->url)
+                    && ctype_digit(trim($vimeo_record->url))) {
+                $vimeo_id   = trim($vimeo_record->url);
+                $vimeo_link = 'https://vimeo.com/' . $vimeo_id;
+                $status_html = '<span style="color:#1a7a1a;font-weight:bold;">&#10003; '
+                    . get_string('vimeo_current_video', 'resource2') . '</span> &nbsp;'
+                    . '<a href="' . $vimeo_link . '" target="_blank">'
+                    . get_string('vimeo_view_on_vimeo', 'resource2') . '</a>';
+            } elseif ($vimeo_record && $vimeo_record->url === '') {
+                $status_html = '<span style="color:#e67e00;font-weight:bold;">'
+                    . get_string('vimeo_status_uploading', 'resource2') . '</span>';
+            } else {
+                $status_html = '<span style="color:#c00;">'
+                    . get_string('vimeo_status_none', 'resource2') . '</span>';
+            }
+
+            // ── Upload URL / session params ────────────────────────────────
+            $upload_url = new moodle_url('/mod/resource2/upload.php');
+            $sesskey    = sesskey();
+            $courseid   = $this->_course->id;
+            $chunk_size = 5 * 1024 * 1024;
+            $r2_max_mb  = (int)(get_config('resource2', 'max_video_size_mb') ?: 500);
+
+            $html = '
+<div id="r2-mgmt-box" style="max-width:600px;">
+
+  <!-- Current status -->
+  <p style="margin:0 0 12px;">' . $status_html . '</p>
+
+  <!-- Replace video heading -->
+  <p style="font-weight:bold;margin:14px 0 4px;">' . get_string('vimeo_replace_section', 'resource2') . '</p>
+  <small style="display:block;margin-bottom:6px;color:#555;">'
+      . get_string('upload_mp4_only_hint', 'resource2') . '</small>
+  <input type="file" id="r2_replace_file" accept=".mp4,video/mp4" style="margin-bottom:8px;">
+
+  <!-- Progress -->
+  <div id="r2-replace-progress-wrap" style="display:none;margin-top:8px;">
+    <progress id="r2-replace-bar" value="0" max="100" style="width:100%;height:22px;"></progress>
+    <span id="r2-replace-label" style="display:block;margin-top:4px;font-size:0.9em;color:#555;"></span>
+  </div>
+
+  <!-- Status message -->
+  <div id="r2-replace-status" style="margin-top:8px;font-weight:bold;color:#c00;"></div>
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+
+    function fmtBytes(b) {
+        if (b < 1024*1024)        return (b/1024).toFixed(1) + \' KB\';
+        if (b < 1024*1024*1024)   return (b/(1024*1024)).toFixed(1) + \' MB\';
+        return (b/(1024*1024*1024)).toFixed(2) + \' GB\';
+    }
+
+    var MAX_MB     = ' . $r2_max_mb . ';
+    var CHUNK_SIZE = ' . $chunk_size . ';
+    var UPLOAD_URL = "' . $upload_url->out(false) . '";
+    var SESSKEY    = "' . $sesskey . '";
+    var COURSE_ID  = "' . $courseid . '";
+    var USER_ID    = "' . $USER->id . '";
+
+    var fileInput    = document.getElementById("r2_replace_file");
+    var progressWrap = document.getElementById("r2-replace-progress-wrap");
+    var progressBar  = document.getElementById("r2-replace-bar");
+    var progressLabel = document.getElementById("r2-replace-label");
+    var statusDiv    = document.getElementById("r2-replace-status");
+    var pendingField = document.querySelector(\'input[name="vimeo_replace_file_token"]\');
+    var submitBtns   = document.querySelectorAll(\'#id_submitbutton,#id_submitbutton2,[name="submitbutton"],[name="submitbutton2"]\');
+
+    fileInput.addEventListener("change", function() {
+        var file = fileInput.files[0];
+        if (!file) { return; }
+
+        var ext = file.name.split(\'.\').pop().toLowerCase();
+        if (ext !== \'mp4\') {
+            statusDiv.style.color = "#c00";
+            statusDiv.textContent = "' . get_string('upload_error_mp4_only', 'resource2') . '";
+            fileInput.value = "";
+            return;
+        }
+
+        var fileMB = file.size / (1024*1024);
+        if (MAX_MB > 0 && fileMB > MAX_MB) {
+            statusDiv.style.color = "#c00";
+            statusDiv.textContent = "' . addslashes(get_string('quota_error_size', 'resource2',
+                (object)['size' => '{size}', 'max' => $r2_max_mb])) . '"
+                .replace("{size}", fileMB.toFixed(1));
+            fileInput.value = "";
+            return;
+        }
+
+        statusDiv.textContent = "";
+        progressWrap.style.display = "block";
+        progressBar.value = 0;
+        progressLabel.textContent = "0% — " + fmtBytes(0) + " / " + fmtBytes(file.size);
+
+        submitBtns.forEach(function(b) { b.disabled = true; });
+
+        var totalChunks   = Math.ceil(file.size / CHUNK_SIZE);
+        var chunkIndex    = 0;
+        var uploadedBytes = 0;
+        var tempKey       = "rep_" + USER_ID + "_" + Date.now();
+
+        function uploadChunk() {
+            var start = chunkIndex * CHUNK_SIZE;
+            var end   = Math.min(start + CHUNK_SIZE, file.size);
+            var blob  = file.slice(start, end);
+
+            var fd = new FormData();
+            fd.append("file",       blob, file.name);
+            fd.append("chunk",      chunkIndex);
+            fd.append("chunks",     totalChunks);
+            fd.append("temp_key",   tempKey);
+            fd.append("total_size", file.size);
+            fd.append("sesskey",    SESSKEY);
+            fd.append("courseid",   COURSE_ID);
+
+            var xhr = new XMLHttpRequest();
+            xhr.open("POST", UPLOAD_URL, true);
+
+            xhr.upload.onprogress = function(e) {
+                if (!e.lengthComputable) { return; }
+                var sent = uploadedBytes + e.loaded;
+                var pct  = Math.min(99, Math.round((sent / file.size) * 100));
+                progressBar.value = pct;
+                progressLabel.textContent = pct + "% — " + fmtBytes(sent) + " / " + fmtBytes(file.size);
+            };
+
+            xhr.onload = function() {
+                var resp;
+                try { resp = JSON.parse(xhr.responseText); }
+                catch(err) { resp = {OK:0, info:"Parse error"}; }
+
+                if (!resp.OK) {
+                    statusDiv.style.color = "#c00";
+                    statusDiv.textContent = resp.info || "' . get_string('upload_error', 'resource2') . '";
+                    progressWrap.style.display = "none";
+                    submitBtns.forEach(function(b) { b.disabled = false; });
+                    return;
+                }
+
+                uploadedBytes += (end - start);
+
+                if (resp.file_token) {
+                    pendingField.value = resp.file_token;
+                    progressBar.value  = 100;
+                    progressLabel.textContent = "100% — " + fmtBytes(file.size) + " / " + fmtBytes(file.size);
+                    statusDiv.style.color = "#1a7a1a";
+                    statusDiv.textContent = "' . get_string('vimeo_replace_done', 'resource2') . '";
+                    submitBtns.forEach(function(b) { b.disabled = false; });
+                } else {
+                    chunkIndex++;
+                    uploadChunk();
+                }
+            };
+
+            xhr.onerror = function() {
+                statusDiv.style.color = "#c00";
+                statusDiv.textContent = "' . get_string('upload_error', 'resource2') . '";
+                submitBtns.forEach(function(b) { b.disabled = false; });
+            };
+
+            xhr.send(fd);
+        }
+
+        uploadChunk();
+    });
+});
+</script>';
+
+            $mform->addElement('html', $html);
+        }
+
         // ── Video upload section (new activities only) ────────────────────────
         if (!$this->current->instance) {
             $mform->addElement('header', 'videosection', get_string('video_upload_header', 'resource2'));

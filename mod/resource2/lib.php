@@ -85,6 +85,24 @@ function resource2_get_post_actions() {
     return array('update', 'add');
 }
 
+// ── Shared helper: write params JSON and spawn vimeo_bg.php ──────────────────
+function resource2_spawn_vimeo_bg(array $params_data, $chunks_dir, $record_id) {
+    global $CFG;
+    $params_file = $chunks_dir . '/vimeo_params_' . $record_id . '_' . time() . '.json';
+    file_put_contents($params_file, json_encode($params_data));
+    $bg      = escapeshellarg($CFG->dirroot . '/test2/vimeo_bg.php');
+    $pf      = escapeshellarg($params_file);
+    $logfile = escapeshellarg($chunks_dir . '/vimeo_bg.log');
+    $php_cli = trim(shell_exec('which php') ?: '');
+    if (!$php_cli) {
+        foreach (['/usr/bin/php', '/usr/bin/php8.1', '/usr/bin/php8.0', '/usr/local/bin/php'] as $try) {
+            if (is_executable($try)) { $php_cli = $try; break; }
+        }
+    }
+    $php = escapeshellarg($php_cli);
+    exec("$php $bg $pf >> $logfile 2>&1 &");
+}
+
 /**
  * Add resource2 instance.
  * @param object $data
@@ -132,28 +150,15 @@ function resource2_add_instance($data, $mform) {
                 $type_data->type         = (int)(isset($data->video_type) ? $data->video_type : 2);
                 $DB->insert_record('reda_video_type2', $type_data);
 
-                // Write params JSON — exact same format as script.php
-                $params_file = $chunks_dir . '/vimeo_params_' . $record_id . '.json';
-                file_put_contents($params_file, json_encode([
+                // Spawn vimeo_bg.php — exact same params format as script.php
+                resource2_spawn_vimeo_bg([
+                    'mode'        => 'upload',
                     'file'        => $perm_file,
                     'id'          => $data->id,
                     'name'        => $vname,
                     'description' => $vname,
                     'record_id'   => $record_id,
-                ]));
-
-                // Spawn vimeo_bg.php — exact same exec() as script.php
-                $bg      = escapeshellarg($CFG->dirroot . '/test2/vimeo_bg.php');
-                $pf      = escapeshellarg($params_file);
-                $logfile = escapeshellarg($chunks_dir . '/vimeo_bg.log');
-                $php_cli = trim(shell_exec('which php') ?: '');
-                if (!$php_cli) {
-                    foreach (['/usr/bin/php', '/usr/bin/php8.1', '/usr/bin/php8.0', '/usr/local/bin/php'] as $try) {
-                        if (is_executable($try)) { $php_cli = $try; break; }
-                    }
-                }
-                $php = escapeshellarg($php_cli);
-                exec("$php $bg $pf >> $logfile 2>&1 &");
+                ], $chunks_dir, $record_id);
             }
         }
     }
@@ -181,6 +186,68 @@ function resource2_update_instance($data, $mform) {
 
     $completiontimeexpected = !empty($data->completionexpected) ? $data->completionexpected : null;
     \core_completion\api::update_completion_date_event($data->coursemodule, 'resource2', $data->id, $completiontimeexpected);
+
+    // ── Handle replace-video token (teacher uploaded a new file in the edit form) ──
+    if (!empty($data->vimeo_replace_file_token)) {
+        $token = preg_replace('/[^a-zA-Z0-9_-]/', '', $data->vimeo_replace_file_token);
+        if ($token) {
+            $chunks_dir = $CFG->dirroot . '/test2/chunks';
+            $perm_file  = $chunks_dir . '/' . $token . '.mp4';
+            if (file_exists($perm_file)) {
+                $vname       = trim($data->name) ?: ('video_' . time());
+                $existing    = $DB->get_record('vimeo_files2', ['resource2_id' => $data->id]);
+                $type_record = $DB->get_record('reda_video_type2', ['resource2_id' => $data->id]);
+                $video_type  = (string)(isset($data->video_type) ? $data->video_type
+                                        : ($type_record ? $type_record->type : '2'));
+
+                $has_vimeo_id = $existing && !empty($existing->url)
+                                && ctype_digit(trim($existing->url));
+
+                if ($has_vimeo_id) {
+                    // ── Replace in place on Vimeo (same video ID, new content) ──
+                    $record_id  = $existing->id;
+                    $vimeo_uri  = '/videos/' . trim($existing->url);
+                    resource2_spawn_vimeo_bg([
+                        'mode'           => 'replace',
+                        'file'           => $perm_file,
+                        'id'             => $data->id,
+                        'name'           => $vname,
+                        'description'    => $vname,
+                        'record_id'      => $record_id,
+                        'vimeo_uri'      => $vimeo_uri,
+                        'type'           => $video_type,
+                        'type_record_id' => $type_record ? (int)$type_record->id : 0,
+                    ], $chunks_dir, $record_id);
+                } else {
+                    // ── No Vimeo video yet — upload as new ───────────────────
+                    if ($existing) {
+                        $record_id = $existing->id;
+                    } else {
+                        $ins               = new stdClass();
+                        $ins->name         = $vname;
+                        $ins->description  = $vname;
+                        $ins->resource2_id = $data->id;
+                        $ins->url          = '';
+                        $record_id = $DB->insert_record('vimeo_files2', $ins);
+                    }
+                    if (!$type_record) {
+                        $td               = new stdClass();
+                        $td->resource2_id = $data->id;
+                        $td->type         = $video_type;
+                        $DB->insert_record('reda_video_type2', $td);
+                    }
+                    resource2_spawn_vimeo_bg([
+                        'mode'        => 'upload',
+                        'file'        => $perm_file,
+                        'id'          => $data->id,
+                        'name'        => $vname,
+                        'description' => $vname,
+                        'record_id'   => $record_id,
+                    ], $chunks_dir, $record_id);
+                }
+            }
+        }
+    }
 
     return true;
 }
@@ -268,23 +335,36 @@ function resource2_delete_instance($id) {
         }
 
     } elseif (!empty($vimeo_files) && !empty($vimeo_files->url) && ctype_digit(trim($vimeo_files->url))) {
-        // ── Vimeo-hosted video (url is a numeric Vimeo video ID) ─────────────
-        // Optionally delete from Vimeo API (admin setting: Site admin → resource2 → delete_from_vimeo).
-        if (get_config('mod_resource2', 'delete_from_vimeo')) {
+        // ── Vimeo-hosted video — always delete from Vimeo + decrement quota ──
+        global $CFG;
+        $video_id = trim($vimeo_files->url);
+        try {
+            require_once($CFG->dirroot . '/vimeo/vendor/autoload.php');
+            $vimeoclient = new \Vimeo\Vimeo(
+                "4dad588b7f47a44426afc26f398fe2367ea49c92",
+                "IHRxCFjq5qvsKlU6DjWGfNQwtZGHGmK1pByyCYWGrkWnE9F91BbNqPdqXY+dHVyvKjvRWYTu3ba2A8KM1GR2gcqqYiz+jXAx6uLrsEb0jFJrUSMIi3KMIyS+Je+nsN3s",
+                "195c95a4e775fca8d6e70cb8db4aca73"
+            );
+            // Fetch size before deleting so we can decrement storage counter accurately.
+            $size_bytes = 0;
             try {
-                require_once($CFG->dirroot . '/vimeo/vendor/autoload.php');
-                $vimeoclient = new \Vimeo\Vimeo(
-                    "4dad588b7f47a44426afc26f398fe2367ea49c92",
-                    "IHRxCFjq5qvsKlU6DjWGfNQwtZGHGmK1pByyCYWGrkWnE9F91BbNqPdqXY+dHVyvKjvRWYTu3ba2A8KM1GR2gcqqYiz+jXAx6uLrsEb0jFJrUSMIi3KMIyS+Je+nsN3s",
-                    "195c95a4e775fca8d6e70cb8db4aca73"
-                );
-                $vimeoclient->request('/videos/' . trim($vimeo_files->url), [], 'DELETE');
-                error_log('resource2_delete_instance: deleted Vimeo video ' . $vimeo_files->url . ' for resource2 id=' . $resource2->id);
-            } catch (Exception $e) {
-                error_log('resource2_delete_instance: Vimeo DELETE failed for video ' . $vimeo_files->url . ' — ' . $e->getMessage());
-            }
+                $meta = $vimeoclient->request('/videos/' . $video_id . '?fields=upload.size', [], 'GET');
+                if (!empty($meta['body']['upload']['size'])) {
+                    $size_bytes = (int)$meta['body']['upload']['size'];
+                }
+            } catch (Exception $ignored) {}
+
+            $vimeoclient->request('/videos/' . $video_id, [], 'DELETE');
+            error_log('resource2_delete_instance: deleted Vimeo video ' . $video_id . ' for resource2 id=' . $resource2->id);
+
+            // Decrement quota counters.
+            $cur_count   = (int)(get_config('resource2', 'video_count')         ?: 0);
+            $cur_storage = (int)(get_config('resource2', 'total_storage_bytes') ?: 0);
+            set_config('video_count',         max(0, $cur_count   - 1),           'resource2');
+            set_config('total_storage_bytes', max(0, $cur_storage - $size_bytes), 'resource2');
+        } catch (Exception $e) {
+            error_log('resource2_delete_instance: Vimeo DELETE failed for video ' . $video_id . ' — ' . $e->getMessage());
         }
-        // Always remove the DB record regardless of whether Vimeo API was called.
         $DB->delete_records('vimeo_files2', ['id' => $vimeo_files->id]);
     }
 

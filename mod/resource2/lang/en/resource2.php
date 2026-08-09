@@ -150,6 +150,8 @@ $string['quota_error_size']        = 'This video is too large ({$a->size} MB). T
 $string['quota_error_storage']     = 'Upload blocked: the platform storage limit has been reached. Please contact the site administrator.';
 
 // ── Inline mod_form upload UI strings ────────────────────────────────────
+$string['video_manage_header']    = 'Video Management';
+$string['vimeo_view_on_vimeo']    = 'View on Vimeo';
 $string['video_upload_header']    = 'Upload Video';
 $string['choose_video_file']      = 'Choose video file';
 $string['upload_mp4_only_hint']   = 'Only MP4 files are accepted (.mp4)';

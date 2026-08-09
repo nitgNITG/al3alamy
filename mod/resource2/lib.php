@@ -146,6 +146,15 @@ function resource2_update_instance($data, $mform) {
     $DB->update_record('resource2', $data);
     resource2_set_mainfile($data);
 
+    // ── Link a freshly-uploaded video (edge case: module had no video) ───────
+    // This mirrors resource2_add_instance: the upload UI on an existing-but-
+    // videoless module stores the pending record id in vimeo_pending_record_id.
+    if (!empty($data->vimeo_pending_record_id)) {
+        $pending_id = (int)$data->vimeo_pending_record_id;
+        $DB->set_field('vimeo_files2', 'resource2_id', $data->id,
+            ['id' => $pending_id, 'resource2_id' => 0]);
+    }
+
     // ── Sync video metadata ───────────────────────────────────────────────
     // Update the video type in reda_video_type2 if the teacher changed it.
     $new_video_type = isset($data->video_type) ? (int)$data->video_type : 0;

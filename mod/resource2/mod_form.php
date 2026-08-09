@@ -426,6 +426,149 @@ class mod_resource2_mod_form extends moodleform_mod {
             $cur_type = $type_rec ? (int)$type_rec->type : 2;
             $mform->setDefault('video_type_visible', $cur_type);
 
+            // ── Upload UI when no video exists yet (edge case: delete or old data) ──
+            if (empty($vimeo_rec)) {
+                $upload_url_u  = new moodle_url('/mod/resource2/upload.php');
+                $sesskey_u     = sesskey();
+                $courseid_u    = $this->_course->id;
+                $max_size_mb_u = (int)(get_config('resource2', 'max_video_size_mb') ?: 500);
+
+                // Hidden field: linked in resource2_update_instance() same as add.
+                $mform->addElement('hidden', 'vimeo_pending_record_id', 0);
+                $mform->setType('vimeo_pending_record_id', PARAM_INT);
+
+                $no_vid_html = '
+<div id="r2-upload-wrap" style="margin:10px 0;">
+  <div class="form-group row">
+    <label class="col-sm-3 col-form-label" for="r2-file-input">'
+    . get_string('vimeo_file_label', 'resource2') . '</label>
+    <div class="col-sm-9">
+      <input type="file" id="r2-file-input" class="form-control-file"
+             accept="video/mp4,video/quicktime,video/x-msvideo,video/*">
+    </div>
+  </div>
+  <div class="form-group row" id="r2-upload-controls" style="display:none;">
+    <div class="col-sm-9 offset-sm-3">
+      <button type="button" id="r2-upload-btn" class="btn btn-primary">'
+    . get_string('vimeo_upload_btn', 'resource2') . '</button>
+      <div class="progress mt-2" style="height:20px;">
+        <div id="r2-progress-bar" class="progress-bar progress-bar-striped progress-bar-animated"
+             role="progressbar" style="width:0%" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">0%</div>
+      </div>
+      <p id="r2-upload-status" class="mt-1 text-muted"></p>
+    </div>
+  </div>
+  <div id="r2-upload-done"  class="alert alert-success" style="display:none;"></div>
+  <div id="r2-upload-error" class="alert alert-danger"  style="display:none;"></div>
+</div>
+<script>
+(function () {
+  var CHUNK_SIZE  = 10 * 1024 * 1024;
+  var UPLOAD_URL  = ' . json_encode($upload_url_u->out(false)) . ';
+  var SESSKEY     = ' . json_encode($sesskey_u) . ';
+  var COURSEID    = ' . json_encode((string)$courseid_u) . ';
+  var MAX_SIZE_MB = ' . json_encode($max_size_mb_u) . ';
+
+  var fileInput   = document.getElementById("r2-file-input");
+  var uploadBtn   = document.getElementById("r2-upload-btn");
+  var controls    = document.getElementById("r2-upload-controls");
+  var progressBar = document.getElementById("r2-progress-bar");
+  var statusEl    = document.getElementById("r2-upload-status");
+  var doneEl      = document.getElementById("r2-upload-done");
+  var errorEl     = document.getElementById("r2-upload-error");
+  var pendingField= document.getElementById("id_vimeo_pending_record_id");
+  var typeVisible = document.getElementById("id_video_type_visible");
+  var typeField   = document.getElementById("id_video_type");
+
+  if (typeVisible && typeField) {
+    typeField.value = typeVisible.value;
+    typeVisible.addEventListener("change", function () { typeField.value = typeVisible.value; });
+  }
+
+  fileInput.addEventListener("change", function () {
+    errorEl.style.display = "none";
+    doneEl.style.display  = "none";
+    controls.style.display = fileInput.files.length ? "block" : "none";
+  });
+
+  uploadBtn.addEventListener("click", async function () {
+    var file = fileInput.files[0];
+    if (!file) return;
+    var sizeMb = file.size / (1024 * 1024);
+    if (MAX_SIZE_MB > 0 && sizeMb > MAX_SIZE_MB) {
+      showError("File too large (" + Math.round(sizeMb) + " MB). Max: " + MAX_SIZE_MB + " MB.");
+      return;
+    }
+    uploadBtn.disabled = true;
+    errorEl.style.display = "none";
+    var nameField = document.getElementById("id_name");
+    var vname = (nameField && nameField.value.trim()) ? nameField.value.trim() : file.name;
+    var tempKey = "u' . $USER->id . '_" + Date.now();
+    var chunks  = Math.ceil(file.size / CHUNK_SIZE);
+    try {
+      var recordId = await uploadChunked(file, vname, tempKey, chunks);
+      pendingField.value = recordId;
+      typeField.value = typeVisible ? typeVisible.value : "2";
+      setProgress(100);
+      doneEl.textContent = ' . json_encode(get_string('vimeo_upload_done', 'resource2')) . ';
+      doneEl.style.display = "block";
+      statusEl.textContent = "";
+      enableSaveButtons();
+    } catch (err) {
+      showError(err.message || String(err));
+      uploadBtn.disabled = false;
+    }
+  });
+
+  async function uploadChunked(file, vname, tempKey, totalChunks) {
+    for (var i = 0; i < totalChunks; i++) {
+      var start = i * CHUNK_SIZE, end = Math.min(start + CHUNK_SIZE, file.size);
+      var fd = new FormData();
+      fd.append("file", file.slice(start, end), file.name);
+      fd.append("chunk", i); fd.append("chunks", totalChunks);
+      fd.append("temp_key", tempKey); fd.append("total_size", file.size);
+      fd.append("vname", vname); fd.append("description", vname);
+      fd.append("video_type", typeVisible ? typeVisible.value : "2");
+      fd.append("sesskey", SESSKEY); fd.append("courseid", COURSEID);
+      var pct = Math.round(((i + 1) / totalChunks) * 100);
+      setProgress(pct);
+      statusEl.textContent = "' . get_string('vimeo_uploading', 'resource2', "' + pct + '") . '";
+      var data = await (await fetch(UPLOAD_URL, {method:"POST", body:fd})).json();
+      if (!data.OK) throw new Error(data.info || "Upload error on chunk " + i);
+      if (data.record_id) return data.record_id;
+    }
+    throw new Error("No record_id returned.");
+  }
+
+  function setProgress(pct) {
+    progressBar.style.width = pct + "%"; progressBar.textContent = pct + "%";
+    progressBar.setAttribute("aria-valuenow", pct);
+  }
+  function showError(msg) {
+    errorEl.textContent = msg; errorEl.style.display = "block";
+    doneEl.style.display = "none"; pendingField.value = 0;
+    disableSaveButtons("Please fix the upload error before saving.");
+  }
+  function enableSaveButtons() {
+    document.querySelectorAll(
+      "#id_submitbutton, #id_submitbutton2, [name=submitbutton], [name=submitbutton2]"
+    ).forEach(function(b){ b.disabled = false; b.removeAttribute("title"); });
+  }
+  function disableSaveButtons(msg) {
+    document.querySelectorAll(
+      "#id_submitbutton, #id_submitbutton2, [name=submitbutton], [name=submitbutton2]"
+    ).forEach(function(b){ b.disabled = true; if (msg) b.title = msg; });
+  }
+  document.addEventListener("DOMContentLoaded", function () {
+    if (!pendingField || pendingField.value == "0" || pendingField.value === "") {
+      disableSaveButtons(' . json_encode(get_string('vimeo_upload_required', 'resource2')) . ');
+    }
+  });
+})();
+</script>';
+                $mform->addElement('html', $no_vid_html);
+            }
+
             // ── Replace / Delete UI (only when a valid video exists) ──────
             if (!empty($vimeo_rec)) {
                 $replace_url  = new moodle_url('/mod/resource2/replace.php');

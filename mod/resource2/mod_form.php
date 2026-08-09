@@ -222,11 +222,12 @@ class mod_resource2_mod_form extends moodleform_mod {
 </div>
 <script>
 (function () {
-  var CHUNK_SIZE  = 10 * 1024 * 1024; // 10 MB
-  var UPLOAD_URL  = ' . json_encode($upload_url->out(false)) . ';
-  var SESSKEY     = ' . json_encode($sesskey) . ';
-  var COURSEID    = ' . json_encode((string)$courseid) . ';
-  var MAX_SIZE_MB = ' . json_encode($max_size_mb) . ';
+  var CHUNK_SIZE    = 10 * 1024 * 1024; // 10 MB
+  var UPLOAD_URL    = ' . json_encode($upload_url->out(false)) . ';
+  var SESSKEY       = ' . json_encode($sesskey) . ';
+  var COURSEID      = ' . json_encode((string)$courseid) . ';
+  var MAX_SIZE_MB   = ' . json_encode($max_size_mb) . ';
+  var UPLOADING_TPL = ' . json_encode(get_string('vimeo_uploading', 'resource2', '{PCT}')) . ';
 
   var fileInput   = document.getElementById("r2-file-input");
   var uploadBtn   = document.getElementById("r2-upload-btn");
@@ -313,7 +314,7 @@ class mod_resource2_mod_form extends moodleform_mod {
 
       var pct = Math.round(((i + 1) / totalChunks) * 100);
       setProgress(pct);
-      statusEl.textContent = "' . get_string('vimeo_uploading', 'resource2', "' + pct + '") . '";
+      statusEl.textContent = UPLOADING_TPL.replace("{PCT}", pct);
 
       var resp = await fetch(UPLOAD_URL, { method: "POST", body: fd });
       var data = await resp.json();
@@ -463,11 +464,12 @@ class mod_resource2_mod_form extends moodleform_mod {
 </div>
 <script>
 (function () {
-  var CHUNK_SIZE  = 10 * 1024 * 1024;
-  var UPLOAD_URL  = ' . json_encode($upload_url_u->out(false)) . ';
-  var SESSKEY     = ' . json_encode($sesskey_u) . ';
-  var COURSEID    = ' . json_encode((string)$courseid_u) . ';
-  var MAX_SIZE_MB = ' . json_encode($max_size_mb_u) . ';
+  var CHUNK_SIZE    = 10 * 1024 * 1024;
+  var UPLOAD_URL    = ' . json_encode($upload_url_u->out(false)) . ';
+  var SESSKEY       = ' . json_encode($sesskey_u) . ';
+  var COURSEID      = ' . json_encode((string)$courseid_u) . ';
+  var MAX_SIZE_MB   = ' . json_encode($max_size_mb_u) . ';
+  var UPLOADING_TPL = ' . json_encode(get_string('vimeo_uploading', 'resource2', '{PCT}')) . ';
 
   var fileInput   = document.getElementById("r2-file-input");
   var uploadBtn   = document.getElementById("r2-upload-btn");
@@ -532,7 +534,7 @@ class mod_resource2_mod_form extends moodleform_mod {
       fd.append("sesskey", SESSKEY); fd.append("courseid", COURSEID);
       var pct = Math.round(((i + 1) / totalChunks) * 100);
       setProgress(pct);
-      statusEl.textContent = "' . get_string('vimeo_uploading', 'resource2', "' + pct + '") . '";
+      statusEl.textContent = UPLOADING_TPL.replace("{PCT}", pct);
       var data = await (await fetch(UPLOAD_URL, {method:"POST", body:fd})).json();
       if (!data.OK) throw new Error(data.info || "Upload error on chunk " + i);
       if (data.record_id) return data.record_id;
@@ -624,14 +626,15 @@ class mod_resource2_mod_form extends moodleform_mod {
 
 <script>
 (function () {
-  var CHUNK_SIZE   = 10 * 1024 * 1024;
-  var REPLACE_URL  = ' . json_encode($replace_url->out(false)) . ';
-  var DELETE_URL   = ' . json_encode($delete_url->out(false)) . ';
-  var VIEW_URL     = ' . json_encode($view_url->out(false)) . ';
-  var SESSKEY      = ' . json_encode($sesskey) . ';
-  var COURSEID     = ' . json_encode((string)$courseid_val) . ';
-  var RESOURCE2_ID = ' . json_encode((string)$resource2_id) . ';
-  var MAX_SIZE_MB  = ' . json_encode($max_size_mb) . ';
+  var CHUNK_SIZE    = 10 * 1024 * 1024;
+  var REPLACE_URL   = ' . json_encode($replace_url->out(false)) . ';
+  var DELETE_URL    = ' . json_encode($delete_url->out(false)) . ';
+  var VIEW_URL      = ' . json_encode($view_url->out(false)) . ';
+  var SESSKEY       = ' . json_encode($sesskey) . ';
+  var COURSEID      = ' . json_encode((string)$courseid_val) . ';
+  var RESOURCE2_ID  = ' . json_encode((string)$resource2_id) . ';
+  var MAX_SIZE_MB   = ' . json_encode($max_size_mb) . ';
+  var REPLACING_TPL = ' . json_encode(get_string('vimeo_replacing', 'resource2', '{PCT}')) . ';
 
   var replaceFile   = document.getElementById("r2-replace-file");
   var replaceBtn    = document.getElementById("r2-replace-btn");
@@ -719,7 +722,7 @@ class mod_resource2_mod_form extends moodleform_mod {
 
       var pct = Math.round(((i + 1) / totalChunks) * 100);
       setReplaceProgress(pct);
-      replaceStatus.textContent = "' . get_string('vimeo_replacing', 'resource2', "' + pct + '") . '";
+      replaceStatus.textContent = REPLACING_TPL.replace("{PCT}", pct);
 
       var resp = await fetch(REPLACE_URL, { method: "POST", body: fd });
       var data = await resp.json();

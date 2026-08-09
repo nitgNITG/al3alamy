@@ -130,7 +130,16 @@ $ins->name         = $vname;
 $ins->description  = $description;
 $ins->resource2_id = 0;   // linked later in resource2_add_instance()
 $ins->url          = '';  // filled by vimeo_bg.php after Vimeo upload completes
-$ins->timecreated  = time();
+
+// timecreated is used by the orphan-cleanup task.
+// Guard against the column not existing yet (e.g. upgrade pending).
+$dbman = $DB->get_manager();
+$vimeo_table = new xmldb_table('vimeo_files2');
+$tc_field    = new xmldb_field('timecreated', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
+if ($dbman->field_exists($vimeo_table, $tc_field)) {
+    $ins->timecreated = time();
+}
+
 $record_id = $DB->insert_record('vimeo_files2', $ins);
 
 // Write params JSON for vimeo_bg.php.

@@ -272,84 +272,8 @@ if ($mform->is_cancelled()) {
 
 
 
-        // Get maximum allowed video count
-        $maximum = $DB->get_field('count_activities', 'count', array('id' => 1));
-        $admins = get_admins();
-
-        foreach ($admins as $admin) {
-            if ($USER->id == $admin->id) {
-                $num = 30;
-                echo '
-                <form method="POST" action="./update_maximum.php">
-                    <label for="maximumNumber">Maximum Number:</label>
-                    <input style="text-align: center;font-size: 20px;" type="number" id="maximumNumber" value="' . $maximum . '" name="maximumNumber">
-                    <input type="submit" value="Update">
-                </form>
-                ';
-            }
-        }
-    }
-
-    if ($add == 'resource2') {
-        if ($count_activities >= $maximum) {
-            echo '
-            <style>
-              .errorbox {
-                  border: 1px solid #f44336;
-                  background-color: #ffebee;
-                  color: #f44336;
-                  padding: 20px;
-                  border-radius: 5px;
-              }
-              
-              .errorcode {
-                  font-size: 24px;
-                  font-weight: bold;
-              }
-              
-              .errormessage {
-                  font-size: 16px;
-                  margin-top: 10px;
-              }        
-            </style>
-            <div data-rel="fatalerror" class="box py-3 errorbox alert alert-danger">
-                <p class="errorcode" style="font-size: 20px; font-weight: bold;">
-                    <i class="fa fa-exclamation-triangle"></i> Error: You have uploaded ' . $count_activities . ' videos.
-                </p>
-                <p class="errormessage">
-                    You have reached the maximum allowed video count. Please delete some videos to upload a new one.
-                </p>
-            </div>
-            ';
-        } else {
-            $available = $maximum - $count_activities;
-            echo '
-            <style>
-              @keyframes ring {
-                  0%, 100% {
-                      transform: translateX(0);
-                  }
-                  50% {
-                      transform: translateX(10px); /* Move right */
-                  }
-              }
-      
-              .bell {
-                  padding: 15px;
-                  background-color: #f4f42936;
-                  display: flex;
-                  gap: 28px;
-              }
-              .fa-bell {
-                  font-size: 30px;
-                  color: #f1c40f; /* Bell icon color */
-                  rotate: 337deg;
-                  animation: ring 1s ease-in-out infinite;
-              }
-            </style>
-            <div class="bell">
-            <i class="fa fa-bell" aria-hidden="true"></i> Number of videos available: ' . $available . '
-            </div>';
+        // Old quota UI removed — quota is now managed via
+        // Admin > Plugins > resource2 settings and shown inside mod_form.
 
             $teacherRoleID = $DB->get_field('role', 'id', array('shortname' => 'editingteacher'));
             $teacherRole = $DB->record_exists('role_assignments', ['userid' => $USER->id, 'roleid' => $teacherRoleID]);

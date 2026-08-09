@@ -827,7 +827,7 @@ function _resource2_spawn_vimeo_upload(int $resource2_id, string $token,
 
     // Write the params JSON that vimeo_bg.php reads.
     $params_file = $upload_dir . '/vimeo_params_' . $record_id . '_' . time() . '.json';
-    file_put_contents($params_file, json_encode([
+    $written = file_put_contents($params_file, json_encode([
         'mode'        => 'upload',
         'file'        => $file_path,
         'id'          => $resource2_id,
@@ -835,13 +835,28 @@ function _resource2_spawn_vimeo_upload(int $resource2_id, string $token,
         'description' => $vname,
         'record_id'   => $record_id,
     ]));
+    if ($written === false) {
+        error_log('resource2: FAILED to write params file: ' . $params_file);
+        return;
+    }
+    error_log('resource2: params written to ' . $params_file);
 
     // Spawn vimeo_bg.php in the background.
+    // Use nohup + output redirect so the child survives after the web request ends.
     $php     = _resource2_find_php_cli();
     $bg      = escapeshellarg($CFG->dirroot . '/test2/vimeo_bg.php');
     $pf      = escapeshellarg($params_file);
-    $logfile = escapeshellarg($upload_dir . '/vimeo_bg.log');
-    exec("$php $bg $pf >> $logfile 2>&1 &");
+    $logfile = $upload_dir . '/vimeo_bg.log';
+
+    error_log('resource2: spawning vimeo_bg — php=' . $php . ' bg=' . $CFG->dirroot . '/test2/vimeo_bg.php' . ' pf=' . $params_file);
+
+    // Build a self-contained shell command that detaches from the web process.
+    $cmd = 'nohup ' . $php . ' ' . $bg . ' ' . $pf
+         . ' >> ' . escapeshellarg($logfile) . ' 2>&1 </dev/null &';
+    $output = [];
+    $ret    = -1;
+    exec($cmd, $output, $ret);
+    error_log('resource2: exec returned ' . $ret . (empty($output) ? '' : ' output: ' . implode(' ', $output)));
 }
 
 /**

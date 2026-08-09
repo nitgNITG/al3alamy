@@ -173,8 +173,8 @@ class mod_resource2_mod_form extends moodleform_mod {
                 }
             } else {
                 // Hidden fields — populated by JS when upload completes.
-                $mform->addElement('hidden', 'vimeo_pending_record_id', 0);
-                $mform->setType('vimeo_pending_record_id', PARAM_INT);
+                $mform->addElement('hidden', 'vimeo_pending_file_token', '');
+                $mform->setType('vimeo_pending_file_token', PARAM_ALPHANUM);
 
                 $mform->addElement('hidden', 'video_type', 2);
                 $mform->setType('video_type', PARAM_INT);
@@ -236,7 +236,7 @@ class mod_resource2_mod_form extends moodleform_mod {
   var statusEl    = document.getElementById("r2-upload-status");
   var doneEl      = document.getElementById("r2-upload-done");
   var errorEl     = document.getElementById("r2-upload-error");
-  var pendingField= document.getElementById("id_vimeo_pending_record_id");
+  var pendingField= document.getElementById("id_vimeo_pending_file_token");
   var typeField   = document.getElementById("id_video_type");
   var typeVisible = document.getElementById("id_video_type_visible");
 
@@ -279,7 +279,7 @@ class mod_resource2_mod_form extends moodleform_mod {
     try {
       var recordId = await uploadChunked(file, vname, tempKey, chunks);
       // Success.
-      pendingField.value = recordId;
+      pendingField.value = token;
       // Keep video_type in sync.
       typeField.value = typeVisible ? typeVisible.value : "2";
       setProgress(100);
@@ -324,11 +324,11 @@ class mod_resource2_mod_form extends moodleform_mod {
       if (!data.OK) {
         throw new Error(data.info || data.error || ("Server error on chunk " + i + " — check server logs"));
       }
-      if (data.record_id) {
-        return data.record_id; // Last chunk returned the DB record id.
+      if (data.file_token) {
+        return data.file_token;
       }
     }
-    throw new Error("No record_id returned from server.");
+    throw new Error("No file_token returned from server.");
   }
 
   function setProgress(pct) {
@@ -341,7 +341,7 @@ class mod_resource2_mod_form extends moodleform_mod {
     errorEl.textContent    = msg;
     errorEl.style.display  = "block";
     doneEl.style.display   = "none";
-    pendingField.value     = 0;
+    pendingField.value     = "";
     disableSaveButtons("Please fix the upload error before saving.");
   }
 
@@ -365,7 +365,7 @@ class mod_resource2_mod_form extends moodleform_mod {
 
   // On page load: disable save buttons until upload completes (new module only).
   document.addEventListener("DOMContentLoaded", function () {
-    if (!pendingField || pendingField.value == "0" || pendingField.value === "") {
+    if (!pendingField || pendingField.value === "") {
       disableSaveButtons("' . get_string('vimeo_upload_required', 'resource2') . '");
     }
   });
@@ -436,9 +436,9 @@ class mod_resource2_mod_form extends moodleform_mod {
                 $courseid_u    = $this->_course->id;
                 $max_size_mb_u = (int)(get_config('resource2', 'max_video_size_mb') ?: 500);
 
-                // Hidden field: linked in resource2_update_instance() same as add.
-                $mform->addElement('hidden', 'vimeo_pending_record_id', 0);
-                $mform->setType('vimeo_pending_record_id', PARAM_INT);
+                // Hidden field: used in resource2_update_instance() to find assembled file.
+                $mform->addElement('hidden', 'vimeo_pending_file_token', '');
+                $mform->setType('vimeo_pending_file_token', PARAM_ALPHANUM);
 
                 $no_vid_html = '
 <div id="r2-upload-wrap" style="margin:10px 0;">
@@ -480,7 +480,7 @@ class mod_resource2_mod_form extends moodleform_mod {
   var statusEl    = document.getElementById("r2-upload-status");
   var doneEl      = document.getElementById("r2-upload-done");
   var errorEl     = document.getElementById("r2-upload-error");
-  var pendingField= document.getElementById("id_vimeo_pending_record_id");
+  var pendingField= document.getElementById("id_vimeo_pending_file_token");
   var typeVisible = document.getElementById("id_video_type_visible");
   var typeField   = document.getElementById("id_video_type");
 
@@ -511,7 +511,7 @@ class mod_resource2_mod_form extends moodleform_mod {
     var chunks  = Math.ceil(file.size / CHUNK_SIZE);
     try {
       var recordId = await uploadChunked(file, vname, tempKey, chunks);
-      pendingField.value = recordId;
+      pendingField.value = token;
       typeField.value = typeVisible ? typeVisible.value : "2";
       setProgress(100);
       doneEl.textContent = ' . json_encode(get_string('vimeo_upload_done', 'resource2')) . ';
@@ -543,9 +543,9 @@ class mod_resource2_mod_form extends moodleform_mod {
         throw new Error("Server error (HTTP " + resp2.status + ") on chunk " + i);
       }
       if (!data.OK) throw new Error(data.info || data.error || ("Server error on chunk " + i + " — check server logs"));
-      if (data.record_id) return data.record_id;
+      if (data.file_token) return data.file_token;
     }
-    throw new Error("No record_id returned.");
+    throw new Error("No file_token returned.");
   }
 
   function setProgress(pct) {
@@ -554,7 +554,7 @@ class mod_resource2_mod_form extends moodleform_mod {
   }
   function showError(msg) {
     errorEl.textContent = msg; errorEl.style.display = "block";
-    doneEl.style.display = "none"; pendingField.value = 0;
+    doneEl.style.display = "none"; pendingField.value = "";
     disableSaveButtons("Please fix the upload error before saving.");
   }
   function enableSaveButtons() {
@@ -568,7 +568,7 @@ class mod_resource2_mod_form extends moodleform_mod {
     ).forEach(function(b){ b.disabled = true; if (msg) b.title = msg; });
   }
   document.addEventListener("DOMContentLoaded", function () {
-    if (!pendingField || pendingField.value == "0" || pendingField.value === "") {
+    if (!pendingField || pendingField.value === "") {
       disableSaveButtons(' . json_encode(get_string('vimeo_upload_required', 'resource2')) . ');
     }
   });
@@ -855,7 +855,7 @@ class mod_resource2_mod_form extends moodleform_mod {
         $errors = parent::validation($data, $files);
 
         // For new modules: require a video upload to be started.
-        if (empty($this->current->instance) && empty($data['vimeo_pending_record_id'])) {
+        if (empty($this->current->instance) && empty($data['vimeo_pending_file_token'])) {
             $errors['vimeo_upload_header'] = get_string('vimeo_upload_required', 'resource2');
         }
 

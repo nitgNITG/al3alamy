@@ -106,22 +106,6 @@ function resource2_add_instance($data, $mform) {
     $DB->set_field('course_modules', 'instance', $data->id, array('id'=>$cmid));
     resource2_set_mainfile($data);
 
-    // ── Link the pre-uploaded vimeo record to this new resource2 ────────────
-    // The mod_form upload.php creates a vimeo_files2 row with resource2_id=0
-    // before the module is saved. Here we update it to the real ID atomically.
-    if (!empty($data->vimeo_pending_record_id)) {
-        $pending_id = (int)$data->vimeo_pending_record_id;
-        // Only link it if it still has resource2_id=0 (not already claimed).
-        $DB->set_field('vimeo_files2', 'resource2_id', $data->id,
-            ['id' => $pending_id, 'resource2_id' => 0]);
-        // Create the video type record.
-        $video_type = (int)($data->video_type ?? 2);
-        $type_rec              = new stdClass();
-        $type_rec->resource2_id = $data->id;
-        $type_rec->type        = $video_type;
-        $DB->insert_record('reda_video_type2', $type_rec);
-    }
-
     $completiontimeexpected = !empty($data->completionexpected) ? $data->completionexpected : null;
     \core_completion\api::update_completion_date_event($cmid, 'resource2', $data->id, $completiontimeexpected);
 
@@ -145,55 +129,6 @@ function resource2_update_instance($data, $mform) {
 
     $DB->update_record('resource2', $data);
     resource2_set_mainfile($data);
-
-    // ── Sync video metadata ───────────────────────────────────────────────
-    // Update the video type in reda_video_type2 if the teacher changed it.
-    $new_video_type = isset($data->video_type) ? (int)$data->video_type : 0;
-    if ($new_video_type > 0) {
-        $type_rec = $DB->get_record('reda_video_type2', ['resource2_id' => $data->id]);
-        if ($type_rec) {
-            if ((int)$type_rec->type !== $new_video_type) {
-                $type_rec->type = $new_video_type;
-                $DB->update_record('reda_video_type2', $type_rec);
-            }
-        } else {
-            // No type record yet — create one.
-            $new_type_rec               = new stdClass();
-            $new_type_rec->resource2_id = $data->id;
-            $new_type_rec->type         = $new_video_type;
-            $DB->insert_record('reda_video_type2', $new_type_rec);
-        }
-    }
-
-    // Sync the Vimeo video title with the activity name (metadata-only PATCH).
-    // Only when a real numeric Vimeo video ID exists (skip during a replace).
-    $vimeo_rec = $DB->get_record('vimeo_files2', ['resource2_id' => $data->id]);
-    if ($vimeo_rec && !empty(trim((string)$vimeo_rec->url))
-            && ctype_digit(trim((string)$vimeo_rec->url))) {
-        $new_name = trim($data->name ?? '');
-        if ($new_name !== '' && $new_name !== trim((string)($vimeo_rec->name ?? ''))) {
-            // Update DB name.
-            $upd       = new stdClass();
-            $upd->id   = $vimeo_rec->id;
-            $upd->name = $new_name;
-            $DB->update_record('vimeo_files2', $upd);
-
-            // PATCH Vimeo (fast metadata-only call — no upload involved).
-            try {
-                require_once($CFG->dirroot . '/vimeo/vendor/autoload.php');
-                $vimeoclient = new \Vimeo\Vimeo(
-                    "4dad588b7f47a44426afc26f398fe2367ea49c92",
-                    "IHRxCFjq5qvsKlU6DjWGfNQwtZGHGmK1pByyCYWGrkWnE9F91BbNqPdqXY+dHVyvKjvRWYTu3ba2A8KM1GR2gcqqYiz+jXAx6uLrsEb0jFJrUSMIi3KMIyS+Je+nsN3s",
-                    "195c95a4e775fca8d6e70cb8db4aca73"
-                );
-                $vimeoclient->request('/videos/' . trim((string)$vimeo_rec->url),
-                    ['name' => $new_name], 'PATCH');
-            } catch (Exception $e) {
-                error_log('resource2_update_instance: Vimeo PATCH failed — ' . $e->getMessage());
-            }
-        }
-    }
-    // ─────────────────────────────────────────────────────────────────────
 
     $completiontimeexpected = !empty($data->completionexpected) ? $data->completionexpected : null;
     \core_completion\api::update_completion_date_event($data->coursemodule, 'resource2', $data->id, $completiontimeexpected);
@@ -285,41 +220,21 @@ function resource2_delete_instance($id) {
 
     } elseif (!empty($vimeo_files) && !empty($vimeo_files->url) && ctype_digit(trim($vimeo_files->url))) {
         // ── Vimeo-hosted video (url is a numeric Vimeo video ID) ─────────────
-        $vimeo_video_id  = trim($vimeo_files->url);
-        $vimeo_size_bytes = 0;
-
-        // Fetch video size from Vimeo before deleting so we can update the quota counter.
-        try {
-            require_once($CFG->dirroot . '/vimeo/vendor/autoload.php');
-            $vimeoclient = new \Vimeo\Vimeo(
-                "4dad588b7f47a44426afc26f398fe2367ea49c92",
-                "IHRxCFjq5qvsKlU6DjWGfNQwtZGHGmK1pByyCYWGrkWnE9F91BbNqPdqXY+dHVyvKjvRWYTu3ba2A8KM1GR2gcqqYiz+jXAx6uLrsEb0jFJrUSMIi3KMIyS+Je+nsN3s",
-                "195c95a4e775fca8d6e70cb8db4aca73"
-            );
-            $meta = $vimeoclient->request('/videos/' . $vimeo_video_id . '?fields=upload.size', [], 'GET');
-            if (!empty($meta['body']['upload']['size'])) {
-                $vimeo_size_bytes = (int)$meta['body']['upload']['size'];
-            }
-        } catch (Exception $e) {
-            error_log('resource2_delete_instance: could not fetch Vimeo size for video ' . $vimeo_video_id . ' — ' . $e->getMessage());
-        }
-
         // Optionally delete from Vimeo API (admin setting: Site admin → resource2 → delete_from_vimeo).
         if (get_config('mod_resource2', 'delete_from_vimeo')) {
             try {
-                $vimeoclient->request('/videos/' . $vimeo_video_id, [], 'DELETE');
-                error_log('resource2_delete_instance: deleted Vimeo video ' . $vimeo_video_id . ' for resource2 id=' . $resource2->id);
+                require_once($CFG->dirroot . '/vimeo/vendor/autoload.php');
+                $vimeoclient = new \Vimeo\Vimeo(
+                    "4dad588b7f47a44426afc26f398fe2367ea49c92",
+                    "IHRxCFjq5qvsKlU6DjWGfNQwtZGHGmK1pByyCYWGrkWnE9F91BbNqPdqXY+dHVyvKjvRWYTu3ba2A8KM1GR2gcqqYiz+jXAx6uLrsEb0jFJrUSMIi3KMIyS+Je+nsN3s",
+                    "195c95a4e775fca8d6e70cb8db4aca73"
+                );
+                $vimeoclient->request('/videos/' . trim($vimeo_files->url), [], 'DELETE');
+                error_log('resource2_delete_instance: deleted Vimeo video ' . $vimeo_files->url . ' for resource2 id=' . $resource2->id);
             } catch (Exception $e) {
-                error_log('resource2_delete_instance: Vimeo DELETE failed for video ' . $vimeo_video_id . ' — ' . $e->getMessage());
+                error_log('resource2_delete_instance: Vimeo DELETE failed for video ' . $vimeo_files->url . ' — ' . $e->getMessage());
             }
         }
-
-        // ── Decrement quota counters ──────────────────────────────────────────
-        $cur_count   = (int)(get_config('resource2', 'video_count') ?: 0);
-        $cur_storage = (int)(get_config('resource2', 'total_storage_bytes') ?: 0);
-        set_config('video_count',         max(0, $cur_count   - 1),                   'resource2');
-        set_config('total_storage_bytes', max(0, $cur_storage - $vimeo_size_bytes),   'resource2');
-
         // Always remove the DB record regardless of whether Vimeo API was called.
         $DB->delete_records('vimeo_files2', ['id' => $vimeo_files->id]);
     }

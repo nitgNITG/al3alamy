@@ -121,24 +121,56 @@ if ($vname === '') {
     $vname = 'video_' . time();
 }
 
-// Create placeholder vimeo_files2 row (resource2_id=0).
-// resource2_add_instance() will update it to the real ID after form save.
-// timecreated is used by the cleanup_orphan_uploads scheduled task to
-// age-filter rows and only delete those older than 24 h.
+// Create (or reuse) a placeholder vimeo_files2 row with resource2_id = 0.
+// resource2_add_instance() will link it to the real ID after form save.
+//
+// IMPORTANT: vimeo_files2 has a UNIQUE constraint on resource2_id.
+// If a previous upload was abandoned (browser closed before saving), a row
+// with resource2_id = 0 already exists. We handle this by:
+//   1. Trying a normal INSERT.
+//   2. If that fails (duplicate key), look for the orphan row.
+//      a. If its url is empty (no Vimeo video yet) → UPDATE it and reuse.
+//      b. If it already has a Vimeo ID (bg upload completed) → delete that
+//         row first, then INSERT fresh (the video was orphaned anyway).
+$vf_columns = $DB->get_columns('vimeo_files2');
+
 $ins               = new stdClass();
 $ins->name         = $vname;
 $ins->description  = $description;
-$ins->resource2_id = 0;   // linked later in resource2_add_instance()
-$ins->url          = '';  // filled by vimeo_bg.php after Vimeo upload completes
-
-// timecreated is used by the orphan-cleanup task.
-// Use get_columns() — always available in AJAX context (avoids xmldb class autoload issues).
-$vf_columns = $DB->get_columns('vimeo_files2');
+$ins->resource2_id = 0;
+$ins->url          = '';
 if (isset($vf_columns['timecreated'])) {
     $ins->timecreated = time();
 }
 
-$record_id = $DB->insert_record('vimeo_files2', $ins);
+try {
+    $record_id = $DB->insert_record('vimeo_files2', $ins);
+} catch (dml_write_exception $e) {
+    // Likely duplicate resource2_id = 0 from an abandoned upload.
+    $orphan = $DB->get_record('vimeo_files2', ['resource2_id' => 0]);
+    if ($orphan) {
+        if (empty(trim((string)$orphan->url))) {
+            // No Vimeo video was ever uploaded — safe to reuse this row.
+            $upd              = new stdClass();
+            $upd->id          = $orphan->id;
+            $upd->name        = $vname;
+            $upd->description = $description;
+            $upd->url         = '';
+            if (isset($vf_columns['timecreated'])) {
+                $upd->timecreated = time();
+            }
+            $DB->update_record('vimeo_files2', $upd);
+            $record_id = $orphan->id;
+        } else {
+            // Orphan already has a Vimeo ID (bg upload finished but form never
+            // saved). Delete it — the cleanup cron would have removed it anyway.
+            $DB->delete_records('vimeo_files2', ['id' => $orphan->id]);
+            $record_id = $DB->insert_record('vimeo_files2', $ins);
+        }
+    } else {
+        die(json_encode(['OK' => 0, 'info' => 'Database error: ' . $e->getMessage()]));
+    }
+}
 
 // Write params JSON for vimeo_bg.php.
 $params_file = $upload_dir . '/vimeo_params_' . $record_id . '_' . time() . '.json';

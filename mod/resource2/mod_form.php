@@ -174,7 +174,7 @@ class mod_resource2_mod_form extends moodleform_mod {
             } else {
                 // Hidden fields — populated by JS when upload completes.
                 $mform->addElement('hidden', 'vimeo_pending_file_token', '');
-                $mform->setType('vimeo_pending_file_token', PARAM_ALPHANUM);
+                $mform->setType('vimeo_pending_file_token', PARAM_ALPHANUMEXT);
 
                 $mform->addElement('hidden', 'video_type', 2);
                 $mform->setType('video_type', PARAM_INT);
@@ -427,7 +427,7 @@ class mod_resource2_mod_form extends moodleform_mod {
 
                 // Hidden field: used in resource2_update_instance() to find assembled file.
                 $mform->addElement('hidden', 'vimeo_pending_file_token', '');
-                $mform->setType('vimeo_pending_file_token', PARAM_ALPHANUM);
+                $mform->setType('vimeo_pending_file_token', PARAM_ALPHANUMEXT);
 
                 $no_vid_html = '
 <div id="r2-upload-wrap" style="margin:10px 0;">

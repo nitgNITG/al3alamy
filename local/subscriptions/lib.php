@@ -17,6 +17,121 @@
 defined('MOODLE_INTERNAL') || die();
 
 /**
+ * Inject Open Graph (og:*) and Twitter Card meta tags into every page <head>.
+ *
+ * This makes link previews on Facebook, WhatsApp, Twitter/X, Telegram, etc.
+ * show the correct title, description, and image instead of stale cached data.
+ *
+ * Logic:
+ *   • Course page  → course name + summary + course image (or site logo)
+ *   • Any other    → page title + site description + site logo
+ *
+ * @return string  Raw HTML to inject into <head>.
+ */
+function local_subscriptions_before_standard_html_head(): string {
+    global $PAGE, $CFG, $COURSE, $DB;
+
+    // ── Gather data ───────────────────────────────────────────────────────────
+
+    $site_name    = format_string(get_config('core', 'fullname') ?: 'حسام هارون | العالمي');
+    $site_desc    = format_string(get_config('core', 'summary')  ?: 'منصة العالمي للتاريخ الوطني مع أ. حسام هارون');
+    $current_url  = $PAGE->url instanceof moodle_url ? $PAGE->url->out(false) : $CFG->wwwroot;
+
+    // Title: use the page heading when available, fall back to page title.
+    $raw_title = $PAGE->heading ?: $PAGE->title ?: $site_name;
+    $og_title  = format_string($raw_title) . ' | ' . $site_name;
+    $og_desc   = $site_desc;
+    $og_image  = '';
+    $og_type   = 'website';
+
+    // ── Site logo as default image ────────────────────────────────────────────
+    // Try Moodle's logo URL first (set in Site Administration → Appearance → Logos).
+    try {
+        $logo_url = $PAGE->theme->logo_url(1200, 630);
+        if ($logo_url) {
+            $og_image = $logo_url->out(false);
+        }
+    } catch (\Throwable $e) {}
+
+    // Fallback: check for a logo file in standard locations.
+    if (!$og_image) {
+        $candidates = [
+            $CFG->wwwroot . '/theme/edumy/pix/logo.png',
+            $CFG->wwwroot . '/theme/edumy/pix/logo.jpg',
+            $CFG->wwwroot . '/pix/logo.png',
+        ];
+        // Use the first one (can't check file_exists on remote; just pick first).
+        $og_image = $candidates[0];
+    }
+
+    // ── Course page overrides ─────────────────────────────────────────────────
+    if (!empty($COURSE->id) && $COURSE->id > 1) {
+        $og_type  = 'article';
+        $og_title = format_string($COURSE->fullname) . ' | ' . $site_name;
+
+        // Course summary → strip tags for description.
+        if (!empty($COURSE->summary)) {
+            $summary  = strip_tags(format_text($COURSE->summary, $COURSE->summaryformat ?? FORMAT_HTML));
+            $summary  = trim(preg_replace('/\s+/', ' ', $summary));
+            if (strlen($summary) > 160) {
+                $summary = mb_substr($summary, 0, 157) . '…';
+            }
+            if ($summary) {
+                $og_desc = $summary;
+            }
+        }
+
+        // Course overview image.
+        try {
+            $context  = context_course::instance($COURSE->id);
+            $fs       = get_file_storage();
+            $files    = $fs->get_area_files($context->id, 'course', 'overviewfiles', 0, 'sortorder DESC', false);
+            foreach ($files as $file) {
+                $mime = $file->get_mimetype();
+                if (strpos($mime, 'image/') === 0) {
+                    $og_image = moodle_url::make_pluginfile_url(
+                        $file->get_contextid(), 'course', 'overviewfiles',
+                        null, $file->get_filepath(), $file->get_filename()
+                    )->out(false);
+                    break;
+                }
+            }
+        } catch (\Throwable $e) {}
+    }
+
+    // ── Escape values ─────────────────────────────────────────────────────────
+    $esc = function(string $s): string {
+        return htmlspecialchars($s, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+    };
+
+    $og_title = $esc($og_title);
+    $og_desc  = $esc($og_desc);
+    $og_url   = $esc($current_url);
+    $og_image = $esc($og_image);
+    $og_site  = $esc($site_name);
+    $og_type  = $esc($og_type);
+
+    // ── Output ────────────────────────────────────────────────────────────────
+    return <<<HTML
+
+<!-- Open Graph / Social sharing tags — injected by local_subscriptions -->
+<meta property="og:type"        content="{$og_type}" />
+<meta property="og:site_name"   content="{$og_site}" />
+<meta property="og:url"         content="{$og_url}" />
+<meta property="og:title"       content="{$og_title}" />
+<meta property="og:description" content="{$og_desc}" />
+<meta property="og:image"       content="{$og_image}" />
+<meta property="og:locale"      content="ar_AR" />
+<!-- Twitter / X Card -->
+<meta name="twitter:card"        content="summary_large_image" />
+<meta name="twitter:title"       content="{$og_title}" />
+<meta name="twitter:description" content="{$og_desc}" />
+<meta name="twitter:image"       content="{$og_image}" />
+
+HTML;
+}
+
+/**
  * Inject a "الاشتراكات" link into the navbar for logged-in non-admin users, and
  * (on the site front page) render the subscription-plans grid after the last
  * content section.

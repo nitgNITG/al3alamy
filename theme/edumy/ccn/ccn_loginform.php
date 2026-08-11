@@ -52,6 +52,11 @@ if (!isloggedin() or isguestuser()) {   // Show the block
   $_ccnlogin .= '<button type="submit" class="btn btn-log btn-block btn-thm2">'.get_string('login').'</button>';
   $_ccnlogin .= '<input type="hidden" name="logintoken" value="'.s(\core\session\manager::get_login_token()).'" />';
 
+  // Always-visible "Forgot password" link, styled prominently below the button.
+  $_ccnlogin .= '<div class="text-center mt-3">';
+  $_ccnlogin .= '<a href="'.$forgot.'" style="color:#c9a227;font-weight:600;font-size:14px;">'.get_string('forgotaccount').'</a>';
+  $_ccnlogin .= '</div>';
+
   $_ccnlogin .= "</form>\n";
 
   $authsequence = get_enabled_auth_plugins(true); // Get all auths, in sequence.
